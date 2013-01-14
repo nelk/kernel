@@ -27,7 +27,7 @@ uint32_t k_getAlignedStartAddress(uint32_t start, uint32_t blockSizeBytes) {
 	return start + (blockSizeBytes - offset);
 }
 
-void k_memInit() {
+void k_memInit(void) {
 	gMem.blockSizeBytes = 1 << 7; // 128 bytes
 
 	gMem.startMemoryAddress = k_getAlignedStartAddress(
@@ -39,7 +39,7 @@ void k_memInit() {
 	gMem.nextAvailableAddress = gMem.startMemoryAddress;
 }
 
-void *k_acquireMemoryBlock() {
+void *k_acquireMemoryBlock(void) {
 	FreeBlock *curFirstFree;
 	void *ret;
 
