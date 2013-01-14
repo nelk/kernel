@@ -24,6 +24,10 @@ MemInfo gMem;
 
 uint32_t k_getAlignedStartAddress(uint32_t start, uint32_t blockSizeBytes) {
 	uint32_t offset = start % blockSizeBytes;
+	if (offset == 0) {
+		return start;
+	}
+
 	return start + (blockSizeBytes - offset);
 }
 
