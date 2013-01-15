@@ -1,3 +1,5 @@
+#include <stddef.h>
+
 #include "mem.h"
 
 MemInfo gMem;
@@ -63,7 +65,6 @@ void k_memInit(void) {
 void *k_acquireMemoryBlock(ProcId oid) {
     FreeBlock *curFirstFree = NULL;
     void *ret = NULL;
-    uint32_t addr = 0;
     ProcId *header = NULL;
     uint8_t didAllocateHeader = 0;
     uint32_t memOffset;

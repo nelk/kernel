@@ -1,7 +1,7 @@
 #ifndef MEM_H
 #define MEM_H
 
-#include "type.h"
+#include <stdint.h>
 
 extern uint32_t Image$$RW_IRAM1$$ZI$$Limit;
 
