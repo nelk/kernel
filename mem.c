@@ -11,7 +11,7 @@ ProcId *k_findOwnerSlot(uint32_t addr) {
     uint32_t index = offset / gMem.blockSizeBytes;
 
     ProcId *header = (ProcId *)(offset - (offset % gMem.arenaSizeBytes));
-    return &header[index];
+    return header + index + gMem.startMemoryAddress;
 }
 
 // See note on k_findOwnerSlot
