@@ -183,8 +183,9 @@ int testMemOperations() {
 
 uint32_t Image$$RW_IRAM1$$ZI$$Limit;
 
-// Run tests with:
-// clang -Wall -Wextra -m32 -g mem.c mem_test.c
+// Run tests with clang and gcc:
+// clang -Wall -Wextra -m32 -g -std=c99 mem.c mem_test.c
+// gcc -Wall -Wextra -m32 -g -std=c99 mem.c mem_test.c
 int main() {
 	assert(testAlignedStartAddress() == PASSED);
 	assert(testMemOperations() == PASSED);
