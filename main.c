@@ -1,6 +1,6 @@
 #include <LPC17xx.h>
-#include "uart_polling.h"
 #include "mem.h"
+#include "uart_polling.h"
 
 int main () {
 	SystemInit();
