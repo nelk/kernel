@@ -54,7 +54,7 @@ void k_setGlobals(
 // Initialize global variables.
 void k_memInit(void) {
     k_setGlobals(
-        Image$$RW_IRAM1$$ZI$$Limit, // startAddr
+        (uint32_t)&Image$$RW_IRAM1$$ZI$$Limit, // startAddr
         0x10008000,                 // endAddr
         1 << 7                      // blockSizeBytes = 128 bytes
     );
