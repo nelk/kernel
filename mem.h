@@ -10,8 +10,9 @@ extern uint32_t Image$$RW_IRAM1$$ZI$$Limit;
 // to distinguish it from regular integers.
 typedef uint8_t ProcId;
 
-#define PROC_ID_KERNEL (0x80)
-#define PROC_ID_NONE   (0xff)
+#define PROC_ID_KERNEL    (0x80)
+#define PROC_ID_ALLOCATOR (0x81)
+#define PROC_ID_NONE      (0xff)
 
 typedef struct FreeBlockStruct FreeBlock;
 
@@ -40,6 +41,7 @@ int k_releaseMemoryBlock(void *mem, ProcId oid);
 
 #ifdef TESTING
 
+ProcId *k_findOwnerSlot(uint32_t addr);
 void k_setOwner(uint32_t addr, ProcId oid);
 ProcId k_getOwner(uint32_t addr);
 uint32_t k_getAlignedStartAddress(uint32_t startAddr, uint32_t blockSizeBytes);

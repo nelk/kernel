@@ -94,7 +94,7 @@ void *k_acquireMemoryBlock(ProcId oid) {
 
     // NOTE: this breaks if your memory starts at 0x0.
     if (didAllocateHeader) {
-        *header = PROC_ID_KERNEL;
+        *header = PROC_ID_ALLOCATOR;
         ++header;
         while (header < (ProcId *)gMem.nextAvailableAddress) {
             *header = PROC_ID_NONE;
@@ -115,7 +115,6 @@ int k_releaseMemoryBlock(void *mem, ProcId oid) {
     ProcId blockOwner;
     FreeBlock *fb;
 
-    // Do a bunch of checks here
     addr = (uint32_t)mem;
 
     // First, check for obvious out of range errors
