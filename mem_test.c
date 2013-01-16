@@ -108,6 +108,38 @@ int testFindOwnerSlot() {
     return PASSED;
 }
 
+int testMultipleArenas() {
+    uint8_t *backingStorage = (uint8_t *)malloc(100000*sizeof(uint8_t));
+    assert(backingStorage);
+
+    k_setGlobals(
+        (uint32_t)backingStorage,           // startAddr
+        ((uint32_t)backingStorage) + 65536, // endAddr
+        2                                   // blockSizeBytes
+    );
+
+    int firstPid = 1;
+    void *firstBlock = k_acquireMemoryBlock(firstPid);
+    assert(firstBlock);
+
+    // Check permissions
+    assert(k_getOwner((uint32_t)firstBlock) == firstPid);
+    assert(k_getOwner((uint32_t)backingStorage) == PROC_ID_ALLOCATOR);
+
+    int secondPid = 2;
+    void *secondBlock = k_acquireMemoryBlock(secondPid);
+    assert(secondBlock);
+
+    // Check permissions
+    assert(k_getOwner((uint32_t)firstBlock) == firstPid);
+    assert(k_getOwner((uint32_t)backingStorage) == PROC_ID_ALLOCATOR);
+    assert(k_getOwner((uint32_t)secondBlock) == secondPid);
+    assert(k_getOwner((uint32_t)secondBlock+2) == PROC_ID_NONE);
+    assert(k_getOwner((uint32_t)backingStorage+4) == PROC_ID_ALLOCATOR);
+
+    return PASSED;
+}
+
 int testMemOperations() {
     uint8_t *backingStorage = (uint8_t *)malloc(100000*sizeof(uint8_t));
     assert(backingStorage);
@@ -207,5 +239,6 @@ uint32_t Image$$RW_IRAM1$$ZI$$Limit;
 int main() {
     assert(testAlignedStartAddress() == PASSED);
     assert(testMemOperations() == PASSED);
+    assert(testMultipleArenas() == PASSED);
     assert(testFindOwnerSlot() == PASSED);
 }
