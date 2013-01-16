@@ -117,8 +117,15 @@ int k_releaseMemoryBlock(void *mem, ProcId oid) {
 
     addr = (uint32_t)mem;
 
-    // First, check for obvious out of range errors
-    if (addr < gMem.startMemoryAddress || addr >= gMem.endMemoryAddress) {
+    // First, check for obvious out of range errors.
+    // NOTE: nextAvailableAddress is always greater than or
+    //       equal to endMemoryAddress, but we check both
+    //       anyways.
+    if (
+        addr < gMem.startMemoryAddress ||
+        addr >= gMem.nextAvailableAddress ||
+        addr >= gMem.endMemoryAddress
+    ) {
         return -1;
     }
 

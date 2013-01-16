@@ -178,6 +178,16 @@ int testMemOperations() {
 	ret = k_releaseMemoryBlock((void *)gMem.endMemoryAddress, PROC_ID_KERNEL);
 	assert(ret != 0);
 
+	// Test after nextAvailableAddress. We shouldn't allow
+	// programs to release memory blocks after that point
+	// because the header is not allocated yet, and might be
+	// corrupted.
+	uint32_t attackArenaAddr = gMem.startMemoryAddress + gMem.arenaSizeBytes;
+	uint32_t attackAddr = attackArenaAddr + gMem.blockSizeBytes;
+	k_setOwner(attackAddr, firstPid);
+	ret = k_releaseMemoryBlock((void *)attackAddr, firstPid);
+	assert(ret != 0);
+
 	// Test OOM
 	gMem.endMemoryAddress = 0;
 	gMem.firstFree = NULL;
