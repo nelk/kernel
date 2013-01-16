@@ -8,7 +8,7 @@ MemInfo gMem;
 // Not meeting this contract will result in security holes and weird segfaults.
 ProcId *k_findOwnerSlot(uint32_t addr) {
     uint32_t offset = addr - gMem.startMemoryAddress;
-    uint32_t index = offset / gMem.blockSizeBytes;
+    uint32_t index = (offset / gMem.blockSizeBytes) % gMem.blockSizeBytes;
 
     ProcId *header = (ProcId *)(offset - (offset % gMem.arenaSizeBytes));
     return header + index + gMem.startMemoryAddress;
