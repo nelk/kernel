@@ -14,13 +14,13 @@ typedef uint8_t ProcId;
 #define PROC_ID_ALLOCATOR (0x81)
 #define PROC_ID_NONE      (0xff)
 
-typedef struct FreeBlockStruct FreeBlock;
-
-struct FreeBlockStruct {
+typedef struct FreeBlock FreeBlock;
+struct FreeBlock {
     FreeBlock *prev;
 };
 
-typedef struct {
+typedef struct MemInfo MemInfo;
+struct MemInfo {
     uint32_t startMemoryAddress;
     uint32_t endMemoryAddress;
 
@@ -30,7 +30,7 @@ typedef struct {
     uint32_t arenaSizeBytes;
 
     FreeBlock *firstFree;
-} MemInfo;
+};
 
 extern MemInfo gMem;
 
