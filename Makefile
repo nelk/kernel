@@ -19,6 +19,6 @@ gcc:
 	${GCC} ${CFLAGS} ${SOURCE} -o ${EXEC}
 
 clean:
-	rm -r ${OBJECTS} ${DEPENDS} ${EXEC}
+	rm -rf ${OBJECTS} ${DEPENDS} ${EXEC}
 
 -include ${DEPENDS}	# reads the .d files and reruns dependencies
