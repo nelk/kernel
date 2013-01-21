@@ -5,6 +5,7 @@ SOURCE = mem.c mem_test.c
 OBJECTS = ${SOURCE:.c=.o}
 DEPENDS = ${SOURCE:.c=.d}
 EXEC = test.out
+DEBUG_SYMBOLS = ${EXEC:.out=.out.dSYM}
 
 # make -f clang test clean
 # make -f gcc test clean
@@ -19,6 +20,6 @@ gcc:
 	${GCC} ${CFLAGS} ${SOURCE} -o ${EXEC}
 
 clean:
-	rm -rf ${OBJECTS} ${DEPENDS} ${EXEC}
+	rm -rf ${OBJECTS} ${DEPENDS} ${EXEC} ${DEBUG_SYMBOLS}
 
 -include ${DEPENDS}	# reads the .d files and reruns dependencies
