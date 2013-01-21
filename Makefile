@@ -6,13 +6,13 @@ OBJECTS = ${SOURCE:.c=.o}
 DEPENDS = ${SOURCE:.c=.d}
 EXEC = test.out
 
-# make -f clang run
-# make -f gcc run
+# make -f clang test clean
+# make -f gcc test clean
 
 clang: ${SOURCE}
 	${CLANG} ${CFLAGS} ${SOURCE} -o ${EXEC}
 
-run:
+test:
 	./${EXEC}
 
 gcc:
