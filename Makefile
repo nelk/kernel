@@ -1,25 +1,19 @@
-CLANG = clang
-GCC = gcc
-CFLAGS = -Wall -Wextra -m32 -g -std=c99
+CC = clang
+CFLAGS = -Wall -Wextra -m32 -MMD -g -std=c99 -Qunused-arguments
 SOURCE = mem.c mem_test.c
 OBJECTS = ${SOURCE:.c=.o}
 DEPENDS = ${SOURCE:.c=.d}
-EXEC = test.out
 DEBUG_SYMBOLS = ${EXEC:.out=.out.dSYM}
 
-# make -f clang test clean
-# make -f gcc test clean
+EXECS = mem_test
 
-clang: ${SOURCE}
-	${CLANG} ${CFLAGS} ${SOURCE} -o ${EXEC}
+all: test
+test: ${EXECS}
 
-test:
-	./${EXEC}
-
-gcc:
-	${GCC} ${CFLAGS} ${SOURCE} -o ${EXEC}
+mem_test: mem_test.o mem.o
+	${CC} ${CFLAGS} -o $@ $^
 
 clean:
-	rm -rf ${OBJECTS} ${DEPENDS} ${EXEC} ${DEBUG_SYMBOLS}
+	rm -rf ${OBJECTS} ${DEPENDS} ${EXECS} ${DEBUG_SYMBOLS}
 
 -include ${DEPENDS}	# reads the .d files and reruns dependencies
