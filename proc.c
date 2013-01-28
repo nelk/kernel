@@ -96,6 +96,11 @@ void k_initProcesses() {
   currentProcess = heap + i;
 }
 
+void switchToProcess(void *p) {
+  __set_MSP((uint32_t) p);
+  __rte(); // Not sure exactly what this does.
+}
+
 
 void runProcessor() {
   while (1) {
@@ -105,8 +110,7 @@ void runProcessor() {
 
     PCB *nextProc = heapTop(heap);
     nextProc->state = RUNNING;
-    __set_MSP((uint32_t) nextProc->stackPointer);
-    __rte(); // Not sure exactly what this does.
+    switchToProcess(nextProc->stackPointer);
   }
 }
 
