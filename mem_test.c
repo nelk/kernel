@@ -88,10 +88,13 @@ int testFindOwnerSlot() {
 
     int result = PASSED;
 
-    for (int i = 0; i < len; i++) {
-        k_setGlobals(cases[i].startAddr, 0x10000000, cases[i].blockSizeBytes);
+    MemInfo *memory = (MemInfo *)malloc(sizeof(MemInfo));
+    assert(memory);
 
-        uint32_t got = (uint32_t)k_findOwnerSlot(cases[i].addr);
+    for (int i = 0; i < len; i++) {
+        k_setGlobals(cases[i].startAddr, 0x10000000, cases[i].blockSizeBytes, memory);
+
+        uint32_t got = (uint32_t)k_findOwnerSlot(cases[i].addr, memory);
 
         if (got == cases[i].expectedResult) {
             continue;
@@ -111,31 +114,34 @@ int testFindOwnerSlot() {
 int testMultipleArenas() {
     uint8_t *backingStorage = (uint8_t *)malloc(100000*sizeof(uint8_t));
     assert(backingStorage);
+    MemInfo *memory = (MemInfo *)malloc(sizeof(MemInfo));
+    assert(memory);
 
     k_setGlobals(
         (uint32_t)backingStorage,           // startAddr
         ((uint32_t)backingStorage) + 65536, // endAddr
-        2                                   // blockSizeBytes
+        2,                                  // blockSizeBytes
+        memory
     );
 
     int firstPid = 1;
-    void *firstBlock = k_acquireMemoryBlock(firstPid);
+    void *firstBlock = k_acquireMemoryBlock(firstPid, memory);
     assert(firstBlock);
 
     // Check permissions
-    assert(k_getOwner((uint32_t)firstBlock) == firstPid);
-    assert(k_getOwner((uint32_t)backingStorage) == PROC_ID_ALLOCATOR);
+    assert(k_getOwner((uint32_t)firstBlock, memory) == firstPid);
+    assert(k_getOwner((uint32_t)backingStorage, memory) == PROC_ID_ALLOCATOR);
 
     int secondPid = 2;
-    void *secondBlock = k_acquireMemoryBlock(secondPid);
+    void *secondBlock = k_acquireMemoryBlock(secondPid, memory);
     assert(secondBlock);
 
     // Check permissions
-    assert(k_getOwner((uint32_t)firstBlock) == firstPid);
-    assert(k_getOwner((uint32_t)backingStorage) == PROC_ID_ALLOCATOR);
-    assert(k_getOwner((uint32_t)secondBlock) == secondPid);
-    assert(k_getOwner((uint32_t)secondBlock+2) == PROC_ID_NONE);
-    assert(k_getOwner((uint32_t)backingStorage+4) == PROC_ID_ALLOCATOR);
+    assert(k_getOwner((uint32_t)firstBlock, memory) == firstPid);
+    assert(k_getOwner((uint32_t)backingStorage, memory) == PROC_ID_ALLOCATOR);
+    assert(k_getOwner((uint32_t)secondBlock, memory) == secondPid);
+    assert(k_getOwner((uint32_t)secondBlock+2, memory) == PROC_ID_NONE);
+    assert(k_getOwner((uint32_t)backingStorage+4, memory) == PROC_ID_ALLOCATOR);
 
     return PASSED;
 }
@@ -143,88 +149,92 @@ int testMultipleArenas() {
 int testMemOperations() {
     uint8_t *backingStorage = (uint8_t *)malloc(100000*sizeof(uint8_t));
     assert(backingStorage);
+    MemInfo *memory = (MemInfo *)malloc(sizeof(MemInfo));
+    assert(memory);
 
     k_setGlobals(
         (uint32_t)backingStorage,           // startAddr
         ((uint32_t)backingStorage) + 65536, // endAddr
-        16                                  // blockSizeBytes
+        16,                                 // blockSizeBytes
+        memory                              
     );
 
     int firstPid = 1;
-    void *firstBlock = k_acquireMemoryBlock(firstPid);
+    void *firstBlock = k_acquireMemoryBlock(firstPid, memory);
     assert(firstBlock);
 
     // Check permissions
-    assert(k_getOwner((uint32_t)firstBlock) == firstPid);
-    assert(k_getOwner((uint32_t)backingStorage) == PROC_ID_ALLOCATOR);
-    assert(k_getOwner((uint32_t)firstBlock+16) == PROC_ID_NONE);
+    assert(k_getOwner((uint32_t)firstBlock, memory) == firstPid);
+    assert(k_getOwner((uint32_t)backingStorage, memory) == PROC_ID_ALLOCATOR);
+    assert(k_getOwner((uint32_t)firstBlock+16, memory) == PROC_ID_NONE);
 
     int secondPid = 2;
-    void *secondBlock = k_acquireMemoryBlock(secondPid);
+    void *secondBlock = k_acquireMemoryBlock(secondPid, memory);
     assert(secondBlock);
 
     // Check permissions
-    assert(k_getOwner((uint32_t)firstBlock) == firstPid);
-    assert(k_getOwner((uint32_t)backingStorage) == PROC_ID_ALLOCATOR);
-    assert(k_getOwner((uint32_t)secondBlock) == secondPid);
-    assert(k_getOwner((uint32_t)secondBlock+16) == PROC_ID_NONE);
+    assert(k_getOwner((uint32_t)firstBlock, memory) == firstPid);
+    assert(k_getOwner((uint32_t)backingStorage, memory) == PROC_ID_ALLOCATOR);
+    assert(k_getOwner((uint32_t)secondBlock, memory) == secondPid);
+    assert(k_getOwner((uint32_t)secondBlock+16, memory) == PROC_ID_NONE);
 
     // Manually add to free list, and verify that acquire takes from free list
-    k_setOwner((uint32_t)secondBlock, PROC_ID_NONE);
+    k_setOwner((uint32_t)secondBlock, PROC_ID_NONE, memory);
     FreeBlock *fb = (FreeBlock *)secondBlock;
-    gMem.firstFree = fb;
+    memory->firstFree = fb;
 
     int thirdPid = 3;
-    void *thirdBlock = k_acquireMemoryBlock(thirdPid);
+    void *thirdBlock = k_acquireMemoryBlock(thirdPid, memory);
     assert(thirdBlock == secondBlock);
-    assert(k_getOwner((uint32_t)thirdBlock) == thirdPid);
-    assert(gMem.firstFree == NULL);
+    assert(k_getOwner((uint32_t)thirdBlock, memory) == thirdPid);
+    assert(memory->firstFree == NULL);
 
 
     // Test happy path
-    int ret = k_releaseMemoryBlock(thirdBlock, thirdPid);
+    int ret = k_releaseMemoryBlock(thirdBlock, thirdPid, memory);
     assert(ret == 0);
-    assert(k_getOwner((uint32_t)thirdBlock) == PROC_ID_NONE);
-    assert(gMem.firstFree != NULL);
+    assert(k_getOwner((uint32_t)thirdBlock, memory) == PROC_ID_NONE);
+    assert(memory->firstFree != NULL);
 
     // Test double-free fails
-    ret = k_releaseMemoryBlock(thirdBlock, thirdPid);
+    ret = k_releaseMemoryBlock(thirdBlock, thirdPid, memory);
     assert(ret != 0);
 
     // Test wrong owner fails
-    ret = k_releaseMemoryBlock(secondBlock, thirdPid);
+    ret = k_releaseMemoryBlock(secondBlock, thirdPid, memory);
     assert(ret != 0);
 
     // Test internal block pointer fails
-    ret = k_releaseMemoryBlock(secondBlock + 1, secondPid);
+    ret = k_releaseMemoryBlock(secondBlock + 1, secondPid, memory);
     assert(ret != 0);
 
     // Test before beginning of memory
     ret = k_releaseMemoryBlock(
-        (void *)(gMem.startMemoryAddress - 1),
-        PROC_ID_ALLOCATOR
+        (void *)(memory->startMemoryAddress - 1),
+        PROC_ID_ALLOCATOR,
+        memory
     );
     assert(ret != 0);
 
     // Test after end of memory
-    ret = k_releaseMemoryBlock((void *)gMem.endMemoryAddress, PROC_ID_KERNEL);
+    ret = k_releaseMemoryBlock((void *)memory->endMemoryAddress, PROC_ID_KERNEL, memory);
     assert(ret != 0);
 
     // Test after nextAvailableAddress. We shouldn't allow
     // programs to release memory blocks after that point
     // because the header is not allocated yet, and might be
     // corrupted.
-    uint32_t attackArenaAddr = gMem.startMemoryAddress + gMem.arenaSizeBytes;
-    uint32_t attackAddr = attackArenaAddr + gMem.blockSizeBytes;
-    k_setOwner(attackAddr, firstPid);
-    ret = k_releaseMemoryBlock((void *)attackAddr, firstPid);
+    uint32_t attackArenaAddr = memory->startMemoryAddress + memory->arenaSizeBytes;
+    uint32_t attackAddr = attackArenaAddr + memory->blockSizeBytes;
+    k_setOwner(attackAddr, firstPid, memory);
+    ret = k_releaseMemoryBlock((void *)attackAddr, firstPid, memory);
     assert(ret != 0);
 
     // Test OOM
-    gMem.endMemoryAddress = 0;
-    gMem.firstFree = NULL;
+    memory->endMemoryAddress = 0;
+    memory->firstFree = NULL;
     int oomPid = 4;
-    void *oomBlock = k_acquireMemoryBlock(oomPid);
+    void *oomBlock = k_acquireMemoryBlock(oomPid, memory);
     assert(oomBlock == NULL);
 
     free(backingStorage);

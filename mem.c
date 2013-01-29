@@ -2,27 +2,27 @@
 
 #include "mem.h"
 
-MemInfo gMem;
+// MemInfo gMem;
 
 // This function assumes addr points to the beginning of a block.
 // Not meeting this contract will result in security holes and weird segfaults.
-ProcId *k_findOwnerSlot(uint32_t addr) {
-    uint32_t offset = addr - gMem.startMemoryAddress;
-    uint32_t index = (offset / gMem.blockSizeBytes) % gMem.blockSizeBytes;
+ProcId *k_findOwnerSlot(uint32_t addr, MemInfo *gMem) {
+    uint32_t offset = addr - gMem->startMemoryAddress;
+    uint32_t index = (offset / gMem->blockSizeBytes) % gMem->blockSizeBytes;
 
-    ProcId *header = (ProcId *)(offset - (offset % gMem.arenaSizeBytes));
-    return header + index + gMem.startMemoryAddress;
+    ProcId *header = (ProcId *)(offset - (offset % gMem->arenaSizeBytes));
+    return header + index + gMem->startMemoryAddress;
 }
 
 // See note on k_findOwnerSlot
-void k_setOwner(uint32_t addr, ProcId oid) {
-    ProcId *ownerSlot = k_findOwnerSlot(addr);
+void k_setOwner(uint32_t addr, ProcId oid, MemInfo *gMem) {
+    ProcId *ownerSlot = k_findOwnerSlot(addr, gMem);
     *ownerSlot = oid;
 }
 
 // See note on k_findOwnerSlot
-ProcId k_getOwner(uint32_t addr) {
-    return *k_findOwnerSlot(addr);
+ProcId k_getOwner(uint32_t addr, MemInfo *gMem) {
+    return *k_findOwnerSlot(addr, gMem);
 }
 
 uint32_t k_getAlignedStartAddress(uint32_t start, uint32_t blockSizeBytes) {
@@ -38,32 +38,34 @@ uint32_t k_getAlignedStartAddress(uint32_t start, uint32_t blockSizeBytes) {
 void k_setGlobals(
     uint32_t startAddr,
     uint32_t endAddr,
-    uint32_t blockSizeBytes
+    uint32_t blockSizeBytes,
+    MemInfo *gMem
     ) {
-    gMem.startMemoryAddress = k_getAlignedStartAddress(
+    gMem->startMemoryAddress = k_getAlignedStartAddress(
         startAddr,
         blockSizeBytes
     );
-    gMem.endMemoryAddress = endAddr;
+    gMem->endMemoryAddress = endAddr;
 
-    gMem.nextAvailableAddress = gMem.startMemoryAddress;
-    gMem.blockSizeBytes = blockSizeBytes;
-    gMem.arenaSizeBytes = blockSizeBytes * blockSizeBytes;
+    gMem->nextAvailableAddress = gMem->startMemoryAddress;
+    gMem->blockSizeBytes = blockSizeBytes;
+    gMem->arenaSizeBytes = blockSizeBytes * blockSizeBytes;
 }
 
 // Initialize global variables.
-void k_memInit(void) {
+void k_memInit(MemInfo *gMem) {
     uint32_t memStartAddr = (uint32_t)&Image$$RW_IRAM1$$ZI$$Limit;
     k_setGlobals(
         memStartAddr,  // startAddr
         0x10008000,    // endAddr
-        1 << 7         // blockSizeBytes = 128 bytes
+        1 << 7,         // blockSizeBytes = 128 bytes
+        gMem
     );
 }
 
 // Acquire a memory block. Will set the block's owner to the
 // passed in owner id (oid).
-void *k_acquireMemoryBlock(ProcId oid) {
+void *k_acquireMemoryBlock(ProcId oid, MemInfo *gMem) {
     FreeBlock *curFirstFree = NULL;
     void *ret = NULL;
     ProcId *header = NULL;
@@ -71,25 +73,25 @@ void *k_acquireMemoryBlock(ProcId oid) {
     uint32_t memOffset;
 
     // Try free list, first
-    if (gMem.firstFree != NULL) {
-        curFirstFree = gMem.firstFree;
-        gMem.firstFree = curFirstFree->prev;
+    if (gMem->firstFree != NULL) {
+        curFirstFree = gMem->firstFree;
+        gMem->firstFree = curFirstFree->prev;
         ret = (void *)curFirstFree;
-        k_setOwner((uint32_t)ret, oid);
+        k_setOwner((uint32_t)ret, oid, gMem);
         return ret;
     }
 
     // Leave room for owner list (header), if necessary
-    memOffset = gMem.nextAvailableAddress - gMem.startMemoryAddress;
-    if ((memOffset % gMem.arenaSizeBytes) == 0) {
-        header = (ProcId *)gMem.nextAvailableAddress;
+    memOffset = gMem->nextAvailableAddress - gMem->startMemoryAddress;
+    if ((memOffset % gMem->arenaSizeBytes) == 0) {
+        header = (ProcId *)gMem->nextAvailableAddress;
         didAllocateHeader = 1;
-        gMem.nextAvailableAddress += gMem.blockSizeBytes;
+        gMem->nextAvailableAddress += gMem->blockSizeBytes;
     }
 
     // Check if we're out of memory
     // TODO: figure out what to return if OOM
-    if (gMem.nextAvailableAddress >= gMem.endMemoryAddress) {
+    if (gMem->nextAvailableAddress >= gMem->endMemoryAddress) {
         return NULL;
     }
 
@@ -97,19 +99,19 @@ void *k_acquireMemoryBlock(ProcId oid) {
     if (didAllocateHeader) {
         *header = PROC_ID_ALLOCATOR;
         ++header;
-        while (header < (ProcId *)gMem.nextAvailableAddress) {
+        while (header < (ProcId *)gMem->nextAvailableAddress) {
             *header = PROC_ID_NONE;
             ++header;
         }
     }
 
-    ret = (void *)gMem.nextAvailableAddress;
-    k_setOwner((uint32_t)ret, oid);
-    gMem.nextAvailableAddress += gMem.blockSizeBytes;
+    ret = (void *)gMem->nextAvailableAddress;
+    k_setOwner((uint32_t)ret, oid, gMem);
+    gMem->nextAvailableAddress += gMem->blockSizeBytes;
     return ret;
 }
 
-int k_releaseMemoryBlock(void *mem, ProcId oid) {
+int k_releaseMemoryBlock(void *mem, ProcId oid, MemInfo *gMem) {
     uint32_t addr;
     uint32_t addrOffset;
     uint32_t blockOffset;
@@ -123,15 +125,15 @@ int k_releaseMemoryBlock(void *mem, ProcId oid) {
     //       equal to endMemoryAddress, but we check both
     //       anyways.
     if (
-        addr < gMem.startMemoryAddress ||
-        addr >= gMem.nextAvailableAddress ||
-        addr >= gMem.endMemoryAddress
+        addr < gMem->startMemoryAddress ||
+        addr >= gMem->nextAvailableAddress ||
+        addr >= gMem->endMemoryAddress
     ) {
         return -1;
     }
 
-    addrOffset = addr - gMem.startMemoryAddress;
-    blockOffset = addrOffset % gMem.blockSizeBytes;
+    addrOffset = addr - gMem->startMemoryAddress;
+    blockOffset = addrOffset % gMem->blockSizeBytes;
 
     // Disallow addresses in the middle of blocks
     if (blockOffset != 0) {
@@ -139,16 +141,16 @@ int k_releaseMemoryBlock(void *mem, ProcId oid) {
     }
 
     // Make sure this is allocated, and is owned by this process.
-    blockOwner = k_getOwner(addr);
+    blockOwner = k_getOwner(addr, gMem);
     if (blockOwner != oid) {
         return -1;
     }
 
-    k_setOwner(addr, PROC_ID_NONE);
+    k_setOwner(addr, PROC_ID_NONE, gMem);
 
     // Add to free list
     fb = (FreeBlock *)mem;
-    fb->prev = gMem.firstFree;
-    gMem.firstFree = fb;
+    fb->prev = gMem->firstFree;
+    gMem->firstFree = fb;
     return 0;
 }

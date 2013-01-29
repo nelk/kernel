@@ -34,23 +34,24 @@ struct MemInfo {
 
 extern MemInfo gMem;
 
-void k_memInit(void);
-void *k_acquireMemoryBlock(ProcId oid);
-int k_releaseMemoryBlock(void *mem, ProcId oid);
+void k_memInit(MemInfo *gMem);
+void *k_acquireMemoryBlock(ProcId oid, MemInfo *gMem);
+int k_releaseMemoryBlock(void *mem, ProcId oid, MemInfo *gMem);
 
 
-#ifdef TESTING
-
-ProcId *k_findOwnerSlot(uint32_t addr);
-void k_setOwner(uint32_t addr, ProcId oid);
-ProcId k_getOwner(uint32_t addr);
+// #ifdef TESTING
+// TODO: memInfo at front
+ProcId *k_findOwnerSlot(uint32_t addr, MemInfo *gMem);
+void k_setOwner(uint32_t addr, ProcId oid, MemInfo *gMem);
+ProcId k_getOwner(uint32_t addr, MemInfo *gMem);
 uint32_t k_getAlignedStartAddress(uint32_t startAddr, uint32_t blockSizeBytes);
 void k_setGlobals(
     uint32_t startAddr,
     uint32_t endAddr,
-    uint32_t blockSizeBytes
+    uint32_t blockSizeBytes,
+    MemInfo *memory
 );
 
-#endif
+// #endif
 
 #endif // MEM_H
