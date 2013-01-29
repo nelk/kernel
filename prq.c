@@ -2,7 +2,7 @@
 #include "prq.h"
 #include "proc.h"
 
-void prqInit(PRQ q, PCB **prStore, int prStoreSize) {
+void prqInit(PRQ q, PCB **prStore, uint32_t prStoreSize) {
   q.heap = prStore;
   q.size = 0;
   q.cap = prStoreSize;
@@ -12,14 +12,14 @@ PCB* prqTop(PRQ q) {
   return q.heap[0];
 }
 
-int prqLess(PCB *a, PCB *b) {
+uint32_t prqLess(PCB *a, PCB *b) {
   return a->priority < b->priority;
 }
 
-void prqUp(PRQ q, int j) {
+void prqUp(PRQ q, uint32_t j) {
   PCB *temp;
   while (1) {
-    int i = (j - 1) / 2; // parent
+    uint32_t i = (j - 1) / 2; // parent
     if (i == j || !prqLess(q.heap[j], q.heap[i])) {
       break;
     }
@@ -30,11 +30,11 @@ void prqUp(PRQ q, int j) {
   }
 }
 
-void prqDown(PRQ q, int i) {
-  int j1 = 0;
-  int j = 0;
-  int j2 = 0;
-  int n = q.size;
+void prqDown(PRQ q, uint32_t i) {
+  uint32_t j1 = 0;
+  uint32_t j = 0;
+  uint32_t j2 = 0;
+  uint32_t n = q.size;
   PCB *temp;
 
   while (1) {
@@ -57,7 +57,7 @@ void prqDown(PRQ q, int i) {
   }
 }
 
-int prqAdd(PRQ q, PCB *pcb) {
+uint32_t prqAdd(PRQ q, PCB *pcb) {
   if (q.size >= q.cap) {
     return -1;
   }
@@ -67,8 +67,7 @@ int prqAdd(PRQ q, PCB *pcb) {
   return 0;
 }
 
-PCB *prqRemove(PRQ q, int i) {
-  int childIndex;
+PCB *prqRemove(PRQ q, uint32_t i) {
   PCB *removed = q.heap[i];
   q.heap[i] = q.heap[q.size - 1];
   //q.heap[q.size - 1] = removed;

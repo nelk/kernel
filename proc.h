@@ -6,8 +6,8 @@
 
 #define NUM_PROCS 6
 
-typedef enum ProcState ProcState;
 enum ProcState {NEW, READY, RUNNING};
+typedef enum ProcState ProcState;
 
 typedef struct PCB PCB;
 struct PCB {

@@ -4,6 +4,7 @@
 
 #include <stdint.h>
 
+typedef struct PCB PCB;
 struct PCB;
 
 typedef struct PRQ PRQ;
