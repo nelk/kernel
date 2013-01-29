@@ -46,7 +46,7 @@ int testAlignedStartAddress() {
         );
     }
 
-    return PASSED;
+    return result;
 }
 
 int testFindOwnerSlot() {
@@ -108,7 +108,7 @@ int testFindOwnerSlot() {
         );
     }
 
-    return PASSED;
+    return result;
 }
 
 int testMultipleArenas() {
