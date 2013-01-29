@@ -205,7 +205,7 @@ int testMemOperations() {
     assert(ret != 0);
 
     // Test internal block pointer fails
-    ret = k_releaseMemoryBlock(memInfo, secondBlock + 1, secondPid);
+    ret = k_releaseMemoryBlock(memInfo, (void*)((uint32_t)secondBlock + 1), secondPid);
     assert(ret != 0);
 
     // Test before beginning of memory
