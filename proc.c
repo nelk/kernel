@@ -31,7 +31,7 @@ void k_initProcesses(void) {
     process = &procInfo.processes[i];
     process->pid = i;
     process->state = READY;
-    //TODO - assert that these memory blocks are contiguous
+    // TODO(nelk): Assert that these memory blocks are contiguous
     k_acquireMemoryBlock(i);
     process->stack = (uint32_t *)((uint32_t)k_acquireMemoryBlock(i) + gMem.blockSizeBytes);
   }
