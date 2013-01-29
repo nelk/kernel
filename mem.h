@@ -32,20 +32,20 @@ struct MemInfo {
     FreeBlock *firstFree;
 };
 
-extern MemInfo gMem;
+extern MemInfo memInfo;
 
-void k_memInit(MemInfo *gMem);
-void *k_acquireMemoryBlock(MemInfo *gMem, ProcId oid);
-int k_releaseMemoryBlock(MemInfo *gMem, void *mem, ProcId oid);
+void k_memInit(MemInfo *memInfo);
+void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid);
+int k_releaseMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid);
 
 
 #ifdef TESTING
-ProcId *k_findOwnerSlot(MemInfo *gMem, uint32_t addr);
-void k_setOwner(MemInfo *gMem, uint32_t addr, ProcId oid);
-ProcId k_getOwner(MemInfo *gMem, uint32_t addr);
+ProcId *k_findOwnerSlot(MemInfo *memInfo, uint32_t addr);
+void k_setOwner(MemInfo *memInfo, uint32_t addr, ProcId oid);
+ProcId k_getOwner(MemInfo *memInfo, uint32_t addr);
 uint32_t k_getAlignedStartAddress(uint32_t startAddr, uint32_t blockSizeBytes);
 void k_setGlobals(
-    MemInfo *memory,
+    MemInfo *memInfo,
     uint32_t startAddr,
     uint32_t endAddr,
     uint32_t blockSizeBytes
