@@ -57,7 +57,7 @@ void k_memInit(MemInfo *memInfo) {
         memInfo,
         memStartAddr,  // startAddr
         0x10008000,    // endAddr
-        1 << 7          // blockSizeBytes = 128 bytes
+        1 << 7         // blockSizeBytes = 128 bytes
     );
 }
 
