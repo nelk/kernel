@@ -32,8 +32,6 @@ struct MemInfo {
     FreeBlock *firstFree;
 };
 
-extern MemInfo memInfo;
-
 void k_memInit(MemInfo *memInfo);
 void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid);
 int k_releaseMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid);
