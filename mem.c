@@ -50,17 +50,6 @@ void k_setInfo(
     memInfo->arenaSizeBytes = blockSizeBytes * blockSizeBytes;
 }
 
-// Initialize global variables.
-void k_memInit(MemInfo *memInfo) {
-    uint32_t memStartAddr = (uint32_t)&Image$$RW_IRAM1$$ZI$$Limit;
-    k_setInfo(
-        memInfo,
-        memStartAddr,  // startAddr
-        0x10008000,    // endAddr
-        1 << 7         // blockSizeBytes = 128 bytes
-    );
-}
-
 // Acquire a memory block. Will set the block's owner to the
 // passed in owner id (oid).
 void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
