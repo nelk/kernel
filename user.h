@@ -2,8 +2,8 @@
 #ifndef USER_H
 #define USER_H
 
-void nullProcess();
-void funProcess();
+void nullProcess(void);
+void funProcess(void);
 
 #endif
 

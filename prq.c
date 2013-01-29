@@ -1,4 +1,5 @@
 
+#include <stddef.h>
 #include "prq.h"
 #include "proc.h"
 
@@ -14,6 +15,9 @@ void prqInit(PRQ q, PCB **prStore, uint32_t prStoreSize) {
 }
 
 PCB* prqTop(PRQ q) {
+  if (q.size == 0) {
+    return NULL;
+  }
   return q.heap[0];
 }
 
@@ -75,7 +79,6 @@ uint32_t prqAdd(PRQ q, PCB *pcb) {
 PCB *prqRemove(PRQ q, uint32_t i) {
   PCB *removed = q.heap[i];
   q.heap[i] = q.heap[q.size - 1];
-  //q.heap[q.size - 1] = removed;
   --q.size;
   prqDown(q, i);
   prqUp(q, i);

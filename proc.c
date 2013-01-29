@@ -1,9 +1,9 @@
 
 #include <stdint.h>
 #include <stddef.h>
-//#include "LPC17xx.h"
-#include "proc.h"
+
 #include "mem.h"
+#include "proc.h"
 #include "prq.h"
 #include "user.h"
 
@@ -31,7 +31,7 @@ void k_initProcesses(void) {
     process = &procInfo.processes[i];
     process->pid = i;
     process->state = READY;
-    //TODO - assert that these memory blocks are contigious
+    //TODO - assert that these memory blocks are contiguous
     k_acquireMemoryBlock(i);
     process->stack = (uint32_t *)((uint32_t)k_acquireMemoryBlock(i) + gMem.blockSizeBytes);
   }
@@ -47,15 +47,16 @@ void k_initProcesses(void) {
   procInfo.currentProcess = NULL;
 }
 
-int k_releaseProcessor(void) {
+uint32_t k_releaseProcessor(void) {
+  PCB *nextProc = prqTop(procInfo.prq);
+
   if (procInfo.currentProcess != NULL) {
     // Save old process info
     procInfo.currentProcess->state = READY;
-    procInfo.currentProcess->stack = (uint32_t *) __get_MSP(); /* save the old process's sp */
+    procInfo.currentProcess->stack = (uint32_t *) __get_MSP(); // save the old process's sp
     prqAdd(procInfo.prq, procInfo.currentProcess);
   }
 
-  PCB *nextProc = prqTop(procInfo.prq);
   nextProc->state = RUNNING;
   prqRemove(procInfo.prq, 0);
   procInfo.currentProcess = nextProc;

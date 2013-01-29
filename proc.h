@@ -21,10 +21,8 @@ struct PCB {
 /**
  * Returns PID
  */
-//uint32_t k_createProcess();
-//uint32_t k_releaseProcess();
 void k_initProcesses(void);
-int k_releaseProcessor(void);
+uint32_t k_releaseProcessor(void);
 
 #endif
 
