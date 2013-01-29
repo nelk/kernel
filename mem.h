@@ -43,7 +43,7 @@ int k_releaseMemoryBlock(MemInfo *gMem, void *mem, ProcId oid);
 // TODO: memInfo at front
 ProcId *k_findOwnerSlot(MemInfo *gMem, uint32_t addr);
 void k_setOwner(MemInfo *gMem, uint32_t addr, ProcId oid);
-ProcId k_getOwner(uint32_t addr, MemInfo *gMem);
+ProcId k_getOwner(MemInfo *gMem, uint32_t addr);
 uint32_t k_getAlignedStartAddress(uint32_t startAddr, uint32_t blockSizeBytes);
 void k_setGlobals(
     MemInfo *memory,

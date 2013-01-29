@@ -21,7 +21,7 @@ void k_setOwner(MemInfo *gMem, uint32_t addr, ProcId oid) {
 }
 
 // See note on k_findOwnerSlot
-ProcId k_getOwner(uint32_t addr, MemInfo *gMem) {
+ProcId k_getOwner(MemInfo *gMem, uint32_t addr) {
     return *k_findOwnerSlot(gMem, addr);
 }
 
@@ -141,7 +141,7 @@ int k_releaseMemoryBlock(MemInfo *gMem, void *mem, ProcId oid) {
     }
 
     // Make sure this is allocated, and is owned by this process.
-    blockOwner = k_getOwner(addr, gMem);
+    blockOwner = k_getOwner(gMem, addr);
     if (blockOwner != oid) {
         return -1;
     }
