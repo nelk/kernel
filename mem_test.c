@@ -247,6 +247,7 @@ uint32_t Image$$RW_IRAM1$$ZI$$Limit;
 // clang -Wall -Wextra -m32 -g -std=c99 mem.c mem_test.c
 // gcc -Wall -Wextra -m32 -g -std=c99 mem.c mem_test.c
 int main() {
+    assert(PASSED != FAILED);
     assert(testAlignedStartAddress() == PASSED);
     assert(testMemOperations() == PASSED);
     assert(testMultipleArenas() == PASSED);
