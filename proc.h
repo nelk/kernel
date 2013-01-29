@@ -4,7 +4,7 @@
 
 #include <stdint.h>
 
-#define PROC_HEAP_SIZE 6
+#define NUM_PROCS 6
 
 typedef enum ProcState ProcState;
 enum ProcState {NEW, READY, RUNNING};
@@ -14,6 +14,7 @@ struct PCB {
   uint32_t *stack;
   uint32_t pid;
   ProcState state;
+
   uint32_t priority;
 };
 
