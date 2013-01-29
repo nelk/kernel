@@ -36,7 +36,7 @@ extern MemInfo gMem;
 
 void k_memInit(MemInfo *gMem);
 void *k_acquireMemoryBlock(MemInfo *gMem, ProcId oid);
-int k_releaseMemoryBlock(void *mem, ProcId oid, MemInfo *gMem);
+int k_releaseMemoryBlock(MemInfo *gMem, void *mem, ProcId oid);
 
 
 #ifdef TESTING

@@ -191,33 +191,33 @@ int testMemOperations() {
 
 
     // Test happy path
-    int ret = k_releaseMemoryBlock(thirdBlock, thirdPid, memory);
+    int ret = k_releaseMemoryBlock(memory, thirdBlock, thirdPid);
     assert(ret == 0);
     assert(k_getOwner((uint32_t)thirdBlock, memory) == PROC_ID_NONE);
     assert(memory->firstFree != NULL);
 
     // Test double-free fails
-    ret = k_releaseMemoryBlock(thirdBlock, thirdPid, memory);
+    ret = k_releaseMemoryBlock(memory, thirdBlock, thirdPid);
     assert(ret != 0);
 
     // Test wrong owner fails
-    ret = k_releaseMemoryBlock(secondBlock, thirdPid, memory);
+    ret = k_releaseMemoryBlock(memory, secondBlock, thirdPid);
     assert(ret != 0);
 
     // Test internal block pointer fails
-    ret = k_releaseMemoryBlock(secondBlock + 1, secondPid, memory);
+    ret = k_releaseMemoryBlock(memory, secondBlock + 1, secondPid);
     assert(ret != 0);
 
     // Test before beginning of memory
     ret = k_releaseMemoryBlock(
+        memory,
         (void *)(memory->startMemoryAddress - 1),
-        PROC_ID_ALLOCATOR,
-        memory
+        PROC_ID_ALLOCATOR
     );
     assert(ret != 0);
 
     // Test after end of memory
-    ret = k_releaseMemoryBlock((void *)memory->endMemoryAddress, PROC_ID_KERNEL, memory);
+    ret = k_releaseMemoryBlock(memory, (void *)memory->endMemoryAddress, PROC_ID_KERNEL);
     assert(ret != 0);
 
     // Test after nextAvailableAddress. We shouldn't allow
@@ -227,7 +227,7 @@ int testMemOperations() {
     uint32_t attackArenaAddr = memory->startMemoryAddress + memory->arenaSizeBytes;
     uint32_t attackAddr = attackArenaAddr + memory->blockSizeBytes;
     k_setOwner(attackAddr, firstPid, memory);
-    ret = k_releaseMemoryBlock((void *)attackAddr, firstPid, memory);
+    ret = k_releaseMemoryBlock(memory, (void *)attackAddr, firstPid);
     assert(ret != 0);
 
     // Test OOM
