@@ -2,6 +2,11 @@
 #include "prq.h"
 #include "proc.h"
 
+/*
+ * Heap implementation ported from the Go language's standard library
+ * http://tip.golang.org/src/pkg/container/heap/heap.go
+ */
+
 void prqInit(PRQ q, PCB **prStore, uint32_t prStoreSize) {
   q.heap = prStore;
   q.size = 0;
