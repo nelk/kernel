@@ -40,7 +40,6 @@ int k_releaseMemoryBlock(MemInfo *gMem, void *mem, ProcId oid);
 
 
 #ifdef TESTING
-// TODO: memInfo at front
 ProcId *k_findOwnerSlot(MemInfo *gMem, uint32_t addr);
 void k_setOwner(MemInfo *gMem, uint32_t addr, ProcId oid);
 ProcId k_getOwner(MemInfo *gMem, uint32_t addr);

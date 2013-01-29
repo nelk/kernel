@@ -2,8 +2,6 @@
 
 #include "mem.h"
 
-// MemInfo gMem;
-
 // This function assumes addr points to the beginning of a block.
 // Not meeting this contract will result in security holes and weird segfaults.
 ProcId *k_findOwnerSlot(MemInfo *gMem, uint32_t addr) {
