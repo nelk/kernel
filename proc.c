@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include <LPC17xx.h>
 #include "mem.h"
 #include "proc.h"
 #include "prq.h"
@@ -25,7 +26,7 @@ void k_initProcesses(void) {
   PCB *process;
   uint32_t i;
 
-  prqInit(procInfo.prq, procInfo.procQueue, NUM_PROCS);
+  prqInit(&procInfo.prq, procInfo.procQueue, NUM_PROCS);
 
   for (i = 0; i < NUM_PROCS; ++i) {
     process = &procInfo.processes[i];
@@ -42,23 +43,23 @@ void k_initProcesses(void) {
   *(process->stack) = (uint32_t) nullProcess;
   process->priority = 6;
   process->state = RUNNING;
-  prqAdd(procInfo.prq, process);
+  prqAdd(&procInfo.prq, process);
 
   procInfo.currentProcess = NULL;
 }
 
 uint32_t k_releaseProcessor(void) {
-  PCB *nextProc = prqTop(procInfo.prq);
+  PCB *nextProc = prqTop(&procInfo.prq);
 
   if (procInfo.currentProcess != NULL) {
     // Save old process info
     procInfo.currentProcess->state = READY;
     procInfo.currentProcess->stack = (uint32_t *) __get_MSP(); // save the old process's sp
-    prqAdd(procInfo.prq, procInfo.currentProcess);
+    prqAdd(&procInfo.prq, procInfo.currentProcess);
   }
 
   nextProc->state = RUNNING;
-  prqRemove(procInfo.prq, 0);
+  prqRemove(&procInfo.prq, 0);
   procInfo.currentProcess = nextProc;
   __set_MSP((uint32_t) nextProc->stack);
   __rte();
