@@ -15,7 +15,7 @@ ProcId *k_findOwnerSlot(MemInfo *gMem, uint32_t addr) {
 }
 
 // See note on k_findOwnerSlot
-void k_setOwner(uint32_t addr, ProcId oid, MemInfo *gMem) {
+void k_setOwner(MemInfo *gMem, uint32_t addr, ProcId oid) {
     ProcId *ownerSlot = k_findOwnerSlot(gMem, addr);
     *ownerSlot = oid;
 }
@@ -77,7 +77,7 @@ void *k_acquireMemoryBlock(MemInfo *gMem, ProcId oid) {
         curFirstFree = gMem->firstFree;
         gMem->firstFree = curFirstFree->prev;
         ret = (void *)curFirstFree;
-        k_setOwner((uint32_t)ret, oid, gMem);
+        k_setOwner(gMem, (uint32_t)ret, oid);
         return ret;
     }
 
@@ -106,7 +106,7 @@ void *k_acquireMemoryBlock(MemInfo *gMem, ProcId oid) {
     }
 
     ret = (void *)gMem->nextAvailableAddress;
-    k_setOwner((uint32_t)ret, oid, gMem);
+    k_setOwner(gMem, (uint32_t)ret, oid);
     gMem->nextAvailableAddress += gMem->blockSizeBytes;
     return ret;
 }
@@ -146,7 +146,7 @@ int k_releaseMemoryBlock(MemInfo *gMem, void *mem, ProcId oid) {
         return -1;
     }
 
-    k_setOwner(addr, PROC_ID_NONE, gMem);
+    k_setOwner(gMem, addr, PROC_ID_NONE);
 
     // Add to free list
     fb = (FreeBlock *)mem;

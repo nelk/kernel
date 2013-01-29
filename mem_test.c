@@ -179,7 +179,7 @@ int testMemOperations() {
     assert(k_getOwner((uint32_t)secondBlock+16, memory) == PROC_ID_NONE);
 
     // Manually add to free list, and verify that acquire takes from free list
-    k_setOwner((uint32_t)secondBlock, PROC_ID_NONE, memory);
+    k_setOwner(memory, (uint32_t)secondBlock, PROC_ID_NONE);
     FreeBlock *fb = (FreeBlock *)secondBlock;
     memory->firstFree = fb;
 
@@ -226,7 +226,7 @@ int testMemOperations() {
     // corrupted.
     uint32_t attackArenaAddr = memory->startMemoryAddress + memory->arenaSizeBytes;
     uint32_t attackAddr = attackArenaAddr + memory->blockSizeBytes;
-    k_setOwner(attackAddr, firstPid, memory);
+    k_setOwner(memory, attackAddr, firstPid);
     ret = k_releaseMemoryBlock(memory, (void *)attackAddr, firstPid);
     assert(ret != 0);
 
