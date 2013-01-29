@@ -71,7 +71,7 @@ uint32_t prqAdd(PRQ *q, PCB *pcb) {
     return 1;
   }
   q->heap[q->size] = pcb;
-  ++q->size;
+  ++(q->size);
   prqUp(q, q->size - 1);
   return 0;
 }
@@ -79,7 +79,7 @@ uint32_t prqAdd(PRQ *q, PCB *pcb) {
 PCB *prqRemove(PRQ *q, uint32_t i) {
   PCB *removed = q->heap[i];
   q->heap[i] = q->heap[q->size - 1];
-  --q->size;
+  --(q->size);
   prqDown(q, i);
   prqUp(q, i);
   return removed;
