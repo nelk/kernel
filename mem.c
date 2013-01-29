@@ -33,7 +33,7 @@ uint32_t k_getAlignedStartAddress(uint32_t start, uint32_t blockSizeBytes) {
 }
 
 // Only for use during initialization. Extracted for testing purposes.
-void k_setGlobals(
+void k_setInfo(
     MemInfo *memInfo,
     uint32_t startAddr,
     uint32_t endAddr,
@@ -53,7 +53,7 @@ void k_setGlobals(
 // Initialize global variables.
 void k_memInit(MemInfo *memInfo) {
     uint32_t memStartAddr = (uint32_t)&Image$$RW_IRAM1$$ZI$$Limit;
-    k_setGlobals(
+    k_setInfo(
         memInfo,
         memStartAddr,  // startAddr
         0x10008000,    // endAddr

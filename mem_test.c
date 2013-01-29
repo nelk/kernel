@@ -92,7 +92,7 @@ int testFindOwnerSlot() {
     assert(memInfo);
 
     for (int i = 0; i < len; i++) {
-        k_setGlobals(memInfo, cases[i].startAddr, 0x10000000, cases[i].blockSizeBytes);
+        k_setInfo(memInfo, cases[i].startAddr, 0x10000000, cases[i].blockSizeBytes);
 
         uint32_t got = (uint32_t)k_findOwnerSlot(memInfo, cases[i].addr);
 
@@ -117,7 +117,7 @@ int testMultipleArenas() {
     MemInfo *memInfo = (MemInfo *)malloc(sizeof(MemInfo));
     assert(memInfo);
 
-    k_setGlobals(
+    k_setInfo(
         memInfo,
         (uint32_t)backingStorage,           // startAddr
         ((uint32_t)backingStorage) + 65536, // endAddr
@@ -152,7 +152,7 @@ int testMemOperations() {
     MemInfo *memInfo = (MemInfo *)malloc(sizeof(MemInfo));
     assert(memInfo);
 
-    k_setGlobals(
+    k_setInfo(
         memInfo,
         (uint32_t)backingStorage,           // startAddr
         ((uint32_t)backingStorage) + 65536, // endAddr
