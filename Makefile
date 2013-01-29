@@ -1,5 +1,5 @@
 CC = clang
-CFLAGS = -Wall -Wextra -m32 -MMD -g -std=c99 -Qunused-arguments
+CFLAGS = -Wall -Wextra -m32 -MMD -g -std=c99 -Qunused-arguments -pedantic
 SOURCE = mem.c mem_test.c
 OBJECTS = ${SOURCE:.c=.o}
 DEPENDS = ${SOURCE:.c=.d}
