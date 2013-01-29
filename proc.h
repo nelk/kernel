@@ -24,9 +24,7 @@ struct PCB {
 //uint32_t k_createProcess();
 //uint32_t k_releaseProcess();
 void k_initProcesses();
-int releaseProcessor();
-
-void runProcessor();
+int k_releaseProcessor();
 
 #endif
 
