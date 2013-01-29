@@ -14,10 +14,10 @@ struct PRQ {
   uint32_t cap;
 };
 
-void prqInit(PRQ q, PCB **prStore, uint32_t prStoreSize);
-PCB* prqTop(PRQ);
-uint32_t prqAdd(PRQ, PCB *);
-PCB *prqRemove(PRQ, uint32_t);
+void prqInit(PRQ *q, PCB **prStore, uint32_t prStoreSize);
+PCB* prqTop(PRQ *q);
+uint32_t prqAdd(PRQ *q, PCB *pcb);
+PCB *prqRemove(PRQ *q, uint32_t index);
 
 #endif
 

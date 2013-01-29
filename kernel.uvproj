@@ -431,6 +431,36 @@
               <FileType>5</FileType>
               <FilePath>.\mem.h</FilePath>
             </File>
+            <File>
+              <FileName>proc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\proc.c</FilePath>
+            </File>
+            <File>
+              <FileName>proc.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\proc.h</FilePath>
+            </File>
+            <File>
+              <FileName>prq.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\prq.c</FilePath>
+            </File>
+            <File>
+              <FileName>prq.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\prq.h</FilePath>
+            </File>
+            <File>
+              <FileName>user.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\user.c</FilePath>
+            </File>
+            <File>
+              <FileName>user.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\user.h</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

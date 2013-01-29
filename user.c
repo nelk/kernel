@@ -2,6 +2,10 @@
 #include "user.h"
 #include "proc.h"
 
+// "User Land"
+
+void releaseProcessor(void);
+
 void nullProcess(void) {
   while (1) {
     releaseProcessor();
