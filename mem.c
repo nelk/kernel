@@ -36,10 +36,10 @@ uint32_t k_getAlignedStartAddress(uint32_t start, uint32_t blockSizeBytes) {
 
 // Only for use during initialization. Extracted for testing purposes.
 void k_setGlobals(
+    MemInfo *gMem,
     uint32_t startAddr,
     uint32_t endAddr,
-    uint32_t blockSizeBytes,
-    MemInfo *gMem
+    uint32_t blockSizeBytes
     ) {
     gMem->startMemoryAddress = k_getAlignedStartAddress(
         startAddr,
@@ -56,10 +56,10 @@ void k_setGlobals(
 void k_memInit(MemInfo *gMem) {
     uint32_t memStartAddr = (uint32_t)&Image$$RW_IRAM1$$ZI$$Limit;
     k_setGlobals(
+        gMem,
         memStartAddr,  // startAddr
         0x10008000,    // endAddr
-        1 << 7,         // blockSizeBytes = 128 bytes
-        gMem
+        1 << 7          // blockSizeBytes = 128 bytes
     );
 }
 

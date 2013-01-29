@@ -46,10 +46,10 @@ void k_setOwner(uint32_t addr, ProcId oid, MemInfo *gMem);
 ProcId k_getOwner(uint32_t addr, MemInfo *gMem);
 uint32_t k_getAlignedStartAddress(uint32_t startAddr, uint32_t blockSizeBytes);
 void k_setGlobals(
+    MemInfo *memory,
     uint32_t startAddr,
     uint32_t endAddr,
-    uint32_t blockSizeBytes,
-    MemInfo *memory
+    uint32_t blockSizeBytes
 );
 
 #endif
