@@ -2,6 +2,8 @@
 #include "user.h"
 #include "proc.h"
 
+void releaseProcessor();
+
 void nullProcess(void) {
   while (1) {
     releaseProcessor();
