@@ -39,7 +39,7 @@ void *k_acquireMemoryBlock(ProcId oid, MemInfo *gMem);
 int k_releaseMemoryBlock(void *mem, ProcId oid, MemInfo *gMem);
 
 
-// #ifdef TESTING
+#ifdef TESTING
 // TODO: memInfo at front
 ProcId *k_findOwnerSlot(uint32_t addr, MemInfo *gMem);
 void k_setOwner(uint32_t addr, ProcId oid, MemInfo *gMem);
@@ -52,6 +52,6 @@ void k_setGlobals(
     MemInfo *memory
 );
 
-// #endif
+#endif
 
 #endif // MEM_H
