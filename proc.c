@@ -21,7 +21,7 @@ struct ProcInfo {
 
 ProcInfo procInfo;
 
-void k_initProcesses() {
+void k_initProcesses(void) {
   PCB *process;
   uint32_t i;
 
@@ -33,7 +33,7 @@ void k_initProcesses() {
     process->state = READY;
     //TODO - assert that these memory blocks are contigious
     k_acquireMemoryBlock(i);
-    process->stack = k_acquireMemoryBlock(i) + gMem.blockSizeBytes;
+    process->stack = (uint32_t *)((uint32_t)k_acquireMemoryBlock(i) + gMem.blockSizeBytes);
   }
 
   // Push process function address onto stack
@@ -47,7 +47,7 @@ void k_initProcesses() {
   procInfo.currentProcess = NULL;
 }
 
-int k_releaseProcessor() {
+int k_releaseProcessor(void) {
   if (procInfo.currentProcess != NULL) {
     // Save old process info
     procInfo.currentProcess->state = READY;
