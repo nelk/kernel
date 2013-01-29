@@ -70,7 +70,7 @@ void heapRemove(PCB* heap[], int i) {
 
 void nullProcess() {
   while (1) {
-    releaseProcessor();
+    k_releaseProcessor();
   }
 }
 
@@ -78,11 +78,11 @@ void funProcess() {
   int i;
   for (i = 0; i < 100; ++i) {
 		//uart0_put_string("Hi\n\r");
-    releaseProcessor();
+    k_releaseProcessor();
   }
 }
 
-void k_initProcesses() {
+void k_initProcesses(void) {
   PCB *process;
   uint32_t i;
   for (i = 0; i < PROC_HEAP_SIZE; ++i) {
@@ -91,7 +91,7 @@ void k_initProcesses() {
     process->state = NEW;
     //TODO - assert that these memory blocks are contigious
     k_acquireMemoryBlock(i);
-    process->stack = k_acquireMemoryBlock(i) + gMem.blockSizeBytes;
+    process->stack = (uint32_t *)((uint32_t)k_acquireMemoryBlock(i) + gMem.blockSizeBytes);
   }
 
   // Push process function address onto stack
@@ -105,7 +105,8 @@ void k_initProcesses() {
   currentProcess = NULL;
 }
 
-int releaseProcessor() {
+int k_releaseProcessor(void) {
+	PCB *nextProc;
   if (currentProcess != NULL) {
     // Save old process info
     currentProcess->state = READY;
@@ -113,7 +114,7 @@ int releaseProcessor() {
     heapAdd(procHeap, currentProcess);
   }
 
-  PCB *nextProc = heapTop(procHeap);
+  nextProc = heapTop(procHeap);
   nextProc->state = RUNNING;
   heapRemove(procHeap, 0);
   currentProcess = nextProc;
