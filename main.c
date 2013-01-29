@@ -10,8 +10,8 @@ int main () {
 	k_memInit();
   k_initProcesses();
 
-  /* transit to unprivileged level, default MSP is used */
+  /* Transition to unprivileged level, default MSP is used */
   __set_CONTROL(__get_CONTROL() | BIT(0));
-  runProcessor();
+  releaseProcessor();
 	return 0;
 }

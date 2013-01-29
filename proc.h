@@ -6,14 +6,14 @@
 
 #define PROC_HEAP_SIZE 6
 
-typedef enum  ProcState ProcState;
+typedef enum ProcState ProcState;
 enum ProcState {NEW, READY, RUNNING};
 
 typedef struct PCB PCB;
 struct PCB {
-  uint32_t *stackPointer;
+  uint32_t *stack;
   uint32_t pid;
-  ProcState procState;
+  ProcState state;
   uint32_t priority;
 };
 
@@ -23,7 +23,7 @@ struct PCB {
 //uint32_t k_createProcess();
 //uint32_t k_releaseProcess();
 void k_initProcesses();
-void releaseProcessor();
+int releaseProcessor();
 
 void runProcessor();
 

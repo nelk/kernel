@@ -1,7 +1,13 @@
 
 #include <stdint.h>
-#include "LPC17xx.h"
+#include <stddef.h>
+//#include "LPC17xx.h"
 #include "proc.h"
+#include "mem.h"
+
+void __rte(void);
+void  __set_MSP(uint32_t);
+uint32_t __get_MSP(void);
 
 PCB processes[PROC_HEAP_SIZE]; // Actual process blocks
 PCB *procHeap[PROC_HEAP_SIZE]; // Pointers to PCBs
@@ -11,18 +17,14 @@ uint32_t heapSize = 0;
 /**
  * Min Heap implementation for PCBs
  */
-PCB* heapTop() {
+PCB* heapTop(PCB* heap[]) {
   return heap[0];
 }
 
-int heapify(PCB* heap[]) {
-  heapify(heap, 0);
-}
-
-int heapify(PCB* heap[], int i) {
+void heapify(PCB* heap[], int i) {
   PCB *temp;
-  // If higher priority
-  if (heap[i].priority < heap[(i-1)/2].priority) {
+  //TODO make iterative
+  if (heap[i]->priority < heap[(i-1)/2]->priority) {
     temp = heap[i];
     heap[i] = heap[(i-1)/2];
     heap[(i-1)/2] = temp;
@@ -38,7 +40,8 @@ int heapAdd(PCB* heap[], PCB *pcb) {
   }
   heap[heapSize] = pcb;
   ++heapSize;
-  heapify(heap);
+  heapify(heap, 0);
+  return 0;
 }
 
 void heapRemove(PCB* heap[], int i) {
@@ -53,7 +56,7 @@ void heapRemove(PCB* heap[], int i) {
 
   // Heapify down
   for (childIndex = 1; childIndex < 3; ++childIndex) {
-    if (i*2 + childIndex < heapSize && heap[i].priority > heap[i*2 + childIndex].priority) {
+    if (i*2 + childIndex < heapSize && heap[i]->priority > heap[i*2 + childIndex]->priority) {
       temp = heap[i];
       heap[i] = heap[i*2 + childIndex];
       heap[i*2 + childIndex] = temp;
@@ -74,43 +77,50 @@ void nullProcess() {
 void funProcess() {
   int i;
   for (i = 0; i < 100; ++i) {
-	  uart0_put_string("Hi\n\r");
+		//uart0_put_string("Hi\n\r");
     releaseProcessor();
   }
-
-  // Who knows what happens next?
 }
 
 void k_initProcesses() {
+  PCB *process;
   uint32_t i;
   for (i = 0; i < PROC_HEAP_SIZE; ++i) {
-    processes[i].pid = i;
-    processes[i].procState = NEW;
-    processes[i].stackPointer = 0x0;
+    process = &processes[i];
+    process->pid = i;
+    process->state = NEW;
+    //TODO - assert that these memory blocks are contigious
+    k_acquireMemoryBlock(i);
+    process->stack = k_acquireMemoryBlock(i) + gMem.blockSizeBytes;
   }
 
-  processes[0].stackPointer = (uint32_t) nullProcess;
-  processes[0].priority = 6;
-  processes[0].state = NEW;
+  // Push process function address onto stack
+  process = &processes[0];
+  process->stack--;
+  *(process->stack) = (uint32_t) nullProcess;
+  process->priority = 6;
+  process->state = RUNNING;
+  heapAdd(procHeap, process);
 
-  currentProcess = heap + i;
+  currentProcess = NULL;
 }
 
-void switchToProcess(void *p) {
-  __set_MSP((uint32_t) p);
-  __rte(); // Not sure exactly what this does.
-}
-
-
-void runProcessor() {
-  while (1) {
+int releaseProcessor() {
+  if (currentProcess != NULL) {
     // Save old process info
     currentProcess->state = READY;
-		currentProcess->stackPointer = (uint32_t *) __get_MSP(); /* save the old process's sp */
-
-    PCB *nextProc = heapTop(heap);
-    nextProc->state = RUNNING;
-    switchToProcess(nextProc->stackPointer);
+    currentProcess->stack = (uint32_t *) __get_MSP(); /* save the old process's sp */
+    heapAdd(procHeap, currentProcess);
   }
+
+  PCB *nextProc = heapTop(procHeap);
+  nextProc->state = RUNNING;
+  heapRemove(procHeap, 0);
+  currentProcess = nextProc;
+  __set_MSP((uint32_t) nextProc->stack);
+  __rte();
+
+  return 0; // Not reachable
 }
+
 
