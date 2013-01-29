@@ -6,7 +6,7 @@
 
 // This function assumes addr points to the beginning of a block.
 // Not meeting this contract will result in security holes and weird segfaults.
-ProcId *k_findOwnerSlot(uint32_t addr, MemInfo *gMem) {
+ProcId *k_findOwnerSlot(MemInfo *gMem, uint32_t addr) {
     uint32_t offset = addr - gMem->startMemoryAddress;
     uint32_t index = (offset / gMem->blockSizeBytes) % gMem->blockSizeBytes;
 
@@ -16,13 +16,13 @@ ProcId *k_findOwnerSlot(uint32_t addr, MemInfo *gMem) {
 
 // See note on k_findOwnerSlot
 void k_setOwner(uint32_t addr, ProcId oid, MemInfo *gMem) {
-    ProcId *ownerSlot = k_findOwnerSlot(addr, gMem);
+    ProcId *ownerSlot = k_findOwnerSlot(gMem, addr);
     *ownerSlot = oid;
 }
 
 // See note on k_findOwnerSlot
 ProcId k_getOwner(uint32_t addr, MemInfo *gMem) {
-    return *k_findOwnerSlot(addr, gMem);
+    return *k_findOwnerSlot(gMem, addr);
 }
 
 uint32_t k_getAlignedStartAddress(uint32_t start, uint32_t blockSizeBytes) {

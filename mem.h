@@ -41,7 +41,7 @@ int k_releaseMemoryBlock(MemInfo *gMem, void *mem, ProcId oid);
 
 #ifdef TESTING
 // TODO: memInfo at front
-ProcId *k_findOwnerSlot(uint32_t addr, MemInfo *gMem);
+ProcId *k_findOwnerSlot(MemInfo *gMem, uint32_t addr);
 void k_setOwner(uint32_t addr, ProcId oid, MemInfo *gMem);
 ProcId k_getOwner(uint32_t addr, MemInfo *gMem);
 uint32_t k_getAlignedStartAddress(uint32_t startAddr, uint32_t blockSizeBytes);

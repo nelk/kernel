@@ -94,7 +94,7 @@ int testFindOwnerSlot() {
     for (int i = 0; i < len; i++) {
         k_setGlobals(memory, cases[i].startAddr, 0x10000000, cases[i].blockSizeBytes);
 
-        uint32_t got = (uint32_t)k_findOwnerSlot(cases[i].addr, memory);
+        uint32_t got = (uint32_t)k_findOwnerSlot(memory, cases[i].addr);
 
         if (got == cases[i].expectedResult) {
             continue;
