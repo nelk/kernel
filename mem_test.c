@@ -125,7 +125,7 @@ int testMultipleArenas() {
     );
 
     int firstPid = 1;
-    void *firstBlock = k_acquireMemoryBlock(firstPid, memory);
+    void *firstBlock = k_acquireMemoryBlock(memory, firstPid);
     assert(firstBlock);
 
     // Check permissions
@@ -133,7 +133,7 @@ int testMultipleArenas() {
     assert(k_getOwner((uint32_t)backingStorage, memory) == PROC_ID_ALLOCATOR);
 
     int secondPid = 2;
-    void *secondBlock = k_acquireMemoryBlock(secondPid, memory);
+    void *secondBlock = k_acquireMemoryBlock(memory, secondPid);
     assert(secondBlock);
 
     // Check permissions
@@ -160,7 +160,7 @@ int testMemOperations() {
     );
 
     int firstPid = 1;
-    void *firstBlock = k_acquireMemoryBlock(firstPid, memory);
+    void *firstBlock = k_acquireMemoryBlock(memory, firstPid);
     assert(firstBlock);
 
     // Check permissions
@@ -169,7 +169,7 @@ int testMemOperations() {
     assert(k_getOwner((uint32_t)firstBlock+16, memory) == PROC_ID_NONE);
 
     int secondPid = 2;
-    void *secondBlock = k_acquireMemoryBlock(secondPid, memory);
+    void *secondBlock = k_acquireMemoryBlock(memory, secondPid);
     assert(secondBlock);
 
     // Check permissions
@@ -184,7 +184,7 @@ int testMemOperations() {
     memory->firstFree = fb;
 
     int thirdPid = 3;
-    void *thirdBlock = k_acquireMemoryBlock(thirdPid, memory);
+    void *thirdBlock = k_acquireMemoryBlock(memory, thirdPid);
     assert(thirdBlock == secondBlock);
     assert(k_getOwner((uint32_t)thirdBlock, memory) == thirdPid);
     assert(memory->firstFree == NULL);
@@ -234,7 +234,7 @@ int testMemOperations() {
     memory->endMemoryAddress = 0;
     memory->firstFree = NULL;
     int oomPid = 4;
-    void *oomBlock = k_acquireMemoryBlock(oomPid, memory);
+    void *oomBlock = k_acquireMemoryBlock(memory, oomPid);
     assert(oomBlock == NULL);
 
     free(backingStorage);
@@ -252,4 +252,5 @@ int main() {
     assert(testMemOperations() == PASSED);
     assert(testMultipleArenas() == PASSED);
     assert(testFindOwnerSlot() == PASSED);
+    printf("All tests passed.\n");
 }

@@ -65,7 +65,7 @@ void k_memInit(MemInfo *gMem) {
 
 // Acquire a memory block. Will set the block's owner to the
 // passed in owner id (oid).
-void *k_acquireMemoryBlock(ProcId oid, MemInfo *gMem) {
+void *k_acquireMemoryBlock(MemInfo *gMem, ProcId oid) {
     FreeBlock *curFirstFree = NULL;
     void *ret = NULL;
     ProcId *header = NULL;
