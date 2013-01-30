@@ -30,6 +30,11 @@ struct MemInfo {
     FreeBlock *firstFree;
 };
 
+#define SUCCESS (0)
+#define ERR_OUTOFRANGE (1)
+#define ERR_UNALIGNED (2)
+#define ERR_PERM (3)
+
 void k_memInit(MemInfo *memInfo);
 void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid);
 int k_releaseMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid);
