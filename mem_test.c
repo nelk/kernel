@@ -239,11 +239,9 @@ int testMemOperations() {
 }
 
 int testErrorConstants() {
-    assert (
-        SUCCESS != ERR_OUTOFRANGE &&
-        ERR_OUTOFRANGE != ERR_UNALIGNED &&
-        ERR_UNALIGNED != ERR_PERM
-    );
+    assert (SUCCESS != ERR_OUTOFRANGE);
+    assert (ERR_OUTOFRANGE != ERR_UNALIGNED);
+    assert (ERR_UNALIGNED != ERR_PERM);
     return PASSED;
 }
 
