@@ -248,10 +248,10 @@ int testErrorConstants() {
 
 int main() {
     assert(PASSED != FAILED);
+    assert(testErrorConstants() == PASSED);
+    assert(testFindOwnerSlot() == PASSED);
     assert(testAlignedStartAddress() == PASSED);
     assert(testMemOperations() == PASSED);
     assert(testMultipleArenas() == PASSED);
-    assert(testFindOwnerSlot() == PASSED);
-    assert(testErrorConstants() == PASSED);
     printf("All tests passed.\n");
 }

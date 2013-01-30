@@ -1,11 +1,9 @@
-
 #ifndef PRQ_H
 #define PRQ_H
 
 #include <stdint.h>
 
-typedef struct PCB PCB;
-struct PCB;
+#include "proc.h"
 
 typedef struct PRQ PRQ;
 struct PRQ {
@@ -20,4 +18,3 @@ uint32_t prqAdd(PRQ *q, PCB *pcb);
 PCB *prqRemove(PRQ *q, uint32_t index);
 
 #endif
-
