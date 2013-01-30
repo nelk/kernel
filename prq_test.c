@@ -1,5 +1,7 @@
 #define TESTING
 
+#include <stdio.h>
+
 #define PASSED (1)
 #define FAILED (0)
 
