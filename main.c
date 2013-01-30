@@ -6,6 +6,8 @@
 extern uint32_t Image$$RW_IRAM1$$ZI$$Limit;
 MemInfo gMem;
 
+void k_memInitGlobal(void);
+
 int main () {
 	SystemInit();
 	uart0_init();
@@ -19,7 +21,7 @@ int main () {
 }
 
 // Initialize global variables.
-void k_memInitGlobal() {
+void k_memInitGlobal(void) {
     uint32_t memStartAddr = (uint32_t)&Image$$RW_IRAM1$$ZI$$Limit;
     k_memInfoInit(
         &gMem,
