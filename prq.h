@@ -14,7 +14,7 @@ struct PRQEntry {
 typedef struct PRQ PRQ;
 struct PRQ {
   PRQEntry *heap;
-  uint32_t len;
+  uint32_t size;
   uint32_t cap;
   uint32_t seq;
 };

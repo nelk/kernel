@@ -10,7 +10,7 @@
 
 void prqInit(PRQ *q, PRQEntry *prStore, uint32_t prStoreSize) {
   q->heap = prStore;
-  q->len = 0;
+  q->size = 0;
   q->cap = prStoreSize;
 }
 
@@ -19,7 +19,7 @@ uint32_t prqNextSeq(PRQ *q) {
 }
 
 PCB* prqTop(PRQ *q) {
-  if (q->len == 0) {
+  if (q->size == 0) {
     return NULL;
   }
 
@@ -57,7 +57,7 @@ void prqDown(PRQ *q, uint32_t i) {
   uint32_t j1 = 0;
   uint32_t j = 0;
   uint32_t j2 = 0;
-  uint32_t n = q->len;
+  uint32_t n = q->size;
   PRQEntry temp;
 
   while (1) {
@@ -83,23 +83,23 @@ void prqDown(PRQ *q, uint32_t i) {
 uint32_t prqAdd(PRQ *q, PCB *pcb) {
   PRQEntry newEntry;
 
-  if (q->len >= q->cap) {
+  if (q->size >= q->cap) {
     return 1;
   }
 
   newEntry.pcb = pcb;
   newEntry.seqNumber = prqNextSeq(q);
 
-  q->heap[q->len] = newEntry;
-  ++(q->len);
-  prqUp(q, q->len - 1);
+  q->heap[q->size] = newEntry;
+  ++(q->size);
+  prqUp(q, q->size - 1);
   return 0;
 }
 
 PCB *prqRemove(PRQ *q, uint32_t i) {
   PCB *removed = q->heap[i].pcb;
-  q->heap[i] = q->heap[q->len - 1];
-  --(q->len);
+  q->heap[i] = q->heap[q->size - 1];
+  --(q->size);
   prqDown(q, i);
   prqUp(q, i);
   return removed;
