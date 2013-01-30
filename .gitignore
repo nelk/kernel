@@ -22,3 +22,6 @@
 
 # compiled test files:
 *_test
+
+# gitignore:
+*.sublime-project
