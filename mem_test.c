@@ -189,21 +189,21 @@ int testMemOperations() {
 
     // Test happy path
     int ret = k_releaseMemoryBlock((&memInfo), thirdBlock, thirdPid);
-    assert(ret == 0);
+    assert(ret == SUCCESS);
     assert(k_getOwner((&memInfo), (uint32_t)thirdBlock) == PROC_ID_NONE);
     assert((&memInfo)->firstFree != NULL);
 
     // Test double-free fails
     ret = k_releaseMemoryBlock((&memInfo), thirdBlock, thirdPid);
-    assert(ret != 0);
+    assert(ret == ERR_PERM);
 
     // Test wrong owner fails
     ret = k_releaseMemoryBlock((&memInfo), secondBlock, thirdPid);
-    assert(ret != 0);
+    assert(ret == ERR_PERM);
 
     // Test internal block pointer fails
     ret = k_releaseMemoryBlock((&memInfo), (void*)((uint32_t)secondBlock + 1), secondPid);
-    assert(ret != 0);
+    assert(ret == ERR_UNALIGNED);
 
     // Test before beginning of memory
     ret = k_releaseMemoryBlock(
@@ -211,11 +211,11 @@ int testMemOperations() {
         (void *)((&memInfo)->startMemoryAddress - 1),
         PROC_ID_ALLOCATOR
     );
-    assert(ret != 0);
+    assert(ret == ERR_OUTOFRANGE);
 
     // Test after end of memory
     ret = k_releaseMemoryBlock((&memInfo), (void *)(&memInfo)->endMemoryAddress, PROC_ID_KERNEL);
-    assert(ret != 0);
+    assert(ret == ERR_OUTOFRANGE);
 
     // Test after nextAvailableAddress. We shouldn't allow
     // programs to release memory blocks after that point
@@ -225,7 +225,7 @@ int testMemOperations() {
     uint32_t attackAddr = attackArenaAddr + (&memInfo)->blockSizeBytes;
     k_setOwner((&memInfo), attackAddr, firstPid);
     ret = k_releaseMemoryBlock((&memInfo), (void *)attackAddr, firstPid);
-    assert(ret != 0);
+    assert(ret == ERR_OUTOFRANGE);
 
     // Test OOM
     (&memInfo)->endMemoryAddress = 0;
@@ -238,14 +238,22 @@ int testMemOperations() {
     return PASSED;
 }
 
-// Run tests with clang and gcc:
-// clang -Wall -Wextra -m32 -g -std=c99 mem.c mem_test.c
-// gcc -Wall -Wextra -m32 -g -std=c99 mem.c mem_test.c
+int testErrorConstants() {
+    assert (
+        SUCCESS != ERR_OUTOFRANGE &&
+        ERR_OUTOFRANGE != ERR_UNALIGNED &&
+        ERR_UNALIGNED != ERR_PERM
+    );
+    return PASSED;
+}
+
+
 int main() {
     assert(PASSED != FAILED);
     assert(testAlignedStartAddress() == PASSED);
     assert(testMemOperations() == PASSED);
     assert(testMultipleArenas() == PASSED);
     assert(testFindOwnerSlot() == PASSED);
+    assert(testErrorConstants() == PASSED);
     printf("All tests passed.\n");
 }
