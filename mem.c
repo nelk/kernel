@@ -117,7 +117,7 @@ int k_releaseMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid) {
         addr >= memInfo->nextAvailableAddress ||
         addr >= memInfo->endMemoryAddress
     ) {
-        return -1;
+        return ERR_OUTOFRANGE;
     }
 
     addrOffset = addr - memInfo->startMemoryAddress;
@@ -125,13 +125,13 @@ int k_releaseMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid) {
 
     // Disallow addresses in the middle of blocks
     if (blockOffset != 0) {
-        return -1;
+        return ERR_UNALIGNED;
     }
 
     // Make sure this is allocated, and is owned by this process.
     blockOwner = k_getOwner(memInfo, addr);
     if (blockOwner != oid) {
-        return -1;
+        return ERR_PERM;
     }
 
     k_setOwner(memInfo, addr, PROC_ID_NONE);
@@ -140,5 +140,5 @@ int k_releaseMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid) {
     fb = (FreeBlock *)mem;
     fb->prev = memInfo->firstFree;
     memInfo->firstFree = fb;
-    return 0;
+    return SUCCESS;
 }
