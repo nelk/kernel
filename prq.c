@@ -15,7 +15,9 @@ void prqInit(PRQ *q, PRQEntry *prStore, uint32_t prStoreSize) {
 }
 
 uint32_t prqNextSeq(PRQ *q) {
-  return (q->seq)++;
+  uint32_t nextSeq = q->seq;
+  ++(q->seq);
+  return nextSeq;
 }
 
 PCB* prqTop(PRQ *q) {
