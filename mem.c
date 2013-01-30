@@ -48,6 +48,7 @@ void k_setInfo(
     memInfo->nextAvailableAddress = memInfo->startMemoryAddress;
     memInfo->blockSizeBytes = blockSizeBytes;
     memInfo->arenaSizeBytes = blockSizeBytes * blockSizeBytes;
+    memInfo->firstFree = NULL;
 }
 
 // Acquire a memory block. Will set the block's owner to the
