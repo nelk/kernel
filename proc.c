@@ -24,7 +24,7 @@ ProcInfo procInfo;
 
 void k_initProcesses(void) {
   PCB *process;
-  uint32_t i;
+  ProcId i;
 
   prqInit(&procInfo.prq, procInfo.procQueue, NUM_PROCS);
 
