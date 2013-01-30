@@ -3,8 +3,6 @@
 
 #include <stdint.h>
 
-extern uint32_t Image$$RW_IRAM1$$ZI$$Limit;
-
 // TODO: move this to proc.h (which doesn't exist yet)
 // ProcId is used to store pids and is typedef'd
 // to distinguish it from regular integers.

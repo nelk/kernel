@@ -238,8 +238,6 @@ int testMemOperations() {
     return PASSED;
 }
 
-uint32_t Image$$RW_IRAM1$$ZI$$Limit;
-
 // Run tests with clang and gcc:
 // clang -Wall -Wextra -m32 -g -std=c99 mem.c mem_test.c
 // gcc -Wall -Wextra -m32 -g -std=c99 mem.c mem_test.c
