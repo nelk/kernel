@@ -33,7 +33,7 @@ uint32_t k_getAlignedStartAddress(uint32_t start, uint32_t blockSizeBytes) {
 }
 
 // Only for use during initialization. Extracted for testing purposes.
-void k_setInfo(
+void k_memInfoInit(
     MemInfo *memInfo,
     uint32_t startAddr,
     uint32_t endAddr,

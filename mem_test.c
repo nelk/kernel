@@ -91,7 +91,7 @@ int testFindOwnerSlot() {
     MemInfo memInfo;
 
     for (int i = 0; i < len; i++) {
-        k_setInfo(&memInfo, cases[i].startAddr, 0x10000000, cases[i].blockSizeBytes);
+        k_memInfoInit(&memInfo, cases[i].startAddr, 0x10000000, cases[i].blockSizeBytes);
 
         uint32_t got = (uint32_t)k_findOwnerSlot(&memInfo, cases[i].addr);
 
@@ -115,7 +115,7 @@ int testMultipleArenas() {
     assert(backingStorage);
     MemInfo memInfo;
 
-    k_setInfo(
+    k_memInfoInit(
         &memInfo,
         (uint32_t)backingStorage,           // startAddr
         ((uint32_t)backingStorage) + 65536, // endAddr
@@ -149,7 +149,7 @@ int testMemOperations() {
     assert(backingStorage);
     MemInfo memInfo;
 
-    k_setInfo(
+    k_memInfoInit(
         (&memInfo),
         (uint32_t)backingStorage,           // startAddr
         ((uint32_t)backingStorage) + 65536, // endAddr

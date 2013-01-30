@@ -3,10 +3,13 @@
 #include "proc.h"
 #include "uart_polling.h"
 
+extern uint32_t Image$$RW_IRAM1$$ZI$$Limit;
+MemInfo gMem;
+
 int main () {
 	SystemInit();
 	uart0_init();
-	k_memInit();
+	k_memInitGlobal();
   k_initProcesses();
 
   // Transition to unprivileged level; default MSP is used
@@ -16,10 +19,10 @@ int main () {
 }
 
 // Initialize global variables.
-void k_memInit(MemInfo *memInfo) {
+void k_memInitGlobal() {
     uint32_t memStartAddr = (uint32_t)&Image$$RW_IRAM1$$ZI$$Limit;
-    k_setInfo(
-        memInfo,
+    k_memInfoInit(
+        &gMem,
         memStartAddr,  // startAddr
         0x10008000,    // endAddr
         1 << 7         // blockSizeBytes = 128 bytes
