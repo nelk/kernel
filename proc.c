@@ -16,7 +16,7 @@ typedef struct ProcInfo ProcInfo;
 struct ProcInfo {
   PRQ prq; // Process ready queue
   PCB processes[NUM_PROCS]; // Actual process blocks
-  PCB *procQueue[NUM_PROCS];
+  PRQEntry *procQueue[NUM_PROCS];
   PCB *currentProcess;
 };
 
