@@ -3,14 +3,8 @@
 
 #include <stdint.h>
 
-// TODO: move this to proc.h (which doesn't exist yet)
-// ProcId is used to store pids and is typedef'd
-// to distinguish it from regular integers.
-typedef uint8_t ProcId;
+#include "proc.h"
 
-#define PROC_ID_KERNEL    (0x80)
-#define PROC_ID_ALLOCATOR (0x81)
-#define PROC_ID_NONE      (0xff)
 
 typedef struct FreeBlock FreeBlock;
 struct FreeBlock {
