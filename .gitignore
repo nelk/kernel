@@ -20,5 +20,5 @@
 # Debug symbols on OS X
 *.dSYM
 
-# compiled test files:
-*_test
+# gitignore:
+*.sublime-project
