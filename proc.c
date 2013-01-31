@@ -11,17 +11,16 @@ void __rte(void);
 void  __set_MSP(uint32_t);
 uint32_t __get_MSP(void);
 
-ProcInfo procInfo;
 extern MemInfo gMem;
 
-void k_initProcesses(void) {
+void k_initProcesses(ProcInfo *procInfo) {
   PCB *process;
   ProcId i;
 
-  prqInit(&procInfo.prq, procInfo.procQueue, NUM_PROCS);
+  prqInit(&(procInfo->prq), procInfo->procQueue, NUM_PROCS);
 
   for (i = 1; i < NUM_PROCS; ++i) {
-    process = &procInfo.processes[i];
+    process = &procInfo->processes[i];
     process->pid = i;
     process->state = READY;
     // TODO(nelk): Assert that these memory blocks are contiguous
@@ -30,38 +29,38 @@ void k_initProcesses(void) {
   }
 
   // Push process function address onto stack
-  process = &procInfo.processes[0];
+  process = &(procInfo->processes[0]);
   --(process->stack);
   *(process->stack) = (uint32_t) nullProcess;
   process->priority = 4;
   process->state = RUNNING;
-  prqAdd(&procInfo.prq, process);
+  prqAdd(&(procInfo->prq), process);
 
-  procInfo.currentProcess = NULL;
+  procInfo->currentProcess = NULL;
 }
 
-uint32_t k_releaseProcessor(void) {
-  PCB *nextProc = prqTop(&procInfo.prq);
+uint32_t k_releaseProcessor(ProcInfo *procInfo) {
+  PCB *nextProc = prqTop(&procInfo->prq);
 
-  if (procInfo.currentProcess != NULL) {
+  if (procInfo->currentProcess != NULL) {
     // Save old process info
-    procInfo.currentProcess->state = READY;
-    procInfo.currentProcess->stack = (uint32_t *) __get_MSP(); // save the old process's sp
-    prqAdd(&procInfo.prq, procInfo.currentProcess);
+    procInfo->currentProcess->state = READY;
+    procInfo->currentProcess->stack = (uint32_t *) __get_MSP(); // save the old process's sp
+    prqAdd(&(procInfo->prq), procInfo->currentProcess);
   }
 
   nextProc->state = RUNNING;
-  prqRemove(&procInfo.prq, 0);
-  procInfo.currentProcess = nextProc;
+  prqRemove(&procInfo->prq, 0);
+  procInfo->currentProcess = nextProc;
   __set_MSP((uint32_t) nextProc->stack);
   __rte();
 
   return 0; // Not reachable
 }
 
-uint32_t k_setProcessPriority(ProcId pid, uint8_t priority) {
-  if (procInfo.currentProcess == NULL ||
-      procInfo.currentProcess->pid != pid) {
+uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) {
+  if (procInfo->currentProcess == NULL ||
+      procInfo->currentProcess->pid != pid) {
     return 1;
   }
 
@@ -70,14 +69,14 @@ uint32_t k_setProcessPriority(ProcId pid, uint8_t priority) {
     return 2;
   }
 
-  procInfo.currentProcess->pid = priority;
+  procInfo->currentProcess->pid = priority;
   return 0;
 }
 
-uint32_t k_getProcessPriority(ProcId pid) {
+uint32_t k_getProcessPriority(ProcInfo *procInfo, ProcId pid) {
   if (pid >= NUM_PROCS) {
     return ~0;
   }
 
-  return procInfo.processes[pid].priority;
+  return procInfo->processes[pid].priority;
 }
