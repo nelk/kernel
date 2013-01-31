@@ -7,9 +7,9 @@
 #include "pq.h"
 #include "user.h"
 
-void __rte(void);
-void  __set_MSP(uint32_t);
-uint32_t __get_MSP(void);
+extern void __rte(void);
+extern void  __set_MSP(uint32_t);
+extern uint32_t __get_MSP(void);
 
 extern MemInfo gMem;
 
