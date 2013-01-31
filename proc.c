@@ -11,14 +11,6 @@ void __rte(void);
 void  __set_MSP(uint32_t);
 uint32_t __get_MSP(void);
 
-typedef struct ProcInfo ProcInfo;
-struct ProcInfo {
-  PRQ prq; // Process ready queue
-  PCB processes[NUM_PROCS]; // Actual process blocks
-  PRQEntry *procQueue[NUM_PROCS];
-  PCB *currentProcess;
-};
-
 ProcInfo procInfo;
 extern MemInfo gMem;
 
@@ -39,7 +31,7 @@ void k_initProcesses(void) {
 
   // Push process function address onto stack
   process = &procInfo.processes[0];
-  process->stack--;
+  --(process->stack);
   *(process->stack) = (uint32_t) nullProcess;
   process->priority = 4;
   process->state = RUNNING;

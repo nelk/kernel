@@ -31,7 +31,7 @@ struct MemInfo {
 
 void k_memInit(MemInfo *memInfo);
 void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid);
-int k_releaseMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid);
+uint32_t k_releaseMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid);
 
 
 #ifdef TESTING
