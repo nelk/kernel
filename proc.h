@@ -35,6 +35,7 @@ typedef struct ProcInfo ProcInfo;
 struct ProcInfo {
   PCB processes[NUM_PROCS]; // Actual process blocks
   PCB *currentProcess;
+  PCB *nullProcess;
 
   PQ prq; // Process ready queue
   PQEntry procQueue[NUM_PROCS];
