@@ -21,7 +21,7 @@ void k_initProcesses(ProcInfo *procInfo) {
   pqInit(&(procInfo->memq), procInfo->memQueue, NUM_PROCS);
 
   for (i = 1; i < NUM_PROCS; ++i) {
-    process = &procInfo->processes[i];
+    process = &(procInfo->processes[i]);
     process->pid = i;
     process->state = READY;
     // TODO(nelk): Assert that these memory blocks are contiguous
