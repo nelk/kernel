@@ -39,6 +39,12 @@ void k_initProcesses(ProcInfo *procInfo) {
   process->priority = 4;
   procInfo->nullProcess = process;
 
+  // Fun Process
+  process = &(procInfo->processes[1]); // Push process function address onto stack
+  --(process->stack);
+  *(process->stack) = (uint32_t) funProcess;
+  process->priority = 3;
+
   procInfo->currentProcess = NULL;
 }
 

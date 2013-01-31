@@ -41,10 +41,10 @@ uint32_t pqLess(PQEntry a, PQEntry b) {
   return a.pcb < b.pcb;
 }
 
-void pqUp(PQ *q, uint32_t j) {
+void pqUp(PQ *q, int32_t j) {
   PQEntry temp;
   while (1) {
-    uint32_t i = (j - 1) / 2; // parent
+    int32_t i = (j - 1) / 2; // parent
     if (i == j || !pqLess(q->heap[j], q->heap[i])) {
       break;
     }
@@ -55,11 +55,11 @@ void pqUp(PQ *q, uint32_t j) {
   }
 }
 
-void pqDown(PQ *q, uint32_t i) {
-  uint32_t j1 = 0;
-  uint32_t j = 0;
-  uint32_t j2 = 0;
-  uint32_t n = q->size;
+void pqDown(PQ *q, int32_t i) {
+  int32_t j1 = 0;
+  int32_t j = 0;
+  int32_t j2 = 0;
+  int32_t n = q->size;
   PQEntry temp;
 
   while (1) {
