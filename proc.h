@@ -19,7 +19,6 @@ enum ProcState {
 };
 typedef enum ProcState ProcState;
 
-
 typedef struct PCB PCB;
 struct PCB {
   uint32_t *stack;

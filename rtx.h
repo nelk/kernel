@@ -5,12 +5,11 @@
 
 #define __SVC_0  __svc_indirect(0)
 
-//---------Process API--------------
+// releaseProcessor
 extern uint32_t bridge_releaseProcessor(void);
 #define release_processor() _releaseProcessor((uint32_t)bridge_releaseProcessor)
 extern uint32_t _releaseProcessor(uint32_t k_func) __SVC_0
 
-//---------Memory API---------------
 
 // acquireMemoryBlock
 extern void *bridge_acquireMemoryBlock(void);

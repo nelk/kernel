@@ -18,3 +18,4 @@ void *bridge_acquireMemoryBlock(void) {
 uint32_t bridge_releaseMemoryBlock(void *blk) {
   return k_releaseMemoryBlock(&gMem, blk, procInfo.currentProcess->pid);
 }
+
