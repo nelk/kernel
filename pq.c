@@ -1,6 +1,6 @@
 
 #include <stddef.h>
-#include "prq.h"
+#include "pq.h"
 #include "proc.h"
 
 /*

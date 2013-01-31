@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "prq.h"
+#include "pq.h"
 
 #define NUM_PROCS 4
 

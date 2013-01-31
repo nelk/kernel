@@ -1,5 +1,5 @@
-#ifndef PRQ_H
-#define PRQ_H
+#ifndef PQ_H
+#define PQ_H
 
 #include <stdint.h>
 
@@ -24,4 +24,4 @@ PCB* pqTop(PQ *q);
 uint32_t pqAdd(PQ *q, PCB *pcb);
 PCB *pqRemove(PQ *q, uint32_t index);
 
-#endif
+#endif // PQ_H
