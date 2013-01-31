@@ -42,8 +42,6 @@ struct ProcInfo {
 
   PQ memq; // Memory blocked queue
   PQEntry memQueue[NUM_PROCS];
-
-  uint32_t optimus;
 };
 
 enum ReleaseReason {
