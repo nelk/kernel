@@ -4,7 +4,7 @@
 #include <LPC17xx.h>
 #include "mem.h"
 #include "proc.h"
-#include "prq.h"
+#include "pq.h"
 #include "user.h"
 
 void __rte(void);
