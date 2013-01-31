@@ -8,14 +8,14 @@ extern MemInfo gMem;
 extern ProcInfo procInfo;
 
 uint32_t bridge_releaseProcessor(void) {
-  return k_releaseProcessor();
+  return k_releaseProcessor(YIELD);
 }
 
 void *bridge_acquireMemoryBlock(void) {
-  return k_acquireMemoryBlock(&gMem, procInfo.currentProcess->pid);
+  return k_acquireMemoryBlock(&gMem, &procInfo, procInfo.currentProcess->pid);
 }
 
 uint32_t bridge_releaseMemoryBlock(void *blk) {
-  return k_releaseMemoryBlock(&gMem, blk, procInfo.currentProcess->pid);
+  return k_releaseMemoryBlock(&gMem, &procInfo, blk, procInfo.currentProcess->pid);
 }
 

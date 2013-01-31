@@ -53,12 +53,19 @@ void k_memInfoInit(
 
 // Acquire a memory block. Will set the block's owner to the
 // passed in owner id (oid).
-void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
-    FreeBlock *curFirstFree = NULL;
-    void *ret = NULL;
-    ProcId *header = NULL;
-    uint8_t didAllocateHeader = 0;
+void *k_acquireMemoryBlock(MemInfo *memInfo, ProcInfo *procInfo, ProcId oid) {
+    FreeBlock *curFirstFree;
+    void *ret;
+    ProcId *header;
+    uint8_t didAllocateHeader;
     uint32_t memOffset;
+
+retry:
+    curFirstFree = NULL;
+    ret = NULL;
+    header = NULL;
+    didAllocateHeader = 0;
+    memOffset = 0;
 
     // Try free list, first
     if (memInfo->firstFree != NULL) {
@@ -78,9 +85,13 @@ void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
     }
 
     // Check if we're out of memory
-    // TODO: figure out what to return if OOM
     if (memInfo->nextAvailableAddress >= memInfo->endMemoryAddress) {
+#ifdef TESTING
+        // make unit tests happy
         return NULL;
+#endif
+        k_releaseProcessor(OOM);
+        goto retry;
     }
 
     // NOTE: this breaks if your memory starts at 0x0.
@@ -96,15 +107,22 @@ void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
     ret = (void *)memInfo->nextAvailableAddress;
     k_setOwner(memInfo, (uint32_t)ret, oid);
     memInfo->nextAvailableAddress += memInfo->blockSizeBytes;
+
     return ret;
 }
 
-int k_releaseMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid) {
+int k_releaseMemoryBlock(
+    MemInfo *memInfo,
+    ProcInfo *procInfo,
+    void *mem,
+    ProcId oid) {
+
     uint32_t addr;
     uint32_t addrOffset;
     uint32_t blockOffset;
     ProcId blockOwner;
     FreeBlock *fb;
+    PCB *firstBlocked;
 
     addr = (uint32_t)mem;
 
@@ -140,5 +158,16 @@ int k_releaseMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid) {
     fb = (FreeBlock *)mem;
     fb->prev = memInfo->firstFree;
     memInfo->firstFree = fb;
+
+    if (procInfo->memq.size == 0) {
+        return SUCCESS;
+    }
+
+    firstBlocked = pqTop(procInfo->memq);
+    if (firstBlocked->priority >= procInfo->currentProcess->priority) {
+        return SUCCESS;
+    }
+
+    k_releaseProcessor(MEMORY_FREED);
     return SUCCESS;
 }

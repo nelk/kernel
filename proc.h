@@ -14,6 +14,7 @@ typedef uint8_t ProcId;
 #define PROC_ID_NONE      (0xff)
 
 enum ProcState {
+    BLOCKED,
     READY,
     RUNNING,
 };
@@ -30,17 +31,27 @@ struct PCB {
 
 typedef struct ProcInfo ProcInfo;
 struct ProcInfo {
-  PRQ prq; // Process ready queue
   PCB processes[NUM_PROCS]; // Actual process blocks
-  PRQEntry *procQueue[NUM_PROCS];
   PCB *currentProcess;
+
+  PQ prq; // Process ready queue
+  PQEntry procQueue[NUM_PROCS];
+
+  PQ memq; // Memory blocked queue
+  PQEntry memQueue[NUM_PROCS];
+
+  uint32_t optimus;
 };
 
-/**
- * Returns PID
- */
+enum ReleaseReason {
+  MEMORY_FREED,
+  OOM,
+  YIELD,
+};
+typedef enum ReleaseReason ReleaseReason;
+
 void k_initProcesses(void);
-uint32_t k_releaseProcessor(void);
+uint32_t k_releaseProcessor(ReleaseReason);
 
 #endif
 

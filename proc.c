@@ -18,7 +18,8 @@ void k_initProcesses(void) {
   PCB *process;
   ProcId i;
 
-  prqInit(&procInfo.prq, procInfo.procQueue, NUM_PROCS);
+  pqInit(&procInfo.prq, procInfo.procQueue, NUM_PROCS);
+  pqInit(&procInfo.memq, procInfo.memQueue, NUM_PROCS);
 
   for (i = 1; i < NUM_PROCS; ++i) {
     process = &procInfo.processes[i];
@@ -35,28 +36,61 @@ void k_initProcesses(void) {
   *(process->stack) = (uint32_t) nullProcess;
   process->priority = 4;
   process->state = RUNNING;
-  prqAdd(&procInfo.prq, process);
+  pqAdd(&procInfo.prq, process);
 
   procInfo.currentProcess = NULL;
 }
 
-uint32_t k_releaseProcessor(void) {
-  PCB *nextProc = prqTop(&procInfo.prq);
+// TODO(sanjay): make this API cleaner.
+uint32_t k_releaseProcessor(ReleaseReason reason) {
+  PCB *nextProc = NULL;
+
+  // we need to set these three variables depending on the release reason
+  ProcState targetState = READY;
+  // we pull the next process to execute from the source queue
+  PQ *srcQueue = NULL;
+  // we push the currently executing process onto this queue
+  PQ *dstQueue = NULL;
+
+
+  switch (reason) {
+  case MEMORY_FREED:
+    srcQueue = &(procInfo->memq);
+    dstQueue = &(procInfo->prq);
+    targetState = READY;
+    break;
+  case OOM:
+    srcQueue = &(procInfo->prq);
+    dstQueue = &(procInfo->memq);
+    targetState = BLOCKED;
+    break;
+  case YIELD:
+    srcQueue = &(procInfo->prq);
+    dstQueue = &(procInfo->prq);
+    targetState = READY;
+    break;
+  default:
+    break;
+  }
+
+  nextProc = pqTop(queue);
+  pqRemove(queue, 0);
 
   if (procInfo.currentProcess != NULL) {
     // Save old process info
-    procInfo.currentProcess->state = READY;
-    procInfo.currentProcess->stack = (uint32_t *) __get_MSP(); // save the old process's sp
-    prqAdd(&procInfo.prq, procInfo.currentProcess);
+    procInfo.currentProcess->stack = (uint32_t *) __get_MSP();
+    procInfo.currentProcess->state = targetState;
+    if (dstQueue != NULL) {
+      pqAdd(dstQueue, procInfo.currentProcess);
+    }
   }
 
   nextProc->state = RUNNING;
-  prqRemove(&procInfo.prq, 0);
   procInfo.currentProcess = nextProc;
   __set_MSP((uint32_t) nextProc->stack);
   __rte();
 
-  return 0; // Not reachable
+  return 0;
 }
 
 uint32_t k_setProcessPriority(ProcId pid, uint8_t priority) {
