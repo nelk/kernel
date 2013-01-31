@@ -20,7 +20,7 @@ void k_initProcesses(ProcInfo *procInfo) {
   pqInit(&(procInfo->prq), procInfo->procQueue, NUM_PROCS);
   pqInit(&(procInfo->memq), procInfo->memQueue, NUM_PROCS);
 
-  for (i = 1; i < NUM_PROCS; ++i) {
+  for (i = 0; i < NUM_PROCS; ++i) {
     process = &(procInfo->processes[i]);
     process->pid = i;
     process->state = READY;
@@ -32,13 +32,11 @@ void k_initProcesses(ProcInfo *procInfo) {
       );
   }
 
-  // Push process function address onto stack
-  process = &(procInfo->processes[0]);
+  // Null Process
+  process = &(procInfo->processes[0]); // Push process function address onto stack
   --(process->stack);
   *(process->stack) = (uint32_t) nullProcess;
   process->priority = 4;
-  process->pid = 0;
-  process->state = READY;
   procInfo->nullProcess = process;
 
   procInfo->currentProcess = NULL;
@@ -47,11 +45,11 @@ void k_initProcesses(ProcInfo *procInfo) {
 uint32_t k_releaseProcessor(ProcInfo *procInfo, ReleaseReason reason) {
   PCB *nextProc = NULL;
 
-  // we need to set these three variables depending on the release reason
+  // We need to set these three variables depending on the release reason
   ProcState targetState = READY;
-  // we pull the next process to execute from the source queue
+  // We pull the next process to execute from the source queue
   PQ *srcQueue = NULL;
-  // we push the currently executing process onto this queue
+  // We push the currently executing process onto this queue
   PQ *dstQueue = NULL;
 
 
@@ -71,8 +69,7 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, ReleaseReason reason) {
     dstQueue = &(procInfo->prq);
     targetState = READY;
 
-    // If it was the null process that yielded, we don't add
-    // it to the ready queue.
+    // If it was the null process that yielded, we don't add it to the ready queue.
     if (procInfo->currentProcess == procInfo->nullProcess) {
       dstQueue = NULL;
     }
@@ -127,3 +124,4 @@ uint32_t k_getProcessPriority(ProcInfo *procInfo, ProcId pid) {
 
   return procInfo->processes[pid].priority;
 }
+
