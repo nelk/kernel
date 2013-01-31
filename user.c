@@ -2,6 +2,7 @@
 #include "proc.h"
 #include "rtx.h"
 #include "user.h"
+#include "uart_polling.h"
 
 // User Land
 
