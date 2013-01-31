@@ -90,7 +90,7 @@ retry:
         // make unit tests happy
         return NULL;
 #endif
-        k_releaseProcessor(OOM);
+        k_releaseProcessor(procInfo, OOM);
         goto retry;
     }
 
@@ -163,11 +163,11 @@ uint32_t k_releaseMemoryBlock(
         return SUCCESS;
     }
 
-    firstBlocked = pqTop(procInfo->memq);
+    firstBlocked = pqTop(&(procInfo->memq));
     if (firstBlocked->priority >= procInfo->currentProcess->priority) {
         return SUCCESS;
     }
 
-    k_releaseProcessor(MEMORY_FREED);
+    k_releaseProcessor(procInfo, MEMORY_FREED);
     return SUCCESS;
 }
