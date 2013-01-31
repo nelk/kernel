@@ -30,7 +30,12 @@ struct MemInfo {
 #define ERR_PERM (3)
 
 void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid);
-uint32_t k_releaseMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid);
+uint32_t k_releaseMemoryBlock(
+    MemInfo *memInfo,
+    ProcInfo *procInfo,
+    void *mem,
+    ProcId oid
+);
 void k_memInfoInit(
     MemInfo *memInfo,
     uint32_t startAddr,

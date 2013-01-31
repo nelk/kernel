@@ -25,8 +25,11 @@ void k_initProcesses(ProcInfo *procInfo) {
     process->pid = i;
     process->state = READY;
     // TODO(nelk): Assert that these memory blocks are contiguous
-    k_acquireMemoryBlock(&gMem, i);
-    process->stack = (uint32_t *)((uint32_t)k_acquireMemoryBlock(&gMem, i) + gMem.blockSizeBytes);
+    k_acquireMemoryBlock(&gMem, procInfo, i);
+    process->stack =
+      (uint32_t *)(
+        (uint32_t)k_acquireMemoryBlock(&gMem, procInfo, i) + gMem.blockSizeBytes
+      );
   }
 
   // Push process function address onto stack

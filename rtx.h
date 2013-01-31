@@ -24,12 +24,12 @@ uint32_t __SVC_0 _releaseProcessor(uint32_t k_func);
 // setProcessPriority
 extern uint32_t bridge_setProcessPriority(uint8_t pid, uint8_t priority);
 #define set_process_priority(pid, priority) _setProcessPriority((uint32_t)bridge_setProcessPriority, pid, priority)
-extern uint32_t _setProcessPriority(uint32_t k_func, uint8_t pid, uint8_t priority) __SVC_0
+uint32_t __SVC_0 _setProcessPriority(uint32_t k_func, uint8_t pid, uint8_t priority);
 
 // getProcessPriority
 extern uint8_t bridge_getProcessPriority(uint8_t priority);
 #define get_process_priority(pid) _getProcessPriority((uint32_t)bridge_getProcessPriority, pid)
-extern uint8_t _getProcessPriority(uint32_t k_func, uint8_t pid) __SVC_0
+uint8_t __SVC_0 _getProcessPriority(uint32_t k_func, uint8_t pid);
 
 
 // acquireMemoryBlock
