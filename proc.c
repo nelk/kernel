@@ -34,8 +34,9 @@ void k_initProcesses(ProcInfo *procInfo) {
   --(process->stack);
   *(process->stack) = (uint32_t) nullProcess;
   process->priority = 4;
-  process->state = RUNNING;
-  prqAdd(&(procInfo->prq), process);
+  process->pid = 0;
+  process->state = READY;
+  procInfo->nullProcess = process;
 
   procInfo->currentProcess = NULL;
 }
@@ -66,13 +67,23 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, ReleaseReason reason) {
     srcQueue = &(procInfo->prq);
     dstQueue = &(procInfo->prq);
     targetState = READY;
+
+    // If it was the null process that yielded, we don't add
+    // it to the ready queue.
+    if (procInfo->currentProcess == procInfo->nullProcess) {
+      dstQueue = NULL;
+    }
     break;
   default:
     break;
   }
 
-  nextProc = pqTop(srcQueue);
-  pqRemove(srcQueue, 0);
+  if (srcQueue != NULL && srcQueue->size > 0) {
+    nextProc = pqTop(srcQueue);
+    pqRemove(srcQueue, 0);
+  } else {
+    nextProc = procInfo->nullProcess;
+  }
 
   if (procInfo->currentProcess != NULL) {
     // Save old process info
