@@ -99,7 +99,7 @@ void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
     return ret;
 }
 
-int k_releaseMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid) {
+uint32_t k_releaseMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid) {
     uint32_t addr;
     uint32_t addrOffset;
     uint32_t blockOffset;
