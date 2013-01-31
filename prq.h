@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "proc.h"
+typedef struct PCB PCB;
 
 typedef struct PRQEntry PRQEntry;
 struct PRQEntry {
