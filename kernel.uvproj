@@ -442,16 +442,6 @@
               <FilePath>.\proc.h</FilePath>
             </File>
             <File>
-              <FileName>prq.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\prq.c</FilePath>
-            </File>
-            <File>
-              <FileName>prq.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\prq.h</FilePath>
-            </File>
-            <File>
               <FileName>user.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\user.c</FilePath>
@@ -460,6 +450,36 @@
               <FileName>user.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\user.h</FilePath>
+            </File>
+            <File>
+              <FileName>pq.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\pq.c</FilePath>
+            </File>
+            <File>
+              <FileName>pq.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\pq.h</FilePath>
+            </File>
+            <File>
+              <FileName>rtx.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\rtx.h</FilePath>
+            </File>
+            <File>
+              <FileName>HAL.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\HAL.c</FilePath>
+            </File>
+            <File>
+              <FileName>bridge.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bridge.c</FilePath>
+            </File>
+            <File>
+              <FileName>bridge.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\bridge.h</FilePath>
             </File>
           </Files>
         </Group>
