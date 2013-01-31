@@ -20,5 +20,9 @@
 # Debug symbols on OS X
 *.dSYM
 
-# gitignore:
+# Sublime
 *.sublime-project
+
+# Vim
+*.un~
+

@@ -19,6 +19,7 @@ enum ProcState {
 };
 typedef enum ProcState ProcState;
 
+
 typedef struct PCB PCB;
 struct PCB {
   uint32_t *stack;
@@ -26,6 +27,14 @@ struct PCB {
   ProcState state;
 
   uint32_t priority;
+};
+
+typedef struct ProcInfo ProcInfo;
+struct ProcInfo {
+  PRQ prq; // Process ready queue
+  PCB processes[NUM_PROCS]; // Actual process blocks
+  PRQEntry *procQueue[NUM_PROCS];
+  PCB *currentProcess;
 };
 
 /**
