@@ -5,6 +5,7 @@
 
 extern uint32_t Image$$RW_IRAM1$$ZI$$Limit;
 MemInfo gMem;
+ProcInfo procInfo;
 
 void k_memInitGlobal(void);
 
@@ -12,11 +13,11 @@ int main () {
 	SystemInit();
 	uart0_init();
 	k_memInitGlobal();
-  k_initProcesses();
+  k_initProcesses(&procInfo);
 
   // Transition to unprivileged level; default MSP is used
   __set_CONTROL(__get_CONTROL() | BIT(0));
-  k_releaseProcessor(YIELD);
+  k_releaseProcessor(&procInfo, YIELD);
 	return 0;
 }
 

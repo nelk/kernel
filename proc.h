@@ -50,8 +50,10 @@ enum ReleaseReason {
 };
 typedef enum ReleaseReason ReleaseReason;
 
-void k_initProcesses(void);
-uint32_t k_releaseProcessor(ReleaseReason);
+void k_initProcesses(ProcInfo *procInfo);
+uint32_t k_releaseProcessor(ProcInfo *procInfo, ReleaseReason reason);
+uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority);
+uint32_t k_getProcessPriority(ProcInfo *procInfo, ProcId pid);
 
 #endif
 

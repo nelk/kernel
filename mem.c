@@ -111,7 +111,7 @@ retry:
     return ret;
 }
 
-int k_releaseMemoryBlock(
+uint32_t k_releaseMemoryBlock(
     MemInfo *memInfo,
     ProcInfo *procInfo,
     void *mem,

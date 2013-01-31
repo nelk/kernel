@@ -29,9 +29,14 @@ struct MemInfo {
 #define ERR_UNALIGNED (2)
 #define ERR_PERM (3)
 
-void k_memInit(MemInfo *memInfo);
 void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid);
 uint32_t k_releaseMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid);
+void k_memInfoInit(
+    MemInfo *memInfo,
+    uint32_t startAddr,
+    uint32_t endAddr,
+    uint32_t blockSizeBytes
+);
 
 
 #ifdef TESTING
@@ -39,12 +44,6 @@ ProcId *k_findOwnerSlot(MemInfo *memInfo, uint32_t addr);
 void k_setOwner(MemInfo *memInfo, uint32_t addr, ProcId oid);
 ProcId k_getOwner(MemInfo *memInfo, uint32_t addr);
 uint32_t k_getAlignedStartAddress(uint32_t startAddr, uint32_t blockSizeBytes);
-void k_memInfoInit(
-    MemInfo *memInfo,
-    uint32_t startAddr,
-    uint32_t endAddr,
-    uint32_t blockSizeBytes
-);
 
 #endif
 
