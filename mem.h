@@ -29,7 +29,7 @@ struct MemInfo {
 #define ERR_UNALIGNED (2)
 #define ERR_PERM (3)
 
-void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid);
+void *k_acquireMemoryBlock(MemInfo *memInfo, ProcInfo *procInfo, ProcId oid);
 uint32_t k_releaseMemoryBlock(
     MemInfo *memInfo,
     ProcInfo *procInfo,
