@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include "prq.h"
+
 #define NUM_PROCS 4
 
 // ProcId is used to store pids and is typedef'd
