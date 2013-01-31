@@ -8,7 +8,7 @@ extern MemInfo gMem;
 extern ProcInfo procInfo;
 
 uint32_t bridge_releaseProcessor(void) {
-  return k_releaseProcessor(&procInfo);
+  return k_releaseProcessor(&procInfo, YIELD);
 }
 
 uint32_t bridge_setProcessPriority(uint8_t pid, uint8_t priority) {
@@ -21,10 +21,10 @@ uint8_t bridge_getProcessPriority(uint8_t pid) {
 
 
 void *bridge_acquireMemoryBlock(void) {
-  return k_acquireMemoryBlock(&gMem, procInfo.currentProcess->pid);
+  return k_acquireMemoryBlock(&gMem, &procInfo, procInfo.currentProcess->pid);
 }
 
 uint32_t bridge_releaseMemoryBlock(void *blk) {
-  return k_releaseMemoryBlock(&gMem, blk, procInfo.currentProcess->pid);
+  return k_releaseMemoryBlock(&gMem, &procInfo, blk, procInfo.currentProcess->pid);
 }
 
