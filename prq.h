@@ -5,23 +5,23 @@
 
 typedef struct PCB PCB;
 
-typedef struct PRQEntry PRQEntry;
-struct PRQEntry {
+typedef struct PQEntry PQEntry;
+struct PQEntry {
     PCB *pcb;
     uint32_t seqNumber;
 };
 
-typedef struct PRQ PRQ;
-struct PRQ {
-  PRQEntry *heap;
+typedef struct PQ PQ;
+struct PQ {
+  PQEntry *heap;
   uint32_t size;
   uint32_t cap;
   uint32_t seq;
 };
 
-void prqInit(PRQ *q, PRQEntry *heap, uint32_t prStoreSize);
-PCB* prqTop(PRQ *q);
-uint32_t prqAdd(PRQ *q, PCB *pcb);
-PCB *prqRemove(PRQ *q, uint32_t index);
+void pqInit(PQ *q, PQEntry *heap, uint32_t pqStoreSize);
+PCB* pqTop(PQ *q);
+uint32_t pqAdd(PQ *q, PCB *pcb);
+PCB *pqRemove(PQ *q, uint32_t index);
 
 #endif

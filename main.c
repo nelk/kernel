@@ -17,7 +17,7 @@ int main () {
 
   // Transition to unprivileged level; default MSP is used
   __set_CONTROL(__get_CONTROL() | BIT(0));
-  k_releaseProcessor(&procInfo);
+  k_releaseProcessor(&procInfo, YIELD);
 	return 0;
 }
 
