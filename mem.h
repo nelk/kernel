@@ -25,12 +25,12 @@ struct MemInfo {
 };
 
 #define SUCCESS (0)
-#define ERR_OUTOFRANGE (1)
-#define ERR_UNALIGNED (2)
-#define ERR_PERM (3)
+#define ERR_OUTOFRANGE (-1)
+#define ERR_UNALIGNED (-2)
+#define ERR_PERM (-3)
 
 void *k_acquireMemoryBlock(MemInfo *memInfo, ProcInfo *procInfo, ProcId oid);
-uint32_t k_releaseMemoryBlock(
+int8_t k_releaseMemoryBlock(
     MemInfo *memInfo,
     ProcInfo *procInfo,
     void *mem,
@@ -51,7 +51,6 @@ ProcId *k_findOwnerSlot(MemInfo *memInfo, uint32_t addr);
 void k_setOwner(MemInfo *memInfo, uint32_t addr, ProcId oid);
 ProcId k_getOwner(MemInfo *memInfo, uint32_t addr);
 uint32_t k_getAlignedStartAddress(uint32_t startAddr, uint32_t blockSizeBytes);
-
 #endif
 
 #endif // MEM_H

@@ -24,7 +24,7 @@ void *bridge_acquireMemoryBlock(void) {
   return k_acquireMemoryBlock(&gMem, &procInfo, procInfo.currentProcess->pid);
 }
 
-uint32_t bridge_releaseMemoryBlock(void *blk) {
+int8_t bridge_releaseMemoryBlock(void *blk) {
   return k_releaseMemoryBlock(&gMem, &procInfo, blk, procInfo.currentProcess->pid);
 }
 

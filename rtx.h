@@ -39,9 +39,9 @@ extern void *bridge_acquireMemoryBlock(void);
 uint32_t __SVC_0 _acquireMemoryBlock(uint32_t k_func);
 
 // releaseMemoryBlock
-extern uint32_t bridge_releaseMemoryBlock(void *blk);
+extern int8_t bridge_releaseMemoryBlock(void *blk);
 #define release_memory_block(blk) _releaseMemoryBlock((uint32_t)bridge_releaseMemoryBlock, blk)
-uint32_t __SVC_0 _releaseMemoryBlock(uint32_t k_func, void *blk);
+int8_t __SVC_0 _releaseMemoryBlock(uint32_t k_func, void *blk);
 
 // outofMemory
 extern uint8_t bridge_isOutOfMemory(void);
