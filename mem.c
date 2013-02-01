@@ -118,7 +118,7 @@ uint8_t k_isOutOfMemory(MemInfo *memInfo) {
     );
 }
 
-uint32_t k_releaseMemoryBlock(
+int8_t k_releaseMemoryBlock(
     MemInfo *memInfo,
     ProcInfo *procInfo,
     void *mem,
