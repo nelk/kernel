@@ -63,8 +63,14 @@ void k_initProcesses(ProcInfo *procInfo) {
 	// Schizo Process
   process = &(procInfo->processes[2]); // Push process function address onto stack
   *(process->startLoc) = ((uint32_t) schizophrenicProcess);
-  process->priority = 2;
+  process->priority = 3;
 	pqAdd(&(procInfo->prq), process);
+
+  // fib Process
+  process = &(procInfo->processes[3]); // Push process function address onto stack
+  *(process->startLoc) = ((uint32_t) fibProcess);
+  process->priority = 2;
+  pqAdd(&(procInfo->prq), process);
 
   procInfo->currentProcess = NULL;
 }
