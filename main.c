@@ -13,8 +13,8 @@ void k_memInitGlobal(void);
 int main () {
 	SystemInit();
 	__disable_irq();
-	uart0_init();
-	uart0_put_string("Jizzilation");
+	uart1_init();
+	uart1_put_string("Jizzilation");
 	k_memInitGlobal();
   k_initProcesses(&procInfo);
   __enable_irq();
@@ -22,7 +22,7 @@ int main () {
   // Transition to unprivileged level; default MSP is used
   __set_CONTROL(__get_CONTROL() | BIT(0));
 	
-  // k_releaseProcessor(&procInfo, YIELD);
+  // k_releaseProcessor(&procInfo, YIELD); FUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU
 	release_processor();
 	return 0;
 }
