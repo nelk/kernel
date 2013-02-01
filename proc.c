@@ -72,6 +72,12 @@ void k_initProcesses(ProcInfo *procInfo) {
   process->priority = 2;
   pqAdd(&(procInfo->prq), process);
 
+  // memory muncher Process
+  process = &(procInfo->processes[4]); // Push process function address onto stack
+  *(process->startLoc) = ((uint32_t) memoryMuncherProcess);
+  process->priority = 1;
+  pqAdd(&(procInfo->prq), process);
+
   procInfo->currentProcess = NULL;
 }
 

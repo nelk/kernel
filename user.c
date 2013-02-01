@@ -106,7 +106,11 @@ void memoryMuncherProcess(void) {
 	}
 
 	uart_put_string(UART_NUM, "I am out of things to eat.\r\n");
+	request_memory_block(); // <- should be blocked forever
 
+	uart_put_string(UART_NUM, "panic(unreachable)\r\n");
+
+	// should be unreachable
 	release_processor();
 	nullProcess();
 }

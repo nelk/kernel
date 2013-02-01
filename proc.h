@@ -5,7 +5,7 @@
 
 #include "pq.h"
 
-#define NUM_PROCS (4)
+#define NUM_PROCS (6)
 
 // ProcId is used to store pids and is typedef'd
 // to distinguish it from regular integers.
