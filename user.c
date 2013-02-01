@@ -39,15 +39,23 @@ void schizophrenicProcess(void) {
 
 void print_uint32(uint32_t i) {
 	int base = 1;
-	while ((i / (base*10)) != 0) {
-		base *= 10;
+
+	if (i == 0) {
+		uart_put_char(UART_NUM, '0');
+		return;
 	}
 
-	do {
+	while (i % base != i) {
+		base *= 10;
+	}
+	base /= 10;
+
+	while (base > 0) {
 		uart_put_char(UART_NUM, (i/base) + '0');
 		i %= base;
 		base /= 10;
-	} while (i > 0);
+	}
+
 }
 
 void fibProcess(void) {
@@ -70,7 +78,7 @@ void fibProcess(void) {
 			print_uint32(idx);
 			uart_put_string(UART_NUM, ") = ");
 			print_uint32(cur);
-			uart_put_string("\r\n");
+			uart_put_string(UART_NUM, "\r\n");
 
 			if (idx % 5 == 0) {
 				release_processor();
@@ -79,4 +87,26 @@ void fibProcess(void) {
 
 		release_processor();
 	}
+}
+
+typedef struct mmNode mmNode;
+struct mmNode {
+	mmNode *next;
+};
+
+void memoryMuncherProcess(void) {
+	mmNode *memList = NULL;
+	while (!is_out_of_memory()) {
+		mmNode *nextNode = (mmNode *)request_memory_block();
+		nextNode->next = memList;
+		memList = nextNode;
+		uart_put_string(UART_NUM, "I have eaten ");
+		print_uint32((uint32_t)memList);
+		uart_put_string(UART_NUM, ".\r\n");
+	}
+
+	uart_put_string(UART_NUM, "I am out of things to eat.\r\n");
+
+	release_processor();
+	nullProcess();
 }
