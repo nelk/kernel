@@ -124,7 +124,7 @@ void releaseProcess(void) {
 	set_process_priority(4, get_process_priority(1)); // funProcess pid = 1
 	release_processor();
 
-	uart_put_string(UART_NUM, "releaseProcess: I am in control\r\n")
+	uart_put_string(UART_NUM, "releaseProcess: I am in control\r\n");
 	release_memory_block(mem);
 
 	nullProcess();
