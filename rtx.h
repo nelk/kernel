@@ -28,20 +28,20 @@ extern uint32_t bridge_setProcessPriority(uint8_t pid, uint8_t priority);
 uint32_t __SVC_0 _setProcessPriority(uint32_t k_func, uint8_t pid, uint8_t priority);
 
 // getProcessPriority
-extern uint8_t bridge_getProcessPriority(uint8_t priority);
+extern int16_t bridge_getProcessPriority(uint8_t priority);
 #define get_process_priority(pid) _getProcessPriority((uint32_t)bridge_getProcessPriority, pid)
-uint8_t __SVC_0 _getProcessPriority(uint32_t k_func, uint8_t pid);
+int16_t __SVC_0 _getProcessPriority(uint32_t k_func, uint8_t pid);
 
 
 // acquireMemoryBlock
 extern void *bridge_acquireMemoryBlock(void);
 #define request_memory_block() _acquireMemoryBlock((uint32_t)bridge_acquireMemoryBlock)
-uint32_t __SVC_0 _acquireMemoryBlock(uint32_t k_func);
+void * __SVC_0 _acquireMemoryBlock(uint32_t k_func);
 
 // releaseMemoryBlock
-extern uint32_t bridge_releaseMemoryBlock(void *blk);
+extern int8_t bridge_releaseMemoryBlock(void *blk);
 #define release_memory_block(blk) _releaseMemoryBlock((uint32_t)bridge_releaseMemoryBlock, blk)
-uint32_t __SVC_0 _releaseMemoryBlock(uint32_t k_func, void *blk);
+int8_t __SVC_0 _releaseMemoryBlock(uint32_t k_func, void *blk);
 
 // outofMemory
 extern uint8_t bridge_isOutOfMemory(void);
