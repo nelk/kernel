@@ -26,3 +26,17 @@
 # Vim
 *.un~
 
+# DAMMIT KYLE!
+*.crf
+*.axf
+*.plg # build log for kyle
+*.sct
+*.tra
+*.uvgui*
+*.dep
+*.bak
+*.uvopt
+*.__i
+
+# TODO: verify
+*.lnp

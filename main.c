@@ -2,6 +2,7 @@
 #include "mem.h"
 #include "proc.h"
 #include "uart_polling.h"
+#include "rtx.h"
 
 extern uint32_t Image$$RW_IRAM1$$ZI$$Limit;
 MemInfo gMem;
@@ -11,13 +12,18 @@ void k_memInitGlobal(void);
 
 int main () {
 	SystemInit();
+	__disable_irq();
 	uart0_init();
+	uart0_put_string("Jizzilation");
 	k_memInitGlobal();
   k_initProcesses(&procInfo);
+  __enable_irq();
 
   // Transition to unprivileged level; default MSP is used
   __set_CONTROL(__get_CONTROL() | BIT(0));
-  k_releaseProcessor(&procInfo, YIELD);
+	
+  // k_releaseProcessor(&procInfo, YIELD);
+	release_processor();
 	return 0;
 }
 
