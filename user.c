@@ -50,7 +50,7 @@ void fibProcess(void) {
 	uint8_t cur;
 	uint8_t prev;
 	uint8_t idx;
-	char *str = "fib(000) = 000";
+	char *str = "fib(000) = 000\r\n";
 	char *buf = (char *)request_memory_block();
 	char *iterl = NULL;
 	char *iterr = NULL;
