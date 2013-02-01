@@ -27,11 +27,12 @@ void k_initProcesses(ProcInfo *procInfo) {
     process->pid = i;
     process->state = NEW;
     // TODO(nelk): Assert that these memory blocks are contiguous
-    k_acquireMemoryBlock(&gMem, procInfo, i);     
-		
-		stack = (uint32_t *)(
-			(uint32_t)k_acquireMemoryBlock(&gMem, procInfo, i) + gMem.blockSizeBytes
-    );
+    // Stack grows backwards, not forwards. We allocate two memory blocks.
+    k_acquireMemoryBlock(&gMem, procInfo, PROC_ID_KERNEL);
+    process->stack =
+      (uint32_t *)(
+        (uint32_t)k_acquireMemoryBlock(&gMem, procInfo, PROC_ID_KERNEL) + gMem.blockSizeBytes
+      );
 	
 		if (!(((uint32_t)stack) & 0x04)) {
 				--stack; 
@@ -44,9 +45,6 @@ void k_initProcesses(ProcInfo *procInfo) {
 			*(--stack) = 0x0;
 		}
 		
-		if (!(((uint32_t)stack) & 0x04)) {
-				//--stack; 
-		}
 		process->stack = stack;
   }
 
