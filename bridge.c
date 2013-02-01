@@ -28,3 +28,7 @@ uint32_t bridge_releaseMemoryBlock(void *blk) {
   return k_releaseMemoryBlock(&gMem, &procInfo, blk, procInfo.currentProcess->pid);
 }
 
+uint8_t bridge_isOutOfMemory(void) {
+    return k_isOutOfMemory(&gMem);
+}
+

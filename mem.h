@@ -43,6 +43,8 @@ void k_memInfoInit(
     uint32_t blockSizeBytes
 );
 
+uint8_t k_isOutOfMemory(MemInfo *memInfo);
+
 
 #ifdef TESTING
 ProcId *k_findOwnerSlot(MemInfo *memInfo, uint32_t addr);

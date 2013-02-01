@@ -7,6 +7,7 @@ uint8_t bridge_getProcessPriority(uint8_t pid);
 
 void *bridge_acquireMemoryBlock(void);
 uint32_t bridge_releaseMemoryBlock(void *blk);
+uint8_t bridge_isOutOfMemory(void);
 
 #endif
 
