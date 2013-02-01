@@ -6,6 +6,7 @@
 #include "pq.h"
 
 #define NUM_PROCS 4
+#define KERNEL_OWNS_MEM_PROC_ID (NUM_PROCS+1)
 
 // ProcId is used to store pids and is typedef'd
 // to distinguish it from regular integers.
