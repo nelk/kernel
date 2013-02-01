@@ -16,6 +16,8 @@ extern MemInfo gMem;
 void k_initProcesses(ProcInfo *procInfo) {
   PCB *process;
   ProcId i;
+	int j;
+	uint32_t *stack = NULL;
 
   pqInit(&(procInfo->prq), procInfo->procQueue, NUM_PROCS);
   pqInit(&(procInfo->memq), procInfo->memQueue, NUM_PROCS);
@@ -23,27 +25,55 @@ void k_initProcesses(ProcInfo *procInfo) {
   for (i = 0; i < NUM_PROCS; ++i) {
     process = &(procInfo->processes[i]);
     process->pid = i;
-    process->state = READY;
+    process->state = NEW;
     // TODO(nelk): Assert that these memory blocks are contiguous
-    k_acquireMemoryBlock(&gMem, procInfo, i);
-    process->stack =
-      (uint32_t *)(
-        (uint32_t)k_acquireMemoryBlock(&gMem, procInfo, i) + gMem.blockSizeBytes
-      );
+    k_acquireMemoryBlock(&gMem, procInfo, i);     
+		
+		stack = (uint32_t *)(
+			(uint32_t)k_acquireMemoryBlock(&gMem, procInfo, i) + gMem.blockSizeBytes
+    );
+	
+		if (!(((uint32_t)stack) & 0x04)) {
+				--stack; 
+		}
+		
+		*(--stack) = 0x01000000; // <- does this work? (this is called XPsr)
+		process->startLoc = --stack;
+		
+		for (j = 0; j < 6; j++) {
+			*(--stack) = 0x0;
+		}
+		
+		if (!(((uint32_t)stack) & 0x04)) {
+				//--stack; 
+		}
+		process->stack = stack;
   }
 
   // Null Process
-  process = &(procInfo->processes[0]); // Push process function address onto stack
-  --(process->stack);
-  *(process->stack) = (uint32_t) nullProcess;
+  process = &(procInfo->processes[0]); // Push process function address onto stack	
+  *(process->startLoc) = ((uint32_t) nullProcess);
   process->priority = 4;
   procInfo->nullProcess = process;
+	
+	// Fun Process
+  process = &(procInfo->processes[1]); // Push process function address onto stack
+  *(process->startLoc) = ((uint32_t) funProcess);
+  process->priority = 3;
+	pqAdd(&(procInfo->prq), process);
+	
+	// Schizo Process
+  process = &(procInfo->processes[2]); // Push process function address onto stack
+  *(process->startLoc) = ((uint32_t) schizophrenicProcess);
+  process->priority = 2;
+	pqAdd(&(procInfo->prq), process);
 
   procInfo->currentProcess = NULL;
 }
 
-uint32_t k_releaseProcessor(ProcInfo *procInfo, ReleaseReason reason) {
+uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
   PCB *nextProc = NULL;
+	ProcState oldState = NEW;
 
   // We need to set these three variables depending on the release reason
   ProcState targetState = READY;
@@ -55,22 +85,22 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, ReleaseReason reason) {
 
   switch (reason) {
   case MEMORY_FREED:
-    srcQueue = &(procInfo->memq);
-    dstQueue = &(procInfo->prq);
+    srcQueue = &(k_procInfo->memq);
+    dstQueue = &(k_procInfo->prq);
     targetState = READY;
     break;
   case OOM:
-    srcQueue = &(procInfo->prq);
-    dstQueue = &(procInfo->memq);
+    srcQueue = &(k_procInfo->prq);
+    dstQueue = &(k_procInfo->memq);
     targetState = BLOCKED;
     break;
   case YIELD:
-    srcQueue = &(procInfo->prq);
-    dstQueue = &(procInfo->prq);
+    srcQueue = &(k_procInfo->prq);
+    dstQueue = &(k_procInfo->prq);
     targetState = READY;
 
     // If it was the null process that yielded, we don't add it to the ready queue.
-    if (procInfo->currentProcess == procInfo->nullProcess) {
+    if (k_procInfo->currentProcess == k_procInfo->nullProcess) {
       dstQueue = NULL;
     }
     break;
@@ -82,22 +112,25 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, ReleaseReason reason) {
     nextProc = pqTop(srcQueue);
     pqRemove(srcQueue, 0);
   } else {
-    nextProc = procInfo->nullProcess;
+    nextProc = k_procInfo->nullProcess;
   }
 
-  if (procInfo->currentProcess != NULL) {
+  if (k_procInfo->currentProcess != NULL) {
     // Save old process info
-    procInfo->currentProcess->stack = (uint32_t *) __get_MSP();
-    procInfo->currentProcess->state = targetState;
+    k_procInfo->currentProcess->stack = (uint32_t *) __get_MSP();
+    k_procInfo->currentProcess->state = targetState;
     if (dstQueue != NULL) {
-      pqAdd(dstQueue, procInfo->currentProcess);
+      pqAdd(dstQueue, k_procInfo->currentProcess);
     }
   }
 
+	oldState = nextProc->state;
   nextProc->state = RUNNING;
-  procInfo->currentProcess = nextProc;
+  k_procInfo->currentProcess = nextProc;
   __set_MSP((uint32_t) nextProc->stack);
-  __rte();
+	if (oldState == NEW) {
+		__rte();
+	}
 
   return 0;
 }
