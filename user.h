@@ -4,6 +4,8 @@
 
 void nullProcess(void);
 void funProcess(void);
+void schizophrenicProcess(void);
+void memMunchProcess(void);
 
 #endif
 
