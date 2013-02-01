@@ -36,7 +36,7 @@ uint8_t __SVC_0 _getProcessPriority(uint32_t k_func, uint8_t pid);
 // acquireMemoryBlock
 extern void *bridge_acquireMemoryBlock(void);
 #define request_memory_block() _acquireMemoryBlock((uint32_t)bridge_acquireMemoryBlock)
-uint32_t __SVC_0 _acquireMemoryBlock(uint32_t k_func);
+void * __SVC_0 _acquireMemoryBlock(uint32_t k_func);
 
 // releaseMemoryBlock
 extern int8_t bridge_releaseMemoryBlock(void *blk);
