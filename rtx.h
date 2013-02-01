@@ -28,9 +28,9 @@ extern uint32_t bridge_setProcessPriority(uint8_t pid, uint8_t priority);
 uint32_t __SVC_0 _setProcessPriority(uint32_t k_func, uint8_t pid, uint8_t priority);
 
 // getProcessPriority
-extern uint8_t bridge_getProcessPriority(uint8_t priority);
+extern int16_t bridge_getProcessPriority(uint8_t priority);
 #define get_process_priority(pid) _getProcessPriority((uint32_t)bridge_getProcessPriority, pid)
-uint8_t __SVC_0 _getProcessPriority(uint32_t k_func, uint8_t pid);
+int16_t __SVC_0 _getProcessPriority(uint32_t k_func, uint8_t pid);
 
 
 // acquireMemoryBlock

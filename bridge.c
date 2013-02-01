@@ -15,7 +15,7 @@ uint32_t bridge_setProcessPriority(uint8_t pid, uint8_t priority) {
   return k_setProcessPriority(&procInfo, (ProcId)pid, priority);
 }
 
-uint8_t bridge_getProcessPriority(uint8_t pid) {
+int16_t bridge_getProcessPriority(uint8_t pid) {
   return k_getProcessPriority(&procInfo, pid);
 }
 
