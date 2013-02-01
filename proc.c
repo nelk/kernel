@@ -33,33 +33,33 @@ void k_initProcesses(ProcInfo *procInfo) {
       (uint32_t *)(
         (uint32_t)k_acquireMemoryBlock(&gMem, procInfo, PROC_ID_KERNEL) + gMem.blockSizeBytes
       );
-	
+
 		if (!(((uint32_t)stack) & 0x04)) {
-				--stack; 
+				--stack;
 		}
-		
+
 		*(--stack) = 0x01000000; // <- does this work? (this is called XPsr)
 		process->startLoc = --stack;
-		
+
 		for (j = 0; j < 6; j++) {
 			*(--stack) = 0x0;
 		}
-		
+
 		process->stack = stack;
   }
 
   // Null Process
-  process = &(procInfo->processes[0]); // Push process function address onto stack	
+  process = &(procInfo->processes[0]); // Push process function address onto stack
   *(process->startLoc) = ((uint32_t) nullProcess);
   process->priority = 4;
   procInfo->nullProcess = process;
-	
+
 	// Fun Process
   process = &(procInfo->processes[1]); // Push process function address onto stack
   *(process->startLoc) = ((uint32_t) funProcess);
   process->priority = 3;
 	pqAdd(&(procInfo->prq), process);
-	
+
 	// Schizo Process
   process = &(procInfo->processes[2]); // Push process function address onto stack
   *(process->startLoc) = ((uint32_t) schizophrenicProcess);
@@ -148,11 +148,11 @@ uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) 
   return 0;
 }
 
-uint32_t k_getProcessPriority(ProcInfo *procInfo, ProcId pid) {
+int16_t k_getProcessPriority(ProcInfo *procInfo, ProcId pid) {
   if (pid >= NUM_PROCS) {
-    return ~0;
+    return -1;
   }
 
-  return procInfo->processes[pid].priority;
+  return (int16_t)(procInfo->processes[pid].priority);
 }
 
