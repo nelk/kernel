@@ -37,12 +37,17 @@ void schizophrenicProcess(void) {
 	}
 }
 
-void itoa(char *buf, uint8_t i) {
-	*(buf++) = (i / 100) + '0';
-	i %= 100;
-	*(buf++) = (i / 10) + '0';
-	i %= 10;
-	*(buf++) = i + '0';
+void print_uint32(uint32_t i) {
+	int base = 1;
+	while ((i / (base*10)) != 0) {
+		base *= 10;
+	}
+
+	do {
+		uart_put_char(UART_NUM, (i/base) + '0');
+		i %= base;
+		base /= 10;
+	} while (i > 0);
 }
 
 void fibProcess(void) {
@@ -50,17 +55,6 @@ void fibProcess(void) {
 	uint8_t cur;
 	uint8_t prev;
 	uint8_t idx;
-	char *str = "fib(000) = 000\r\n";
-	char *buf = (char *)request_memory_block();
-	char *iterl = NULL;
-	char *iterr = NULL;
-
-	iterl = str;
-	iterr = buf;
-	while (*iterl != '\0') {
-		*(iterr++) = *(iterl++);
-	}
-	*iterr = '\0';
 
 	while (1) {
 		prev = 1;
@@ -72,10 +66,11 @@ void fibProcess(void) {
 			cur = cur + temp;
 			idx++;
 
-			itoa(buf + 4, idx);
-			itoa(buf + 11, cur);
-
-			uart_put_string(UART_NUM, buf);
+			uart_put_string(UART_NUM, "fib(");
+			print_uint32(idx);
+			uart_put_string(UART_NUM, ") = ");
+			print_uint32(cur);
+			uart_put_string("\r\n");
 
 			if (idx % 5 == 0) {
 				release_processor();
