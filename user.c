@@ -16,9 +16,9 @@ void funProcess(void) {
   int i;
 	while (1) {
 		for (i = 0; i < 5; ++i) {
-			uart0_put_string("Fun ");
-			uart0_put_char(i + '0');
-			uart0_put_string("\n\r");
+			uart1_put_string("Fun ");
+			uart1_put_char(i + '0');
+			uart1_put_string("\n\r");
 		}
 		release_processor();
 	}
@@ -28,9 +28,9 @@ void schizophrenicProcess(void) {
 	int i;
 	while (1) {
 		for (i = 9; i >= 5; --i) {
-			uart0_put_string("Schizophrenic ");
-			uart0_put_char(i + '0');
-			uart0_put_string("\n\r");
+			uart1_put_string("Schizophrenic ");
+			uart1_put_char(i + '0');
+			uart1_put_string("\n\r");
 		}
 		release_processor();
 	}
