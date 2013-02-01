@@ -95,7 +95,7 @@ int uart_get_char(int n_uart)
  * @brief: write a char c to the n_uart
  */
 
-int uart_put_char(int n_uart, unsigned char c)
+int uart_put_char(int n_uart, char c)
 {
   LPC_UART_TypeDef *pUart;
 
