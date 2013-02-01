@@ -111,6 +111,13 @@ retry:
     return ret;
 }
 
+uint8_t k_isOutOfMemory(MemInfo *memInfo) {
+    return (
+        memInfo->firstFree == NULL &&
+        memInfo->nextAvailableAddress >= memInfo->endMemoryAddress
+    );
+}
+
 uint32_t k_releaseMemoryBlock(
     MemInfo *memInfo,
     ProcInfo *procInfo,
