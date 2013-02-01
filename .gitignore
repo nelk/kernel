@@ -27,16 +27,19 @@
 *.un~
 
 # DAMMIT KYLE!
+*.lst
 *.crf
 *.axf
-*.plg # build log for kyle
+*.plg
 *.sct
 *.tra
 *.uvgui*
 *.dep
 *.bak
-*.uvopt
 *.__i
+*.iex
+kernel.htm
+kernel.map
 
 # TODO: verify
 *.lnp

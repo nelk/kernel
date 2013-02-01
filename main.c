@@ -15,6 +15,7 @@ int main () {
 	__disable_irq();
 	uart_init(UART_NUM);
 	uart_put_string(UART_NUM, "Jizzilation");
+
 	k_memInitGlobal();
   k_initProcesses(&procInfo);
   __enable_irq();
