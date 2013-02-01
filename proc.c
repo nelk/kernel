@@ -78,6 +78,12 @@ void k_initProcesses(ProcInfo *procInfo) {
   process->priority = 1;
   pqAdd(&(procInfo->prq), process);
 
+  // release Process
+  process = &(procInfo->processes[5]); // Push process function address onto stack
+  *(process->startLoc) = ((uint32_t) releaseProcess);
+  process->priority = 0;
+  pqAdd(&(procInfo->prq), process);
+
   procInfo->currentProcess = NULL;
 }
 

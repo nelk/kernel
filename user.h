@@ -6,6 +6,7 @@ void funProcess(void);
 void nullProcess(void);
 void schizophrenicProcess(void);
 void memoryMuncherProcess(void);
+void releaseProcess(void);
 
 #endif
 

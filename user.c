@@ -114,3 +114,18 @@ void memoryMuncherProcess(void) {
 	release_processor();
 	nullProcess();
 }
+
+void releaseProcess(void) {
+	void *mem = request_memory_block();
+	uart_put_string(UART_NUM, "releaseProcess: taken mem ");
+	print_uint32((uint32_t)mem);
+	uart_put_string(UART_NUM, "\r\n");
+
+	set_process_priority(4, get_process_priority(1)); // funProcess pid = 1
+	release_processor();
+
+	uart_put_string(UART_NUM, "releaseProcess: I am in control\r\n")
+	release_memory_block(mem);
+
+	nullProcess();
+}
