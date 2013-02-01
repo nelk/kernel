@@ -27,3 +27,20 @@
 # Vim
 *.un~
 
+# DAMMIT KYLE!
+*.lst
+*.crf
+*.axf
+*.plg
+*.sct
+*.tra
+*.uvgui*
+*.dep
+*.bak
+*.__i
+*.iex
+kernel.htm
+kernel.map
+
+# TODO: verify
+*.lnp

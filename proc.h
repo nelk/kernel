@@ -5,7 +5,7 @@
 
 #include "pq.h"
 
-#define NUM_PROCS 4
+#define NUM_PROCS (4)
 
 // ProcId is used to store pids and is typedef'd
 // to distinguish it from regular integers.
@@ -16,6 +16,7 @@ typedef uint8_t ProcId;
 #define PROC_ID_NONE      (0xff)
 
 enum ProcState {
+		NEW,
     BLOCKED,
     READY,
     RUNNING,
@@ -27,6 +28,7 @@ struct PCB {
   uint32_t *stack;
   ProcId pid;
   ProcState state;
+	uint32_t *startLoc;
 
   uint32_t priority;
 };

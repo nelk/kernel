@@ -6,10 +6,15 @@
  * NOTE this file contains embedded assembly.
  */
 
+// [provided] context switch code here:
+// https://ece.uwaterloo.ca/~yqhuang/labs/se350/
+
 // pop off exception stack frame from the stack
 __asm void __rte(void)
 {
   PRESERVE8
+  ; Explanation: http://bit.ly/OS_COURSE_1
+  ; Return to thread mode with the main stack ptr
   MVN  LR, #:NOT:0xFFFFFFF9  ; set EXC_RETURN value, Thread mode, MSP
   BX   LR
 }
