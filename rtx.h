@@ -12,6 +12,7 @@
  *
  * void *request_memory_block(void)
  * uint32_t release_memory_block(void *blk)
+ * uint8_t is_out_of_memory(void)
  */
 
 #define __SVC_0  __svc_indirect(0)
@@ -42,6 +43,10 @@ extern uint32_t bridge_releaseMemoryBlock(void *blk);
 #define release_memory_block(blk) _releaseMemoryBlock((uint32_t)bridge_releaseMemoryBlock, blk)
 uint32_t __SVC_0 _releaseMemoryBlock(uint32_t k_func, void *blk);
 
+// outofMemory
+extern uint8_t bridge_isOutOfMemory(void);
+#define is_out_of_memory() _isOutOfMemory((uint32_t)bridge_isOutOfMemory)
+uint8_t __SVC_0 _isOutOfMemory(uint32_t k_func);
 
 #endif
 

@@ -16,9 +16,9 @@ void funProcess(void) {
   int i;
 	while (1) {
 		for (i = 0; i < 5; ++i) {
-			uart0_put_string("Fun ");
-			uart0_put_char(i + '0');
-			uart0_put_string("\n\r");
+			uart_put_string(UART_NUM, "Fun ");
+			uart_put_char(UART_NUM, i + '0');
+			uart_put_string(UART_NUM, "\n\r");
 		}
 		release_processor();
 	}
@@ -28,9 +28,9 @@ void schizophrenicProcess(void) {
 	int i;
 	while (1) {
 		for (i = 9; i >= 5; --i) {
-			uart0_put_string("Schizophrenic ");
-			uart0_put_char(i + '0');
-			uart0_put_string("\n\r");
+			uart_put_string(UART_NUM, "Schizophrenic ");
+			uart_put_char(UART_NUM, i + '0');
+			uart_put_string(UART_NUM, "\n\r");
 		}
 		release_processor();
 	}
@@ -74,7 +74,7 @@ void fibProcess(void) {
 			itoa(buf + 4, idx);
 			itoa(buf + 11, cur);
 
-			uart1_put_string(buf);
+			uart_put_string(UART_NUM, buf);
 
 			if (idx % 5 == 0) {
 				release_processor();

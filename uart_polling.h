@@ -29,16 +29,6 @@
 
 #define UART_NUM (0)
 
-#define uart0_init()        uart_init(UART_NUM)
-#define uart0_get_char()    uart_get_char(UART_NUM)
-#define uart0_put_char(c)   uart_put_char(UART_NUM,c)
-#define uart0_put_string(s) uart_put_string(UART_NUM,s)
-
-#define uart1_init()        uart_init(UART_NUM)
-#define uart1_get_char()    uart_get_char(UART_NUM)
-#define uart1_put_char(c)   uart_put_char(UART_NUM,c)
-#define uart1_put_string(s) uart_put_string(UART_NUM,s)
-
 int uart_init(int n_uart);      /* initialize the n_uart       */
 int uart_get_char(int n_uart);  /* read a char from the n_uart */
 int uart_put_char(int n_uart, unsigned char c);   /* write a char   to n_uart */
