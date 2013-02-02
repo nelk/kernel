@@ -16,7 +16,7 @@ void nullProcess(void) {
 
 void printProcess(char *c) {
 	while (1) {
-		uart_put_string(c);
+		uart_put_string(UART_NUM, c);
 		release_processor();
 	}
 }
@@ -91,9 +91,9 @@ void fibProcess(void) {
 			if (idx % 5 == 0) {
 				release_processor();
 			}
-			if (idx % 100 == 0) {
-				set_process_priority(3, get_process_priority(1)); // funProcess pid = 1
-			}
+			//if (idx % 100 == 0) {
+			//	set_process_priority(3, get_process_priority(1)); // funProcess pid = 1
+			//}
 		}
 
 		release_processor();
@@ -117,12 +117,19 @@ void memoryMuncherProcess(void) {
 	}
 
 	uart_put_string(UART_NUM, "I am out of things to eat.\r\n");
-	request_memory_block(); // <- should be blocked forever
+	
+	release_memory_block(request_memory_block()); // Should block
+	
+	uart_put_string(UART_NUM, "I'm too full, I will release all the memory that I ate.\r\n");
+	while (memList != NULL) {
+		mmNode *temp = memList->next;
+		release_memory_block((void *)memList);
+		memList = temp;
+	}
+	
+	set_process_priority(4, get_process_priority(1)); // funProcess pid = 1
 
-	uart_put_string(UART_NUM, "panic(unreachable)\r\n");
-
-	// should be unreachable
-	printProcess("memoryMuncher");
+	printProcess("memoryMuncher\r\n");
 }
 
 void releaseProcess(void) {
@@ -131,11 +138,12 @@ void releaseProcess(void) {
 	print_uint32((uint32_t)mem);
 	uart_put_string(UART_NUM, "\r\n");
 
-	set_process_priority(4, get_process_priority(1)); // funProcess pid = 1
+	set_process_priority(5, get_process_priority(1)); // funProcess pid = 1
 	release_processor();
 
 	uart_put_string(UART_NUM, "releaseProcess: I am in control\r\n");
 	release_memory_block(mem);
 
-	printProcess("releaseProcess");
+	//set_process_priority(4, get_process_priority(1)); // funProcess pid = 1
+	printProcess("releaseProcess\r\n");
 }

@@ -162,7 +162,7 @@ uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) 
     return 2;
   }
 
-  procInfo->currentProcess->pid = priority;
+  procInfo->currentProcess->priority = priority;
   return 0;
 }
 

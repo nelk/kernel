@@ -33,6 +33,6 @@ void k_memInitGlobal(void) {
         &gMem,
         memStartAddr,  // startAddr
         0x10008000,    // endAddr
-        1 << 7         // blockSizeBytes = 128 bytes
+        1 << 10         // blockSizeBytes = 128 bytes
     );
 }
