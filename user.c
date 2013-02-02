@@ -13,6 +13,14 @@ void nullProcess(void) {
   }
 }
 
+
+void printProcess(char *c) {
+	while (1) {
+		uart_put_string(c);
+		release_processor();
+	}
+}
+
 void funProcess(void) {
   int i;
 	while (1) {
@@ -68,7 +76,7 @@ void fibProcess(void) {
 		prev = 1;
 		cur = 1;
 		idx = 0;
-		while (cur < 200) {
+		while (cur < 1000000000) {
 			temp = prev;
 			prev = cur;
 			cur = cur + temp;
@@ -82,6 +90,9 @@ void fibProcess(void) {
 
 			if (idx % 5 == 0) {
 				release_processor();
+			}
+			if (idx % 100 == 0) {
+				set_process_priority(3, get_process_priority(1)); // funProcess pid = 1
 			}
 		}
 
@@ -111,8 +122,7 @@ void memoryMuncherProcess(void) {
 	uart_put_string(UART_NUM, "panic(unreachable)\r\n");
 
 	// should be unreachable
-	release_processor();
-	nullProcess();
+	printProcess("memoryMuncher");
 }
 
 void releaseProcess(void) {
@@ -127,5 +137,5 @@ void releaseProcess(void) {
 	uart_put_string(UART_NUM, "releaseProcess: I am in control\r\n");
 	release_memory_block(mem);
 
-	nullProcess();
+	printProcess("releaseProcess");
 }
