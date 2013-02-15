@@ -107,26 +107,34 @@ struct mmNode {
 
 void memoryMuncherProcess(void) {
 	mmNode *memList = NULL;
-	while (!is_out_of_memory()) {
-		mmNode *nextNode = (mmNode *)request_memory_block();
+	void *tempBlock = NULL;
+
+	while (true) {
+		tempBlock = try_request_memory_block();
+		if (tempBlock == NULL) {
+			break;
+		}
+
+		mmNode *nextNode = (mmNode *)tempBlock;
 		nextNode->next = memList;
 		memList = nextNode;
+
 		uart_put_string(UART_NUM, "I have eaten ");
 		print_uint32((uint32_t)memList);
 		uart_put_string(UART_NUM, ".\r\n");
 	}
 
 	uart_put_string(UART_NUM, "I am out of things to eat.\r\n");
-	
+
 	release_memory_block(request_memory_block()); // Should block
-	
+
 	uart_put_string(UART_NUM, "I'm too full, I will release all the memory that I ate.\r\n");
 	while (memList != NULL) {
 		mmNode *temp = memList->next;
 		release_memory_block((void *)memList);
 		memList = temp;
 	}
-	
+
 	set_process_priority(4, get_process_priority(1)); // funProcess pid = 1
 
 	printProcess("memoryMuncher\r\n");
