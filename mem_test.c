@@ -127,19 +127,19 @@ int testMultipleArenas() {
     assert(firstBlock);
 
     // Check permissions
-    assert(k_getOwner(&memInfo, (uint32_t)firstBlock) == firstPid);
-    assert(k_getOwner(&memInfo, (uint32_t)backingStorage) == PROC_ID_ALLOCATOR);
+    assert(k_isOwner(&memInfo, (uint32_t)firstBlock, firstPid));
+    assert(k_isOwner(&memInfo, (uint32_t)backingStorage, PROC_ID_ALLOCATOR));
 
     int secondPid = 2;
     void *secondBlock = k_acquireMemoryBlock(&memInfo, secondPid);
     assert(secondBlock);
 
     // Check permissions
-    assert(k_getOwner(&memInfo, (uint32_t)firstBlock) == firstPid);
-    assert(k_getOwner(&memInfo, (uint32_t)backingStorage) == PROC_ID_ALLOCATOR);
-    assert(k_getOwner(&memInfo, (uint32_t)secondBlock) == secondPid);
-    assert(k_getOwner(&memInfo, (uint32_t)secondBlock+2) == PROC_ID_NONE);
-    assert(k_getOwner(&memInfo, (uint32_t)backingStorage+4) == PROC_ID_ALLOCATOR);
+    assert(k_isOwner(&memInfo, (uint32_t)firstBlock, firstPid));
+    assert(k_isOwner(&memInfo, (uint32_t)backingStorage, PROC_ID_ALLOCATOR));
+    assert(k_isOwner(&memInfo, (uint32_t)secondBlock, secondPid));
+    assert(k_isOwner(&memInfo, (uint32_t)secondBlock+2, PROC_ID_NONE));
+    assert(k_isOwner(&memInfo, (uint32_t)backingStorage+4, PROC_ID_ALLOCATOR));
 
     return PASSED;
 }
@@ -161,19 +161,19 @@ int testMemOperations() {
     assert(firstBlock);
 
     // Check permissions
-    assert(k_getOwner((&memInfo), (uint32_t)firstBlock) == firstPid);
-    assert(k_getOwner((&memInfo), (uint32_t)backingStorage) == PROC_ID_ALLOCATOR);
-    assert(k_getOwner((&memInfo), (uint32_t)firstBlock+16) == PROC_ID_NONE);
+    assert(k_isOwner((&memInfo), (uint32_t)firstBlock, firstPid));
+    assert(k_isOwner((&memInfo), (uint32_t)backingStorage, PROC_ID_ALLOCATOR));
+    assert(k_isOwner((&memInfo), (uint32_t)firstBlock+16, PROC_ID_NONE));
 
     int secondPid = 2;
     void *secondBlock = k_acquireMemoryBlock((&memInfo), secondPid);
     assert(secondBlock);
 
     // Check permissions
-    assert(k_getOwner((&memInfo), (uint32_t)firstBlock) == firstPid);
-    assert(k_getOwner((&memInfo), (uint32_t)backingStorage) == PROC_ID_ALLOCATOR);
-    assert(k_getOwner((&memInfo), (uint32_t)secondBlock) == secondPid);
-    assert(k_getOwner((&memInfo), (uint32_t)secondBlock+16) == PROC_ID_NONE);
+    assert(k_isOwner((&memInfo), (uint32_t)firstBlock, firstPid));
+    assert(k_isOwner((&memInfo), (uint32_t)backingStorage, PROC_ID_ALLOCATOR));
+    assert(k_isOwner((&memInfo), (uint32_t)secondBlock, secondPid));
+    assert(k_isOwner((&memInfo), (uint32_t)secondBlock+16, PROC_ID_NONE));
 
     // Manually add to free list, and verify that acquire takes from free list
     k_setOwner((&memInfo), (uint32_t)secondBlock, PROC_ID_NONE);
@@ -183,14 +183,14 @@ int testMemOperations() {
     int thirdPid = 3;
     void *thirdBlock = k_acquireMemoryBlock((&memInfo), thirdPid);
     assert(thirdBlock == secondBlock);
-    assert(k_getOwner((&memInfo), (uint32_t)thirdBlock) == thirdPid);
+    assert(k_isOwner((&memInfo), (uint32_t)thirdBlock, thirdPid));
     assert((&memInfo)->firstFree == NULL);
 
 
     // Test happy path
     int ret = k_releaseMemoryBlock((&memInfo), thirdBlock, thirdPid);
     assert(ret == SUCCESS);
-    assert(k_getOwner((&memInfo), (uint32_t)thirdBlock) == PROC_ID_NONE);
+    assert(k_isOwner((&memInfo), (uint32_t)thirdBlock, PROC_ID_NONE));
     assert((&memInfo)->firstFree != NULL);
 
     // Test double-free fails
