@@ -29,10 +29,9 @@ struct MemInfo {
 #define ERR_UNALIGNED (-2)
 #define ERR_PERM (-3)
 
-void *k_acquireMemoryBlock(MemInfo *memInfo, ProcInfo *procInfo, ProcId oid);
+void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid);
 int8_t k_releaseMemoryBlock(
     MemInfo *memInfo,
-    ProcInfo *procInfo,
     void *mem,
     ProcId oid
 );
@@ -42,8 +41,6 @@ void k_memInfoInit(
     uint32_t endAddr,
     uint32_t blockSizeBytes
 );
-
-uint8_t k_isOutOfMemory(MemInfo *memInfo);
 
 
 #ifdef TESTING

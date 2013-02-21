@@ -53,14 +53,13 @@ void k_memInfoInit(
 
 // Acquire a memory block. Will set the block's owner to the
 // passed in owner id (oid).
-void *k_acquireMemoryBlock(MemInfo *memInfo, ProcInfo *procInfo, ProcId oid) {
+void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
     FreeBlock *curFirstFree;
     void *ret;
     ProcId *header;
     uint8_t didAllocateHeader;
     uint32_t memOffset;
 
-retry:
     curFirstFree = NULL;
     ret = NULL;
     header = NULL;
@@ -86,12 +85,7 @@ retry:
 
     // Check if we're out of memory
     if (memInfo->nextAvailableAddress >= memInfo->endMemoryAddress) {
-#ifdef TESTING
-        // make unit tests happy
         return NULL;
-#endif
-        k_releaseProcessor(procInfo, OOM);
-        goto retry;
     }
 
     // NOTE: this breaks if your memory starts at 0x0.
@@ -111,16 +105,8 @@ retry:
     return ret;
 }
 
-uint8_t k_isOutOfMemory(MemInfo *memInfo) {
-    return (
-        memInfo->firstFree == NULL &&
-        memInfo->nextAvailableAddress >= memInfo->endMemoryAddress
-    );
-}
-
 int8_t k_releaseMemoryBlock(
     MemInfo *memInfo,
-    ProcInfo *procInfo,
     void *mem,
     ProcId oid) {
 
@@ -129,7 +115,6 @@ int8_t k_releaseMemoryBlock(
     uint32_t blockOffset;
     ProcId blockOwner;
     FreeBlock *fb;
-    PCB *firstBlocked;
 
     addr = (uint32_t)mem;
 
@@ -166,15 +151,5 @@ int8_t k_releaseMemoryBlock(
     fb->prev = memInfo->firstFree;
     memInfo->firstFree = fb;
 
-    if (procInfo->memq.size == 0) {
-        return SUCCESS;
-    }
-
-    firstBlocked = pqTop(&(procInfo->memq));
-    if (firstBlocked->priority >= procInfo->currentProcess->priority) {
-        return SUCCESS;
-    }
-
-    k_releaseProcessor(procInfo, MEMORY_FREED);
     return SUCCESS;
 }

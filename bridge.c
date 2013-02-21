@@ -20,15 +20,40 @@ int16_t bridge_getProcessPriority(uint8_t pid) {
 }
 
 
+void *bridge_tryAcquireMemoryBlock(void) {
+  return k_acquireMemoryBlock(&gMem, procInfo.currentProcess->pid);
+}
+
 void *bridge_acquireMemoryBlock(void) {
-  return k_acquireMemoryBlock(&gMem, &procInfo, procInfo.currentProcess->pid);
+  void *mem = NULL;
+
+  mem = k_acquireMemoryBlock(&gMem, procInfo.currentProcess->pid);
+  while (mem == NULL) {
+    k_releaseProcessor(&procInfo, OOM);
+    mem = k_acquireMemoryBlock(&gMem, &procInfo, procInfo.currentProcess->pid);
+  }
+
+  return mem;
 }
 
 int8_t bridge_releaseMemoryBlock(void *blk) {
-  return k_releaseMemoryBlock(&gMem, &procInfo, blk, procInfo.currentProcess->pid);
-}
+  int8_t status = SUCCESS;
+  PCB *firstBlocked = NULL;
 
-uint8_t bridge_isOutOfMemory(void) {
-    return k_isOutOfMemory(&gMem);
-}
+  status = k_releaseMemoryBlock(&gMem, blk, procInfo.currentProcess->pid);
+  if (status != SUCCESS) {
+    return status;
+  }
 
+  if (procInfo->memq.size == 0) {
+    return SUCCESS;
+  }
+
+  firstBlocked = pqTop(&(procInfo->memq));
+  if (firstBlocked->priority >= procInfo->currentProcess->priority) {
+    return SUCCESS;
+  }
+
+  k_releaseProcessor(procInfo, MEMORY_FREED);
+  return SUCCESS;
+}
