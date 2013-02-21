@@ -3,11 +3,11 @@
 
 #include <stdint.h>
 
-typedef struct PCB PCB;
+struct PCB;
 
 typedef struct PQEntry PQEntry;
 struct PQEntry {
-    PCB *pcb;
+    struct PCB *pcb;
     uint32_t seqNumber;
 };
 
@@ -20,8 +20,8 @@ struct PQ {
 };
 
 void pqInit(PQ *q, PQEntry *heap, uint32_t pqStoreSize);
-PCB* pqTop(PQ *q);
-uint32_t pqAdd(PQ *q, PCB *pcb);
-PCB *pqRemove(PQ *q, uint32_t index);
+struct PCB* pqTop(PQ *q);
+uint32_t pqAdd(PQ *q, struct PCB *pcb);
+struct PCB *pqRemove(PQ *q, uint32_t index);
 
 #endif // PQ_H

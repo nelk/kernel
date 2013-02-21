@@ -33,6 +33,11 @@ extern int16_t bridge_getProcessPriority(uint8_t priority);
 int16_t __SVC_0 _getProcessPriority(uint32_t k_func, uint8_t pid);
 
 
+// tryAcquireMemoryBlock
+extern void *bridge_tryAcquireMemoryBlock(void);
+#define try_request_memory_block() ((void*)(_tryAcquireMemoryBlock((uint32_t)bridge_tryAcquireMemoryBlock)))
+uint32_t __SVC_0 _tryAcquireMemoryBlock(uint32_t k_func);
+
 // acquireMemoryBlock
 extern void *bridge_acquireMemoryBlock(void);
 #define request_memory_block() ((void*)(_acquireMemoryBlock((uint32_t)bridge_acquireMemoryBlock)))
@@ -42,11 +47,6 @@ uint32_t __SVC_0 _acquireMemoryBlock(uint32_t k_func);
 extern int8_t bridge_releaseMemoryBlock(void *blk);
 #define release_memory_block(blk) _releaseMemoryBlock((uint32_t)bridge_releaseMemoryBlock, blk)
 int8_t __SVC_0 _releaseMemoryBlock(uint32_t k_func, void *blk);
-
-// outofMemory
-extern uint8_t bridge_isOutOfMemory(void);
-#define is_out_of_memory() _isOutOfMemory((uint32_t)bridge_isOutOfMemory)
-uint8_t __SVC_0 _isOutOfMemory(uint32_t k_func);
 
 #endif
 
