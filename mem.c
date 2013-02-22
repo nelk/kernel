@@ -18,9 +18,9 @@ void k_setOwner(MemInfo *memInfo, uint32_t addr, ProcId oid) {
     *ownerSlot = oid;
 }
 
-// See note on k_findOwnerSlot
-ProcId k_getOwner(MemInfo *memInfo, uint32_t addr) {
-    return *k_findOwnerSlot(memInfo, addr);
+// Checks if addr is owned by oid, see note on k_findOwnerSlot
+uint8_t k_isOwner(MemInfo *memInfo, uint32_t addr, ProcId oid) {
+    return (*k_findOwnerSlot(memInfo, addr) == oid);
 }
 
 uint32_t k_getAlignedStartAddress(uint32_t start, uint32_t blockSizeBytes) {
@@ -33,6 +33,8 @@ uint32_t k_getAlignedStartAddress(uint32_t start, uint32_t blockSizeBytes) {
 }
 
 // Only for use during initialization. Extracted for testing purposes.
+// Note that blockSizeBytes must be greater than or equal to
+// sizeof(FreeBlock), or else madness will ensue.
 void k_memInfoInit(
     MemInfo *memInfo,
     uint32_t startAddr,
@@ -113,7 +115,6 @@ int8_t k_releaseMemoryBlock(
     uint32_t addr;
     uint32_t addrOffset;
     uint32_t blockOffset;
-    ProcId blockOwner;
     FreeBlock *fb;
 
     addr = (uint32_t)mem;
@@ -139,8 +140,7 @@ int8_t k_releaseMemoryBlock(
     }
 
     // Make sure this is allocated, and is owned by this process.
-    blockOwner = k_getOwner(memInfo, addr);
-    if (blockOwner != oid) {
+    if (!k_isOwner(memInfo, addr, oid)) {
         return ERR_PERM;
     }
 
