@@ -21,6 +21,8 @@ struct MemInfo {
     uint32_t blockSizeBytes;
     uint32_t arenaSizeBytes;
 
+    uint8_t trackOwners;
+
     FreeBlock *firstFree;
 };
 
@@ -39,7 +41,8 @@ void k_memInfoInit(
     MemInfo *memInfo,
     uint32_t startAddr,
     uint32_t endAddr,
-    uint32_t blockSizeBytes
+    uint32_t blockSizeBytes,
+    uint8_t trackOwners
 );
 
 

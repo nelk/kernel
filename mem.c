@@ -14,12 +14,19 @@ ProcId *k_findOwnerSlot(MemInfo *memInfo, uint32_t addr) {
 
 // See note on k_findOwnerSlot
 void k_setOwner(MemInfo *memInfo, uint32_t addr, ProcId oid) {
-    ProcId *ownerSlot = k_findOwnerSlot(memInfo, addr);
+    ProcId *ownerSlot = NULL;
+    if (!(memInfo->trackOwners)) {
+        return;
+    }
+    ownerSlot = k_findOwnerSlot(memInfo, addr);
     *ownerSlot = oid;
 }
 
 // Checks if addr is owned by oid, see note on k_findOwnerSlot
 uint8_t k_isOwner(MemInfo *memInfo, uint32_t addr, ProcId oid) {
+    if (!(memInfo->trackOwners)) {
+        return 1;
+    }
     return (*k_findOwnerSlot(memInfo, addr) == oid);
 }
 
@@ -39,7 +46,8 @@ void k_memInfoInit(
     MemInfo *memInfo,
     uint32_t startAddr,
     uint32_t endAddr,
-    uint32_t blockSizeBytes
+    uint32_t blockSizeBytes,
+    uint8_t trackOwners
     ) {
     memInfo->startMemoryAddress = k_getAlignedStartAddress(
         startAddr,
@@ -51,22 +59,17 @@ void k_memInfoInit(
     memInfo->blockSizeBytes = blockSizeBytes;
     memInfo->arenaSizeBytes = blockSizeBytes * blockSizeBytes;
     memInfo->firstFree = NULL;
+    memInfo->trackOwners = trackOwners;
 }
 
 // Acquire a memory block. Will set the block's owner to the
 // passed in owner id (oid).
 void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
-    FreeBlock *curFirstFree;
-    void *ret;
-    ProcId *header;
-    uint8_t didAllocateHeader;
-    uint32_t memOffset;
-
-    curFirstFree = NULL;
-    ret = NULL;
-    header = NULL;
-    didAllocateHeader = 0;
-    memOffset = 0;
+    FreeBlock *curFirstFree = NULL;
+    void *ret = NULL;
+    ProcId *header = NULL;
+    uint8_t didAllocateHeader = 0;
+    uint32_t memOffset = 0;
 
     // Try free list, first
     if (memInfo->firstFree != NULL) {
@@ -79,7 +82,7 @@ void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
 
     // Leave room for owner list (header), if necessary
     memOffset = memInfo->nextAvailableAddress - memInfo->startMemoryAddress;
-    if ((memOffset % memInfo->arenaSizeBytes) == 0) {
+    if (memInfo->trackOwners && (memOffset % memInfo->arenaSizeBytes) == 0) {
         header = (ProcId *)memInfo->nextAvailableAddress;
         didAllocateHeader = 1;
         memInfo->nextAvailableAddress += memInfo->blockSizeBytes;
