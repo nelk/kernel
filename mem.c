@@ -33,6 +33,8 @@ uint32_t k_getAlignedStartAddress(uint32_t start, uint32_t blockSizeBytes) {
 }
 
 // Only for use during initialization. Extracted for testing purposes.
+// Note that blockSizeBytes must be greater than or equal to
+// sizeof(FreeBlock), or else madness will ensue.
 void k_memInfoInit(
     MemInfo *memInfo,
     uint32_t startAddr,
