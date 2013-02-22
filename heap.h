@@ -5,7 +5,11 @@
 #include <stdint.h>
 
 // This header will define a "generic" heap that operates via
-// a series of user-controlled callbacks.
+// a series of user-controlled callbacks. It is based on the
+// Go programming language's open-source implementation of
+// the heap data structure.
+// See http://tip.golang.org/pkg/container/heap/ for docs,
+// and http://tip.golang.org/src/pkg/container/heap/ for source.
 
 typedef uint8_t (*heapLessFunc)(void *, size_t, size_t);
 typedef void (*heapSwapFunc)(void *, size_t, size_t);
