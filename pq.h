@@ -3,19 +3,23 @@
 
 #include <stdint.h>
 
+#include "heap.h"
+
 struct PCB;
 
 typedef struct PQEntry PQEntry;
 struct PQEntry {
-    struct PCB *pcb;
-    uint32_t seqNumber;
+  struct PCB *pcb;
+  uint32_t seqNumber;
 };
 
 typedef struct PQ PQ;
 struct PQ {
-  PQEntry *heap;
+  heap storeMgr;
+  PQEntry *store;
   uint32_t size;
   uint32_t cap;
+
   uint32_t seq;
 };
 

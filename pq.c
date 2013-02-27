@@ -1,17 +1,19 @@
-
 #include <stddef.h>
 #include "pq.h"
 #include "proc.h"
 
-/*
- * Heap implementation ported from the Go language's standard library
- * http://tip.golang.org/src/pkg/container/heap/heap.go
- */
+void pqSwap(void *vCtx, size_t i, size_t j);
+uint8_t pqLess(void *vCtx, size_t i, size_t j);
 
 void pqInit(PQ *q, PQEntry *pqStore, uint32_t pqStoreSize) {
-  q->heap = pqStore;
+  q->store = pqStore;
   q->size = 0;
   q->cap = pqStoreSize;
+
+  heapZero(&(q->storeMgr));
+  heapSetLessFn(&(q->storeMgr), &pqLess);
+  heapSetSwapFn(&(q->storeMgr), &pqSwap);
+  heapSetContext(&(q->storeMgr), q);
 }
 
 uint32_t pqNextSeq(PQ *q) {
@@ -25,61 +27,31 @@ PCB* pqTop(PQ *q) {
     return NULL;
   }
 
-  return q->heap[0].pcb;
+  return q->store[0].pcb;
 }
 
-uint32_t pqLess(PQEntry a, PQEntry b) {
-  if (a.pcb->priority != b.pcb->priority) {
-    return a.pcb->priority < b.pcb->priority;
+uint8_t pqLess(void *vCtx, size_t i, size_t j) {
+  PQ *ctx = (PQ *)vCtx;
+  PQEntry lhs = ctx->store[i];
+  PQEntry rhs = ctx->store[j];
+
+  if (lhs.pcb->priority != rhs.pcb->priority) {
+    return lhs.pcb->priority < rhs.pcb->priority;
   }
 
-  if (a.seqNumber != b.seqNumber) {
-    return a.seqNumber < b.seqNumber;
+  if (lhs.seqNumber != rhs.seqNumber) {
+    return lhs.seqNumber < rhs.seqNumber;
   }
 
   // This is a last-resort fallback. This case should never be triggered
-  return a.pcb < b.pcb;
+  return lhs.pcb < rhs.pcb;
 }
 
-void pqUp(PQ *q, int32_t j) {
-  PQEntry temp;
-  while (1) {
-    int32_t i = (j - 1) / 2; // parent
-    if (i == j || !pqLess(q->heap[j], q->heap[i])) {
-      break;
-    }
-    temp = q->heap[i];
-    q->heap[i] = q->heap[j];
-    q->heap[j] = temp;
-    j = i;
-  }
-}
-
-void pqDown(PQ *q, int32_t i) {
-  int32_t j1 = 0;
-  int32_t j = 0;
-  int32_t j2 = 0;
-  int32_t n = q->size;
-  PQEntry temp;
-
-  while (1) {
-    j1 = 2*i + 1;
-    if (j1 >= n) {
-      break;
-    }
-    j = j1; // left child
-    j2 = j1 + 1;
-    if (j2 < n && !pqLess(q->heap[j1], q->heap[j2])) {
-      j = j2; // = 2*i + 2  // right child
-    }
-    if (!pqLess(q->heap[j], q->heap[i])) {
-      break;
-    }
-    temp = q->heap[i];
-    q->heap[i] = q->heap[j];
-    q->heap[j] = temp;
-    i = j;
-  }
+void pqSwap(void *vCtx, size_t i, size_t j) {
+  PQ *ctx = (PQ *)vCtx;
+  PQEntry temp = ctx->store[i];
+  ctx->store[i] = ctx->store[j];
+  ctx->store[j] = temp;
 }
 
 uint32_t pqAdd(PQ *q, PCB *pcb) {
@@ -92,17 +64,14 @@ uint32_t pqAdd(PQ *q, PCB *pcb) {
   newEntry.pcb = pcb;
   newEntry.seqNumber = pqNextSeq(q);
 
-  q->heap[q->size] = newEntry;
+  q->store[q->size] = newEntry;
   ++(q->size);
-  pqUp(q, q->size - 1);
+  heapAdd(&(q->storeMgr));
   return 0;
 }
 
 PCB *pqRemove(PQ *q, uint32_t i) {
-  PCB *removed = q->heap[i].pcb;
-  q->heap[i] = q->heap[q->size - 1];
+  heapRemove(&(q->storeMgr), i);
   --(q->size);
-  pqDown(q, i);
-  pqUp(q, i);
-  return removed;
+  return q->store[q->size].pcb;
 }
