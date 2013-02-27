@@ -32,6 +32,10 @@ uint32_t k_getAlignedStartAddress(uint32_t start, uint32_t blockSizeBytes) {
     return start + (blockSizeBytes - offset);
 }
 
+uint32_t k_getAlignedEndAddress(uint32_t end, uint32_t blockSizeBytes) {
+    return end - (end % blockSizeBytes);
+}
+
 // Only for use during initialization. Extracted for testing purposes.
 // Note that blockSizeBytes must be greater than or equal to
 // sizeof(FreeBlock), or else madness will ensue.
@@ -45,7 +49,10 @@ void k_memInfoInit(
         startAddr,
         blockSizeBytes
     );
-    memInfo->endMemoryAddress = endAddr;
+    memInfo->endMemoryAddress = k_getAlignedEndAddress(
+        endAddr,
+        blockSizeBytes
+    );
 
     memInfo->nextAvailableAddress = memInfo->startMemoryAddress;
     memInfo->blockSizeBytes = blockSizeBytes;

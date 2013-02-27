@@ -10,16 +10,23 @@
 #define FAILED (0)
 
 uint32_t k_getAlignedStartAddress(uint32_t, uint32_t);
+uint32_t k_getAlignedEndAddress(uint32_t, uint32_t);
 int testAlignedStartAddress() {
     typedef struct {
-        uint32_t start;
         uint32_t blockSize;
-        uint32_t expectedResult;
+
+        uint32_t start;
+        uint32_t end;
+
+        uint32_t expectedStart;
+        uint32_t expectedEnd;
     } testcase;
 
     testcase cases[] = {
-        {0, 2, 0},
-        {1, 2, 2},
+        {2, 0, 6, 0, 6},
+        {2, 1, 6, 2, 6},
+        {2, 0, 5, 0, 4},
+        {2, 1, 5, 2, 4},
     };
 
     int len = sizeof(cases)/sizeof(cases[0]);
@@ -27,23 +34,43 @@ int testAlignedStartAddress() {
     int result = PASSED;
 
     for (int i = 0; i < len; i++) {
-        uint32_t got = k_getAlignedStartAddress(
+        uint32_t gotStart = k_getAlignedStartAddress(
             cases[i].start,
             cases[i].blockSize
         );
 
-        if (got == cases[i].expectedResult) {
+        uint32_t gotEnd = k_getAlignedEndAddress(
+            cases[i].end,
+            cases[i].blockSize
+        );
+
+        if (
+            gotStart == cases[i].expectedStart &&
+            gotEnd == cases[i].expectedEnd
+        ) {
             continue;
         }
 
         result = FAILED;
-        printf(
-            "for k_getAlignedStartAddress(%d, %d), got %d, expected %d\n",
-            cases[i].start,
-            cases[i].blockSize,
-            got,
-            cases[i].expectedResult
-        );
+
+        if (gotStart != cases[i].expectedStart) {
+            printf(
+                "for k_getAlignedStartAddress(%d, %d), got %d, expected %d\n",
+                cases[i].start,
+                cases[i].blockSize,
+                gotStart,
+                cases[i].expectedStart
+            );
+        }
+        if (gotEnd != cases[i].expectedEnd) {
+            printf(
+                "for k_getAlignedEndAddress(%d, %d), got %d, expected %d\n",
+                cases[i].end,
+                cases[i].blockSize,
+                gotEnd,
+                cases[i].expectedEnd
+            );
+        }
     }
 
     return result;
