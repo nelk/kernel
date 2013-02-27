@@ -28,11 +28,12 @@ int main () {
 
 // Initialize global variables.
 void k_memInitGlobal(void) {
-    uint32_t memStartAddr = (uint32_t)&Image$$RW_IRAM1$$ZI$$Limit;
-    k_memInfoInit(
-        &gMem,
-        memStartAddr,  // startAddr
-        0x10008000,    // endAddr
-        1 << 10         // blockSizeBytes = 128 bytes
-    );
+  uint32_t memStartAddr = (uint32_t)&Image$$RW_IRAM1$$ZI$$Limit;
+  k_memInfoInit(
+    &gMem,
+    memStartAddr, // startAddr
+    0x10008000,   // endAddr
+    1 << 10,      // blockSizeBytes = 128 bytes
+    1             // trackOwners = true
+  );
 }
