@@ -61,7 +61,8 @@ int testAlignedStartAddress() {
                 gotStart,
                 cases[i].expectedStart
             );
-        } else {
+        }
+        if (gotEnd != cases[i].expectedEnd) {
             printf(
                 "for k_getAlignedEndAddress(%d, %d), got %d, expected %d\n",
                 cases[i].end,
