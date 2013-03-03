@@ -30,7 +30,7 @@ void *bridge_acquireMemoryBlock(void) {
   mem = k_acquireMemoryBlock(&gMem, procInfo.currentProcess->pid);
   while (mem == NULL) {
     k_releaseProcessor(&procInfo, OOM);
-    mem = k_acquireMemoryBlock(&gMem, &procInfo, procInfo.currentProcess->pid);
+    mem = k_acquireMemoryBlock(&gMem, procInfo.currentProcess->pid);
   }
 
   return mem;
@@ -45,15 +45,15 @@ int8_t bridge_releaseMemoryBlock(void *blk) {
     return status;
   }
 
-  if (procInfo->memq.size == 0) {
+  if (procInfo.memq.size == 0) {
     return SUCCESS;
   }
 
-  firstBlocked = pqTop(&(procInfo->memq));
-  if (firstBlocked->priority >= procInfo->currentProcess->priority) {
+  firstBlocked = pqTop(&(procInfo.memq));
+  if (firstBlocked->priority >= procInfo.currentProcess->priority) {
     return SUCCESS;
   }
 
-  k_releaseProcessor(procInfo, MEMORY_FREED);
+  k_releaseProcessor(&procInfo, MEMORY_FREED);
   return SUCCESS;
 }

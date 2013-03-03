@@ -75,3 +75,15 @@ PCB *pqRemove(PQ *q, uint32_t i) {
   --(q->size);
   return q->store[q->size].pcb;
 }
+
+PCB *pqRemoveByPid(PQ *q, ProcId pid) {
+  // Search for a PCB with the same pid in the pq's store.
+  uint32_t i = 0;
+  while (i < q->size && q->store[i].pcb->pid != pid) {
+    ++i;
+  }
+  if (i >= q->size) {
+    return NULL;
+  }
+  return pqRemove(q, i);
+}

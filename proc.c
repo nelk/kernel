@@ -111,6 +111,7 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
     targetState = BLOCKED;
     break;
   case YIELD:
+  case CHANGED_PRIORITY:
     srcQueue = &(k_procInfo->prq);
     dstQueue = &(k_procInfo->prq);
     targetState = READY;
@@ -152,18 +153,26 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
 }
 
 uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) {
-  if (procInfo->currentProcess == NULL ||
-      procInfo->currentProcess->pid != pid) {
+  if (procInfo->currentProcess == NULL) {
     return 1;
   }
-
-  // TODO(sanjay): constantify
-  if (priority >= 4) {
+  if (priority >= NUM_PRIORITIES - 1) { // We are not allowing any process to be set to the worst priority (The null process begins at the worst priority).
     return 2;
   }
 
-  procInfo->currentProcess->priority = priority;
-  return 0;
+  PCB *changedProcess = pqRemoveByPid(&(procInfo->prq), pid);
+  if (changedProcess == NULL || changedProcess == procInfo->nullProcess) { // We don't allow changing the priority of the null process
+    return 1;
+  }
+  changedProcess->priority = priority;
+  pqAdd(&(procInfo->prq), changedProcess);
+
+  if (changedProcess->priority >= procInfo->currentProcess->priority) {
+    return 0;
+  }
+
+  // Preempt the current process; note that the changed process won't necessarily be the one to run
+  k_releaseProcessor(procInfo, CHANGED_PRIORITY);
 }
 
 int16_t k_getProcessPriority(ProcInfo *procInfo, ProcId pid) {

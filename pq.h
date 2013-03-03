@@ -27,5 +27,6 @@ void pqInit(PQ *q, PQEntry *heap, uint32_t pqStoreSize);
 struct PCB* pqTop(PQ *q);
 uint32_t pqAdd(PQ *q, struct PCB *pcb);
 struct PCB *pqRemove(PQ *q, uint32_t index);
+struct PCB *pqRemoveByPid(PQ *q, uint32_t pid);
 
 #endif // PQ_H
