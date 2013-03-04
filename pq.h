@@ -13,19 +13,24 @@ struct PQEntry {
   uint32_t seqNumber;
 };
 
+typedef ssize_t *(*storeIndexFunc)(struct PCB *);
+
 typedef struct PQ PQ;
 struct PQ {
   heap storeMgr;
   PQEntry *store;
-  uint32_t size;
-  uint32_t cap;
+  size_t size;
+  size_t cap;
 
   uint32_t seq;
+
+  storeIndexFunc getIndexInStore; // takes a PCB* and returns a ssize_t*
 };
 
-void pqInit(PQ *q, PQEntry *heap, uint32_t pqStoreSize);
+void pqInit(PQ *q, PQEntry *heap, size_t pqStoreSize);
 struct PCB* pqTop(PQ *q);
 uint32_t pqAdd(PQ *q, struct PCB *pcb);
-struct PCB *pqRemove(PQ *q, uint32_t index);
+struct PCB *pqRemove(PQ *q, size_t index);
+void pqChangedPriority(PQ *q, struct PCB *pcb);
 
 #endif // PQ_H
