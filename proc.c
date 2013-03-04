@@ -152,6 +152,14 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
   return 0;
 }
 
+/**
+ * Behavior:
+ *  Changing process A's priority:
+ *      If A has a higher priority than current process, preempt
+ *  Changing current process's priority:
+ *      If priority is changed to better priority, continue running
+ *      Otherwise, if new priority is worse than next priority in queue, preempt
+ */
 uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) {
   if (procInfo->currentProcess == NULL) {
     return 1;
@@ -160,14 +168,25 @@ uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) 
     return 2;
   }
 
-  PCB *changedProcess = pqRemoveByPid(&(procInfo->prq), pid);
-  if (changedProcess == NULL || changedProcess == procInfo->nullProcess) { // We don't allow changing the priority of the null process
-    return 1;
+  PCB *replacementProcess = NULL; // Which process to check running process against to see if running process should be preempted.
+  if (pid == procInfo->currentProcess->pid) {
+    uint8_t oldPriority = procInfo->currentProcess->priority;
+    procInfo->currentProcess->priority = priority;
+    if (oldPriority <= priority) { // If we made the priority of this process better, don't preempt it.
+        return 0;
+    }
+    replacementProcess = pqTop(&(procInfo->prq)); // Otherwise we'll preempt this process if the top process has a better priority.
+  } else {
+    replacementProcess = pqRemoveByPid(&(procInfo->prq), pid);
+    if (replacementProcess == NULL || replacementProcess == procInfo->nullProcess) { // We don't allow changing the priority of the null process
+      return 1;
+    }
+    replacementProcess->priority = priority;
+    pqAdd(&(procInfo->prq), replacementProcess);
   }
-  changedProcess->priority = priority;
-  pqAdd(&(procInfo->prq), changedProcess);
 
-  if (changedProcess->priority >= procInfo->currentProcess->priority) {
+  // TODO(nelk): Create function to define comparison for priorities (also use it in pqLess).
+  if (replacementProcess->priority >= procInfo->currentProcess->priority) {
     return 0;
   }
 
