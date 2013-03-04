@@ -5,10 +5,11 @@
 void pqSwap(void *vCtx, size_t i, size_t j);
 uint8_t pqLess(void *vCtx, size_t i, size_t j);
 
-void pqInit(PQ *q, PQEntry *pqStore, uint32_t pqStoreSize) {
+void pqInit(PQ *q, PQEntry *pqStore, size_t pqStoreSize, storeIndexFunc fn) {
   q->store = pqStore;
   q->size = 0;
   q->cap = pqStoreSize;
+  q->getIndexInStore = fn;
 
   heapZero(&(q->storeMgr));
   heapSetLessFn(&(q->storeMgr), &pqLess);
@@ -52,6 +53,10 @@ void pqSwap(void *vCtx, size_t i, size_t j) {
   PQEntry temp = ctx->store[i];
   ctx->store[i] = ctx->store[j];
   ctx->store[j] = temp;
+
+  *(ctx->getIndexInStore(temp.pcb)) = j;
+  temp = ctx->store[i];
+  *(ctx->getIndexInStore(temp.pcb)) = i;
 }
 
 uint32_t pqAdd(PQ *q, PCB *pcb) {
@@ -60,6 +65,8 @@ uint32_t pqAdd(PQ *q, PCB *pcb) {
   if (q->size >= q->cap) {
     return 1;
   }
+
+  *(q->getIndexInStore(pcb)) = q->size;
 
   newEntry.pcb = pcb;
   newEntry.seqNumber = pqNextSeq(q);
@@ -70,10 +77,34 @@ uint32_t pqAdd(PQ *q, PCB *pcb) {
   return 0;
 }
 
-PCB *pqRemove(PQ *q, uint32_t i) {
+PCB *pqRemove(PQ *q, size_t i) {
+  PCB *removing = NULL;
   heapRemove(&(q->storeMgr), i);
   --(q->size);
-  return q->store[q->size].pcb;
+  removing = q->store[q->size].pcb;
+
+  *(q->getIndexInStore(removing)) = -1;
+
+  return removing;
+}
+
+void pqChangedPriority(PQ *q, struct PCB *pcb) {
+  ssize_t index = -1;
+  PQEntry updatingEntry;
+
+  assert(q->getIndexInStore != NULL);
+  index = *(q->getIndexInStore(pcb));
+
+  if (index == -1) {
+    return;
+  }
+
+  assert(index < q->size);
+  updatingEntry = q->store[index];
+
+  assert(updatingEntry.pcb == pcb);
+  updatingEntry.seqNumber = pqNextSeq(q);
+  heapInvalidate(&(q->storeMgr), index);
 }
 
 PCB *pqRemoveByPid(PQ *q, ProcId pid) {
