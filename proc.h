@@ -2,7 +2,9 @@
 #define PROC_H
 
 #include <stdint.h>
+#include <sys/types.h>
 
+#include "mem.h"
 #include "pq.h"
 
 #define NUM_PROCS (6)
@@ -31,6 +33,9 @@ struct PCB {
 	uint32_t *startLoc;
 
   uint32_t priority;
+
+  ssize_t pqIndex;
+  ssize_t memqIndex;
 };
 
 typedef struct ProcInfo ProcInfo;
