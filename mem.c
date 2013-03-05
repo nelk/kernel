@@ -117,12 +117,9 @@ void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
     return ret;
 }
 
-int8_t k_validMemoryBlock(MemInfo *memInfo, uint32_t mem, ProcId oid) {
-    uint32_t addr;
+int8_t k_validMemoryBlock(MemInfo *memInfo, uint32_t addr, ProcId oid) {
     uint32_t addrOffset;
     uint32_t blockOffset;
-
-    addr = (uint32_t)mem;
 
     // First, check for obvious out of range errors.
     // NOTE: nextAvailableAddress is always greater than or
@@ -152,21 +149,18 @@ int8_t k_validMemoryBlock(MemInfo *memInfo, uint32_t mem, ProcId oid) {
     return SUCCESS;
 }
 
-int8_t k_releaseMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid) {
-    uint32_t addr;
+int8_t k_releaseMemoryBlock(MemInfo *memInfo, uint32_t addr, ProcId oid) {
     FreeBlock *fb = NULL;
 
-    int8_t isValid = k_validMemoryBlock(memInfo, mem, oid);
+    int8_t isValid = k_validMemoryBlock(memInfo, addr, oid);
     if (isValid != SUCCESS) {
         return isValid;
     }
 
-    addr = (uint32_t)mem;
-
     k_setOwner(memInfo, addr, PROC_ID_NONE);
 
     // Add to free list
-    fb = (FreeBlock *)mem;
+    fb = (FreeBlock *)addr;
     fb->prev = memInfo->firstFree;
     memInfo->firstFree = fb;
 
