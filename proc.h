@@ -31,11 +31,11 @@ struct PCB {
   uint32_t *stack;
   ProcId pid;
   ProcState state;
-	uint32_t *startLoc;
+  uint32_t *startLoc;
 
   uint32_t priority;
 
-  ssize_t pqIndex;
+  ssize_t rqIndex;
   ssize_t memqIndex;
 };
 

@@ -27,7 +27,7 @@ struct PQ {
   storeIndexFunc getIndexInStore; // takes a PCB* and returns a ssize_t*
 };
 
-void pqInit(PQ *q, PQEntry *heap, size_t pqStoreSize);
+void pqInit(PQ *q, PQEntry *heap, size_t pqStoreSize, storeIndexFunc fn);
 struct PCB* pqTop(PQ *q);
 uint32_t pqAdd(PQ *q, struct PCB *pcb);
 struct PCB *pqRemove(PQ *q, size_t index);

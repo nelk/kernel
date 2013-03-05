@@ -11,16 +11,22 @@ extern void __rte(void);
 extern void  __set_MSP(uint32_t);
 extern uint32_t __get_MSP(void);
 
-extern MemInfo gMem;
+ssize_t *rqStoreIndexFunc(PCB *pcb) {
+    return &(pcb->rqIndex);
+}
 
-void k_initProcesses(ProcInfo *procInfo) {
+ssize_t *memqStoreIndexFunc(PCB *pcb) {
+    return &(pcb->memqIndex);
+}
+
+void k_initProcesses(MemInfo *memInfo, ProcInfo *procInfo) {
   PCB *process;
   ProcId i;
 	int j;
 	uint32_t *stack = NULL;
 
-  pqInit(&(procInfo->prq), procInfo->procQueue, NUM_PROCS);
-  pqInit(&(procInfo->memq), procInfo->memQueue, NUM_PROCS);
+  pqInit(&(procInfo->prq), procInfo->procQueue, NUM_PROCS, &rqStoreIndexFunc);
+  pqInit(&(procInfo->memq), procInfo->memQueue, NUM_PROCS, &memqStoreIndexFunc);
 
   for (i = 0; i < NUM_PROCS; ++i) {
     process = &(procInfo->processes[i]);
@@ -28,10 +34,10 @@ void k_initProcesses(ProcInfo *procInfo) {
     process->state = NEW;
     // TODO(nelk): Assert that these memory blocks are contiguous
     // Stack grows backwards, not forwards. We allocate two memory blocks.
-    k_acquireMemoryBlock(&gMem, procInfo, PROC_ID_KERNEL);
+    k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL);
     stack =
       (uint32_t *)(
-        (uint32_t)k_acquireMemoryBlock(&gMem, procInfo, PROC_ID_KERNEL) + gMem.blockSizeBytes
+        (uint32_t)k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL) + memInfo->blockSizeBytes
       );
 
 		if (!(((uint32_t)stack) & 0x04)) {
@@ -58,13 +64,13 @@ void k_initProcesses(ProcInfo *procInfo) {
   process = &(procInfo->processes[1]); // Push process function address onto stack
   *(process->startLoc) = ((uint32_t) funProcess);
   process->priority = 3;
-	pqAdd(&(procInfo->prq), process);
+  pqAdd(&(procInfo->prq), process);
 
 	// Schizo Process
   process = &(procInfo->processes[2]); // Push process function address onto stack
   *(process->startLoc) = ((uint32_t) schizophrenicProcess);
   process->priority = 3;
-	pqAdd(&(procInfo->prq), process);
+  pqAdd(&(procInfo->prq), process);
 
   // fib Process
   process = &(procInfo->processes[3]); // Push process function address onto stack
@@ -154,11 +160,9 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
 
 /**
  * Behavior:
- *  Changing process A's priority:
- *      If A has a higher priority than current process, preempt
- *  Changing current process's priority:
- *      If priority is changed to better priority, continue running
- *      Otherwise, if new priority is worse than next priority in queue, preempt
+ *  Change specified process's priority (can't change null process's priority)
+ *  If current process priority was changed to better priority, continue running
+ *  Otherwise, if current process priority is worse than top priority in queue, preempt
  */
 uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) {
   if (procInfo->currentProcess == NULL) {
@@ -168,25 +172,25 @@ uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) 
     return 2;
   }
 
-  PCB *replacementProcess = NULL; // Which process to check running process against to see if running process should be preempted.
   if (pid == procInfo->currentProcess->pid) {
     uint8_t oldPriority = procInfo->currentProcess->priority;
     procInfo->currentProcess->priority = priority;
     if (oldPriority <= priority) { // If we made the priority of this process better, don't preempt it.
         return 0;
     }
-    replacementProcess = pqTop(&(procInfo->prq)); // Otherwise we'll preempt this process if the top process has a better priority.
   } else {
-    replacementProcess = pqRemoveByPid(&(procInfo->prq), pid);
-    if (replacementProcess == NULL || replacementProcess == procInfo->nullProcess) { // We don't allow changing the priority of the null process
+    PCB *modifiedProcess = &(procInfo->processes[pid]);
+    if (modifiedProcess == procInfo->nullProcess) { // We don't allow changing the priority of the null process
       return 1;
     }
-    replacementProcess->priority = priority;
-    pqAdd(&(procInfo->prq), replacementProcess);
+    modifiedProcess->priority = priority;
+    pqChangedPriority(&(procInfo->prq), modifiedProcess);
+    pqChangedPriority(&(procInfo->memq), modifiedProcess);
   }
 
-  // TODO(nelk): Create function to define comparison for priorities (also use it in pqLess).
-  if (replacementProcess->priority >= procInfo->currentProcess->priority) {
+  // TODO(alex): Create function/struct to define comparison for priorities (also use it in pqLess).
+  PCB *topProcess = pqTop(&(procInfo->prq)); // Otherwise we'll preempt this process if the top process has a better priority.
+  if (topProcess->priority >= procInfo->currentProcess->priority) {
     return 0;
   }
 
