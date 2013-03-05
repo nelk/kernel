@@ -20,9 +20,9 @@ ssize_t *memqStoreIndexFunc(PCB *pcb) {
 }
 
 void k_initProcesses(MemInfo *memInfo, ProcInfo *procInfo) {
-    PCB *process;
     ProcId i;
     int j;
+    PCB *process = NULL;
     uint32_t *stack = NULL;
 
     pqInit(&(procInfo->prq), procInfo->procQueue, NUM_PROCS, &rqStoreIndexFunc);
@@ -100,10 +100,10 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
 
     // We need to set these three variables depending on the release reason
     ProcState targetState = READY;
-    // We pull the next process to execute from the source queue
-    PQ *srcQueue = NULL;
     // We push the currently executing process onto this queue
     PQ *dstQueue = NULL;
+    // We pull the next process to execute from the source queue
+    PQ *srcQueue = NULL;
 
     // TODO - delayed send check
 
@@ -173,8 +173,8 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
  *  Otherwise, if current process priority is worse than top priority in queue, preempt
  */
 uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) {
-    PCB *topProcess;
-    PCB *modifiedProcess;
+    PCB *topProcess = NULL;
+    PCB *modifiedProcess = NULL;
     uint8_t oldPriority;
 
     if (procInfo->currentProcess == NULL) {
