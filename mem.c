@@ -117,7 +117,7 @@ void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
     return ret;
 }
 
-int8_t k_validMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid) {
+int8_t k_validMemoryBlock(MemInfo *memInfo, uint32_t mem, ProcId oid) {
     uint32_t addr;
     uint32_t addrOffset;
     uint32_t blockOffset;
