@@ -41,6 +41,7 @@ struct PCB {
     ssize_t memqIndex;
 
     Envelope *messageQueue;
+    Envelope *endOfMessageQueue;
 };
 
 typedef struct ProcInfo ProcInfo;
@@ -59,7 +60,7 @@ struct ProcInfo {
 enum ReleaseReason {
     CHANGED_PRIORITY,
     MEMORY_FREED,
-    MESSAGE_RECEIVED,
+    MESSAGE_RECEIVE,
     MESSAGE_SENT,
     OOM,
     YIELD,

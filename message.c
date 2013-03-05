@@ -17,23 +17,23 @@ int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, ProcId pid, Envelope 
     if (pid >= NUM_PROCS) {
         return 1;
     }
-    // Check memory block
-    if (k_validMemoryBlock(memInfo, envelope, pid) != 0) { // TODO (alex) - should we be using SUCCESS here? Maybe have global return codes like SUCCESS that's not just for memory?
+    // Set to new owner (and check if valid)
+    if (k_changeOwner(memInfo, (uint32_t)envelope, PROC_ID_KERNEL) != 0) { // TODO (alex) - should we be using SUCCESS here? Maybe have global return codes like SUCCESS that's not just for memory?
         return 2;
     }
-
-    // Set to new owner
-    k_setOwner(memInfo, (uint32_t)envelope, PROC_ID_KERNEL);
 
     currentProc = procInfo->currentProcess;
     receivingProc = &(procInfo->processes[pid]);
 
     // Add to message queue
-    nextMessage = currentProc->messageQueue;
+    nextMessage = currentProc->endOfMessageQueue;
     envelope->header[NEXT_ENVELOPE] = (uint32_t)nextMessage;
     envelope->senderPid = currentProc->pid; // Force sender PID to be correct
     envelope->destPid = pid;
-    currentProc->messageQueue = envelope;
+    currentProc->endOfMessageQueue = envelope;
+    if (currentProc->messageQueue == NULL) {
+        currentProc->messageQueue = envelope;
+    }
 
     // Unblock receiver
     if (receivingProc->state == BLOCKED_MESSAGE) {
@@ -53,16 +53,17 @@ Envelope *k_receiveMessage(MemInfo *memInfo, ProcInfo *procInfo, uint8_t *sender
 
     // Check if message exists
     currentProc = procInfo->currentProcess;
-    message = currentProc->messageQueue;
-    while (message == NULL) {
+    while (currentProc->messageQueue == NULL) {
         // Block receiver
-        currentProc->state = BLOCKED_MESSAGE;
-        k_releaseProcessor(procInfo, MESSAGE_RECEIVED);
-        message = currentProc->messageQueue;
+        k_releaseProcessor(procInfo, MESSAGE_RECEIVE);
     }
+    message = currentProc->messageQueue;
     currentProc->messageQueue = (Envelope *)message->header[NEXT_ENVELOPE];
+    if (currentProc->messageQueue == NULL) {
+        currentProc->endOfMessageQueue = NULL;
+    }
     message->header[NEXT_ENVELOPE] = 0; // Clear this so user doesn't have next message pointer
-    k_setOwner(memInfo, (uint32_t)message, currentProc->pid);
+    k_changeOwner(memInfo, (uint32_t)message, currentProc->pid);
 
     if (senderPid != NULL) {
         *senderPid = message->senderPid; // Set out param

@@ -2,6 +2,39 @@
 
 #include "mem.h"
 
+
+int8_t k_validMemoryBlock(MemInfo *memInfo, uint32_t addr, ProcId oid) {
+    uint32_t addrOffset;
+    uint32_t blockOffset;
+
+    // First, check for obvious out of range errors.
+    // NOTE: nextAvailableAddress is always greater than or
+    //       equal to endMemoryAddress, but we check both
+    //       anyways.
+    if (
+        addr < memInfo->startMemoryAddress ||
+        addr >= memInfo->nextAvailableAddress ||
+        addr >= memInfo->endMemoryAddress
+    ) {
+        return ERR_OUTOFRANGE;
+    }
+
+    addrOffset = addr - memInfo->startMemoryAddress;
+    blockOffset = addrOffset % memInfo->blockSizeBytes;
+
+    // Disallow addresses in the middle of blocks
+    if (blockOffset != 0) {
+        return ERR_UNALIGNED;
+    }
+
+    // Make sure this is allocated, and is owned by this process.
+    if (!k_isOwner(memInfo, addr, oid)) {
+        return ERR_PERM;
+    }
+
+    return SUCCESS;
+}
+
 // This function assumes addr points to the beginning of a block.
 // Not meeting this contract will result in security holes and weird segfaults.
 ProcId *k_findOwnerSlot(MemInfo *memInfo, uint32_t addr) {
@@ -13,10 +46,15 @@ ProcId *k_findOwnerSlot(MemInfo *memInfo, uint32_t addr) {
 }
 
 // See note on k_findOwnerSlot
-void k_setOwner(MemInfo *memInfo, uint32_t addr, ProcId oid) {
+int8_t k_changeOwner(MemInfo *memInfo, uint32_t addr, ProcId oid) {
+    int8_t isValid = k_validMemoryBlock(memInfo, addr, oid);
+    if (isValid != SUCCESS) {
+        return isValid;
+    }
+
     ProcId *ownerSlot = NULL;
     if (!(memInfo->trackOwners)) {
-        return;
+        return 1;
     }
     ownerSlot = k_findOwnerSlot(memInfo, addr);
     *ownerSlot = oid;
@@ -83,7 +121,7 @@ void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
         curFirstFree = memInfo->firstFree;
         memInfo->firstFree = curFirstFree->prev;
         ret = (void *)curFirstFree;
-        k_setOwner(memInfo, (uint32_t)ret, oid);
+        k_changeOwner(memInfo, (uint32_t)ret, oid);
         return ret;
     }
 
@@ -111,62 +149,22 @@ void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
     }
 
     ret = (void *)memInfo->nextAvailableAddress;
-    k_setOwner(memInfo, (uint32_t)ret, oid);
+    k_changeOwner(memInfo, (uint32_t)ret, oid);
     memInfo->nextAvailableAddress += memInfo->blockSizeBytes;
 
     return ret;
 }
 
-int8_t k_validMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid) {
-    uint32_t addr;
-    uint32_t addrOffset;
-    uint32_t blockOffset;
+int8_t k_releaseMemoryBlock(MemInfo *memInfo, uint32_t addr, ProcId oid) {
+    FreeBlock *fb = NULL;
 
-    addr = (uint32_t)mem;
-
-    // First, check for obvious out of range errors.
-    // NOTE: nextAvailableAddress is always greater than or
-    //       equal to endMemoryAddress, but we check both
-    //       anyways.
-    if (
-        addr < memInfo->startMemoryAddress ||
-        addr >= memInfo->nextAvailableAddress ||
-        addr >= memInfo->endMemoryAddress
-    ) {
-        return ERR_OUTOFRANGE;
-    }
-
-    addrOffset = addr - memInfo->startMemoryAddress;
-    blockOffset = addrOffset % memInfo->blockSizeBytes;
-
-    // Disallow addresses in the middle of blocks
-    if (blockOffset != 0) {
-        return ERR_UNALIGNED;
-    }
-
-    // Make sure this is allocated, and is owned by this process.
-    if (!k_isOwner(memInfo, addr, oid)) {
-        return ERR_PERM;
-    }
-
-    return SUCCESS;
-}
-
-int8_t k_releaseMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid) {
-    uint32_t addr;
-    FreeBlock *fb;
-
-    int8_t isValid = k_validMemoryBlock(memInfo, mem, oid);
+    int8_t isValid = k_changeOwner(memInfo, addr, PROC_ID_NONE);
     if (isValid != SUCCESS) {
         return isValid;
     }
 
-    addr = (uint32_t)mem;
-
-    k_setOwner(memInfo, addr, PROC_ID_NONE);
-
     // Add to free list
-    fb = (FreeBlock *)mem;
+    fb = (FreeBlock *)addr;
     fb->prev = memInfo->firstFree;
     memInfo->firstFree = fb;
 

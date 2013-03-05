@@ -20,9 +20,9 @@ ssize_t *memqStoreIndexFunc(PCB *pcb) {
 }
 
 void k_initProcesses(MemInfo *memInfo, ProcInfo *procInfo) {
-    PCB *process;
     ProcId i;
     int j;
+    PCB *process = NULL;
     uint32_t *stack = NULL;
 
     pqInit(&(procInfo->prq), procInfo->procQueue, NUM_PROCS, &rqStoreIndexFunc);
@@ -120,7 +120,6 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
             break;
         case YIELD:
         case CHANGED_PRIORITY:
-        case MESSAGE_RECEIVED:
         case MESSAGE_SENT:
             srcQueue = &(k_procInfo->prq);
             dstQueue = &(k_procInfo->prq);
@@ -130,6 +129,11 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
             if (k_procInfo->currentProcess == k_procInfo->nullProcess) {
                 dstQueue = NULL;
             }
+            break;
+        case MESSAGE_RECEIVE:
+            srcQueue = &(k_procInfo->prq);
+            dstQueue = &(k_procInfo->prq);
+            targetState = BLOCKED_MESSAGE;
             break;
         default:
             break;
@@ -169,8 +173,8 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
  *  Otherwise, if current process priority is worse than top priority in queue, preempt
  */
 uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) {
-    PCB *topProcess;
-    PCB *modifiedProcess;
+    PCB *topProcess = NULL;
+    PCB *modifiedProcess = NULL;
     uint8_t oldPriority;
 
     if (procInfo->currentProcess == NULL) {
