@@ -9,22 +9,22 @@ struct PCB;
 
 typedef struct PQEntry PQEntry;
 struct PQEntry {
-  struct PCB *pcb;
-  uint32_t seqNumber;
+    struct PCB *pcb;
+    uint32_t seqNumber;
 };
 
 typedef ssize_t *(*storeIndexFunc)(struct PCB *);
 
 typedef struct PQ PQ;
 struct PQ {
-  heap storeMgr;
-  PQEntry *store;
-  size_t size;
-  size_t cap;
+    heap storeMgr;
+    PQEntry *store;
+    size_t size;
+    size_t cap;
 
-  uint32_t seq;
+    uint32_t seq;
 
-  storeIndexFunc getIndexInStore; // takes a PCB* and returns a ssize_t*
+    storeIndexFunc getIndexInStore; // takes a PCB* and returns a ssize_t*
 };
 
 void pqInit(PQ *q, PQEntry *heap, size_t pqStoreSize, storeIndexFunc fn);

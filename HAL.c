@@ -43,7 +43,7 @@ __asm void SVC_Handler (void)
                        ; R12 contains the corresponding 
                        ; C kernel functions entry point
                        ; R0-R3 contains the kernel function input params 
-		                   ; according to AAPCS
+                       ; according to AAPCS
 
   MRS  R12, MSP        ; Read MSP
   STR  R0, [R12]       ; store C kernel function return value in R0
