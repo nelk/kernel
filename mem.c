@@ -27,8 +27,7 @@ uint8_t k_isOwner(MemInfo *memInfo, uint32_t addr, ProcId oid) {
     if (!(memInfo->trackOwners)) {
         return 1;
     }
-    ProcId* ownerSlot = k_findOwnerSlot(memInfo, addr);
-    return (*ownerSlot == oid);
+    return (*k_findOwnerSlot(memInfo, addr) == oid);
 }
 
 uint32_t k_getAlignedStartAddress(uint32_t start, uint32_t blockSizeBytes) {

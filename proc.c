@@ -168,7 +168,7 @@ uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) 
   if (procInfo->currentProcess == NULL) {
     return 1;
   }
-  if (priority >= NUM_PRIORITIES - 1) { // We are not allowing any process to be set to the worst priority (The null process begins at the worst priority).
+  if (priority >= MAX_PRIORITY) { // We are not allowing any process to be set to the worst priority (The null process begins at the worst priority).
     return 2;
   }
 
@@ -189,7 +189,7 @@ uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) 
   }
 
   // TODO(alex): Create function/struct to define comparison for priorities (also use it in pqLess).
-  PCB *topProcess = pqTop(&(procInfo->prq)); // Otherwise we'll preempt this process if the top process has a better priority.
+  PCB *topProcess = pqTop(&(procInfo->prq)); // We'll preempt this process if the top process has a better priority.
   if (topProcess->priority >= procInfo->currentProcess->priority) {
     return 0;
   }

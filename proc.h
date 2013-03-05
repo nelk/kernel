@@ -8,7 +8,7 @@
 #include "pq.h"
 
 #define NUM_PROCS (6)
-#define NUM_PRIORITIES (5)
+#define MAX_PRIORITY (4)
 
 // ProcId is used to store pids and is typedef'd
 // to distinguish it from regular integers.
@@ -53,9 +53,9 @@ struct ProcInfo {
 };
 
 enum ReleaseReason {
+  CHANGED_PRIORITY,
   MEMORY_FREED,
   OOM,
-  CHANGED_PRIORITY,
   YIELD,
 };
 typedef enum ReleaseReason ReleaseReason;
