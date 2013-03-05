@@ -6,6 +6,7 @@
 
 #include "mem.h"
 #include "pq.h"
+#include "message.h"
 
 #define NUM_PROCS (6)
 #define MAX_PRIORITY (4)
@@ -19,8 +20,9 @@ typedef uint8_t ProcId;
 #define PROC_ID_NONE      (0xff)
 
 enum ProcState {
-    NEW,
     BLOCKED,
+    BLOCKED_MESSAGE,
+    NEW,
     READY,
     RUNNING,
 };
@@ -37,6 +39,9 @@ struct PCB {
 
     ssize_t rqIndex;
     ssize_t memqIndex;
+
+    Envelope *messageQueue;
+    Envelope *endOfMessageQueue;
 };
 
 typedef struct ProcInfo ProcInfo;
@@ -55,6 +60,8 @@ struct ProcInfo {
 enum ReleaseReason {
     CHANGED_PRIORITY,
     MEMORY_FREED,
+    MESSAGE_RECEIVE,
+    MESSAGE_SENT,
     OOM,
     YIELD,
 };
