@@ -154,7 +154,7 @@ int8_t k_validMemoryBlock(MemInfo *memInfo, uint32_t mem, ProcId oid) {
 
 int8_t k_releaseMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid) {
     uint32_t addr;
-    FreeBlock *fb;
+    FreeBlock *fb = NULL;
 
     int8_t isValid = k_validMemoryBlock(memInfo, mem, oid);
     if (isValid != SUCCESS) {
