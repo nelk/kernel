@@ -120,7 +120,6 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
             break;
         case YIELD:
         case CHANGED_PRIORITY:
-        case MESSAGE_RECEIVED:
         case MESSAGE_SENT:
             srcQueue = &(k_procInfo->prq);
             dstQueue = &(k_procInfo->prq);
@@ -130,6 +129,11 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
             if (k_procInfo->currentProcess == k_procInfo->nullProcess) {
                 dstQueue = NULL;
             }
+            break;
+        case MESSAGE_RECEIVE:
+            srcQueue = &(k_procInfo->prq);
+            dstQueue = &(k_procInfo->prq);
+            targetState = BLOCKED_MESSAGE;
             break;
         default:
             break;
