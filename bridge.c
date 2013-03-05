@@ -3,6 +3,7 @@
 #include "bridge.h"
 #include "mem.h"
 #include "proc.h"
+#include "message.h"
 
 extern MemInfo gMem;
 extern ProcInfo procInfo;
@@ -56,4 +57,17 @@ int8_t bridge_releaseMemoryBlock(void *blk) {
 
     k_releaseProcessor(&procInfo, MEMORY_FREED);
     return SUCCESS;
+}
+
+
+int8_t bridge_sendMessage(uint8_t pid, Envelope *envelope) {
+    k_sendMessage(&gMem, &procInfo, pid, envelope);
+}
+
+int8_t bridge_receiveMessage(uint8_t *senderPid) {
+    k_receiveMessage(&gMem, &procInfo, senderPid);
+}
+
+int8_t bridge_delayedSend(uint8_t pid, Envelop *envelope, uint32_t delay) {
+    k_delayedSend(&gMem, &procInfo, pid, envelope, delay);
 }
