@@ -117,15 +117,10 @@ void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
     return ret;
 }
 
-int8_t k_releaseMemoryBlock(
-    MemInfo *memInfo,
-    void *mem,
-    ProcId oid) {
-
+int8_t k_validateMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid) {
     uint32_t addr;
     uint32_t addrOffset;
     uint32_t blockOffset;
-    FreeBlock *fb;
 
     addr = (uint32_t)mem;
 
@@ -153,6 +148,17 @@ int8_t k_releaseMemoryBlock(
     if (!k_isOwner(memInfo, addr, oid)) {
         return ERR_PERM;
     }
+
+    return SUCCESS;
+}
+
+int8_t k_releaseMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid) {
+    uint32_t addr;
+    FreeBlock *fb;
+
+    k_validateMemoryBlock(memInfo, mem, oid);
+
+    addr = (uint32_t)mem;
 
     k_setOwner(memInfo, addr, PROC_ID_NONE);
 

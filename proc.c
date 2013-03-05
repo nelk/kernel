@@ -32,6 +32,7 @@ void k_initProcesses(MemInfo *memInfo, ProcInfo *procInfo) {
         process = &(procInfo->processes[i]);
         process->pid = i;
         process->state = NEW;
+        process->messageQueue = NULL;
         // TODO(nelk): Assert that these memory blocks are contiguous
         // Stack grows backwards, not forwards. We allocate two memory blocks.
         k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL);
@@ -104,6 +105,7 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
     // We push the currently executing process onto this queue
     PQ *dstQueue = NULL;
 
+    // TODO - delayed send check
 
     switch (reason) {
         case MEMORY_FREED:
@@ -118,6 +120,7 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
             break;
         case YIELD:
         case CHANGED_PRIORITY:
+        case MESSAGE_RECEIVED:
             srcQueue = &(k_procInfo->prq);
             dstQueue = &(k_procInfo->prq);
             targetState = READY;
@@ -165,7 +168,14 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
  *  Otherwise, if current process priority is worse than top priority in queue, preempt
  */
 uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) {
+    PCB *topProcess;
+    PCB *modifiedProcess;
+    uint8_t oldPriority;
+
     if (procInfo->currentProcess == NULL) {
+        return 1;
+    }
+    if (pid >= NUM_PROCS) {
         return 1;
     }
     if (priority >= MAX_PRIORITY) { // We are not allowing any process to be set to the worst priority (The null process begins at the worst priority).
@@ -173,13 +183,13 @@ uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) 
     }
 
     if (pid == procInfo->currentProcess->pid) {
-        uint8_t oldPriority = procInfo->currentProcess->priority;
+        oldPriority = procInfo->currentProcess->priority;
         procInfo->currentProcess->priority = priority;
         if (oldPriority <= priority) { // If we made the priority of this process better, don't preempt it.
             return 0;
         }
     } else {
-        PCB *modifiedProcess = &(procInfo->processes[pid]);
+        modifiedProcess = &(procInfo->processes[pid]);
         if (modifiedProcess == procInfo->nullProcess) { // We don't allow changing the priority of the null process
             return 1;
         }
@@ -189,7 +199,7 @@ uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) 
     }
 
     // TODO(alex): Create function/struct to define comparison for priorities (also use it in pqLess).
-    PCB *topProcess = pqTop(&(procInfo->prq)); // We'll preempt this process if the top process has a better priority.
+    topProcess = pqTop(&(procInfo->prq)); // We'll preempt this process if the top process has a better priority.
     if (topProcess->priority >= procInfo->currentProcess->priority) {
         return 0;
     }
