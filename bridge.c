@@ -6,6 +6,7 @@
 
 extern MemInfo gMem;
 extern ProcInfo procInfo;
+extern MessageInfo messageInfo;
 
 uint32_t bridge_releaseProcessor(void) {
     return k_releaseProcessor(&procInfo, YIELD);
@@ -68,5 +69,5 @@ Envelope *bridge_receiveMessage(uint8_t *senderPid) {
 }
 
 int8_t bridge_delayedSend(uint8_t pid, Envelope *envelope, uint32_t delay) {
-    return k_delayedSend(&gMem, &procInfo, pid, envelope, delay);
+    return k_delayedSend(&gMem, &messageInfo, &procInfo, pid, envelope, delay);
 }
