@@ -1,6 +1,7 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 
+#include "common.h"
 #include "message.h"
 #include "mem.h"
 #include "proc.h"
@@ -12,7 +13,7 @@ struct Envelope {
     uint32_t senderPid;
     uint32_t destPid;
     uint32_t messageType;
-    char messageData; // TODO(alex) - make this an array so the user won't be confused
+    char messageData[BLOCKSIZE_BYTES - 6*sizeof(uint32_t)];
 };
 
 
