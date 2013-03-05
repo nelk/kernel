@@ -1,8 +1,9 @@
 #include <LPC17xx.h>
+#include "common.h"
 #include "mem.h"
 #include "proc.h"
-#include "uart_polling.h"
 #include "rtx.h"
+#include "uart_polling.h"
 
 extern uint32_t Image$$RW_IRAM1$$ZI$$Limit;
 MemInfo gMem;
@@ -31,9 +32,9 @@ void k_memInitGlobal(void) {
     uint32_t memStartAddr = (uint32_t)&Image$$RW_IRAM1$$ZI$$Limit;
     k_memInfoInit(
             &gMem,
-            memStartAddr, // startAddr
-            0x10008000,   // endAddr
-            1 << 10,      // blockSizeBytes = 128 bytes
-            1             // trackOwners = true
+            memStartAddr,           // startAddr
+            0x10008000,             // endAddr
+            BLOCKSIZE_BYTES, // blockSizeBytes = 128 bytes
+            1                       // trackOwners = true
             );
 }
