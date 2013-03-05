@@ -11,16 +11,22 @@ extern void __rte(void);
 extern void  __set_MSP(uint32_t);
 extern uint32_t __get_MSP(void);
 
-extern MemInfo gMem;
+ssize_t *rqStoreIndexFunc(PCB *pcb) {
+    return &(pcb->rqIndex);
+}
 
-void k_initProcesses(ProcInfo *procInfo) {
+ssize_t *memqStoreIndexFunc(PCB *pcb) {
+    return &(pcb->memqIndex);
+}
+
+void k_initProcesses(MemInfo *memInfo, ProcInfo *procInfo) {
   PCB *process;
   ProcId i;
 	int j;
 	uint32_t *stack = NULL;
 
-  pqInit(&(procInfo->prq), procInfo->procQueue, NUM_PROCS);
-  pqInit(&(procInfo->memq), procInfo->memQueue, NUM_PROCS);
+  pqInit(&(procInfo->prq), procInfo->procQueue, NUM_PROCS, &rqStoreIndexFunc);
+  pqInit(&(procInfo->memq), procInfo->memQueue, NUM_PROCS, &memqStoreIndexFunc);
 
   for (i = 0; i < NUM_PROCS; ++i) {
     process = &(procInfo->processes[i]);
@@ -28,10 +34,10 @@ void k_initProcesses(ProcInfo *procInfo) {
     process->state = NEW;
     // TODO(nelk): Assert that these memory blocks are contiguous
     // Stack grows backwards, not forwards. We allocate two memory blocks.
-    k_acquireMemoryBlock(&gMem, procInfo, PROC_ID_KERNEL);
+    k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL);
     stack =
       (uint32_t *)(
-        (uint32_t)k_acquireMemoryBlock(&gMem, procInfo, PROC_ID_KERNEL) + gMem.blockSizeBytes
+        (uint32_t)k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL) + memInfo->blockSizeBytes
       );
 
 		if (!(((uint32_t)stack) & 0x04)) {
@@ -58,13 +64,13 @@ void k_initProcesses(ProcInfo *procInfo) {
   process = &(procInfo->processes[1]); // Push process function address onto stack
   *(process->startLoc) = ((uint32_t) funProcess);
   process->priority = 3;
-	pqAdd(&(procInfo->prq), process);
+  pqAdd(&(procInfo->prq), process);
 
 	// Schizo Process
   process = &(procInfo->processes[2]); // Push process function address onto stack
   *(process->startLoc) = ((uint32_t) schizophrenicProcess);
   process->priority = 3;
-	pqAdd(&(procInfo->prq), process);
+  pqAdd(&(procInfo->prq), process);
 
   // fib Process
   process = &(procInfo->processes[3]); // Push process function address onto stack
@@ -111,6 +117,7 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
     targetState = BLOCKED;
     break;
   case YIELD:
+  case CHANGED_PRIORITY:
     srcQueue = &(k_procInfo->prq);
     dstQueue = &(k_procInfo->prq);
     targetState = READY;
@@ -151,19 +158,44 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
   return 0;
 }
 
+/**
+ * Behavior:
+ *  Change specified process's priority (can't change null process's priority)
+ *  If current process priority was changed to better priority, continue running
+ *  Otherwise, if current process priority is worse than top priority in queue, preempt
+ */
 uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) {
-  if (procInfo->currentProcess == NULL ||
-      procInfo->currentProcess->pid != pid) {
+  if (procInfo->currentProcess == NULL) {
     return 1;
   }
-
-  // TODO(sanjay): constantify
-  if (priority >= 4) {
+  if (priority >= MAX_PRIORITY) { // We are not allowing any process to be set to the worst priority (The null process begins at the worst priority).
     return 2;
   }
 
-  procInfo->currentProcess->priority = priority;
-  return 0;
+  if (pid == procInfo->currentProcess->pid) {
+    uint8_t oldPriority = procInfo->currentProcess->priority;
+    procInfo->currentProcess->priority = priority;
+    if (oldPriority <= priority) { // If we made the priority of this process better, don't preempt it.
+        return 0;
+    }
+  } else {
+    PCB *modifiedProcess = &(procInfo->processes[pid]);
+    if (modifiedProcess == procInfo->nullProcess) { // We don't allow changing the priority of the null process
+      return 1;
+    }
+    modifiedProcess->priority = priority;
+    pqChangedPriority(&(procInfo->prq), modifiedProcess);
+    pqChangedPriority(&(procInfo->memq), modifiedProcess);
+  }
+
+  // TODO(alex): Create function/struct to define comparison for priorities (also use it in pqLess).
+  PCB *topProcess = pqTop(&(procInfo->prq)); // We'll preempt this process if the top process has a better priority.
+  if (topProcess->priority >= procInfo->currentProcess->priority) {
+    return 0;
+  }
+
+  // Preempt the current process; note that the changed process won't necessarily be the one to run
+  k_releaseProcessor(procInfo, CHANGED_PRIORITY);
 }
 
 int16_t k_getProcessPriority(ProcInfo *procInfo, ProcId pid) {
