@@ -34,7 +34,7 @@ void k_memInitGlobal(void) {
             &gMem,
             memStartAddr,           // startAddr
             0x10008000,             // endAddr
-            BLOCKSIZE_BYTES, // blockSizeBytes = 128 bytes
+            BLOCKSIZE_BYTES,        // blockSizeBytes = 128 bytes
             1                       // trackOwners = true
             );
 }
