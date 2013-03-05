@@ -7,12 +7,16 @@
  * User Land API
  *
  * uint32_t release_processor(void)
- * uint32_t set_process_priority(int8_t pid, int8_t priority)
- * uint8_t get_process_priority(int8_t pid)
+ * uint32_t set_process_priority(uint8_t pid, uint8_t priority)
+ * uint8_t get_process_priority(uint8_t pid)
  *
  * void *request_memory_block(void)
  * uint32_t release_memory_block(void *blk)
  * uint8_t is_out_of_memory(void)
+ *
+ * int8_t send_message(uint8_t pid, Envelope *envelope)
+ * Envelope *received_message(uint8_t *senderPid) // output parameter
+ * int8_t delayed_send(uint8_t pid, Envelope *envelope, uint32_t delay)
  */
 
 #define __SVC_0  __svc_indirect(0)
@@ -41,12 +45,28 @@ uint32_t __SVC_0 _tryAcquireMemoryBlock(uint32_t k_func);
 // acquireMemoryBlock
 extern void *bridge_acquireMemoryBlock(void);
 #define request_memory_block() ((void*)(_acquireMemoryBlock((uint32_t)bridge_acquireMemoryBlock)))
-uint32_t __SVC_0 _acquireMemoryBlock(uint32_t k_func);
+void* __SVC_0 _acquireMemoryBlock(uint32_t k_func);
 
 // releaseMemoryBlock
 extern int8_t bridge_releaseMemoryBlock(void *blk);
 #define release_memory_block(blk) _releaseMemoryBlock((uint32_t)bridge_releaseMemoryBlock, blk)
 int8_t __SVC_0 _releaseMemoryBlock(uint32_t k_func, void *blk);
+
+
+// sendMessage
+extern int8_t bridge_sendMessage(uint8_t pid, Envelope *envelope);
+#define send_message(pid, envelope) _sendMessage((uint32_t)bridge_sendMessage, pid, envelope)
+int8_t __SVC_0 _sendMessage(uint32_t k_func, uint8_t pid, Envelope *envelope);
+
+// receiveMessage
+extern Envelope *bridge_receiveMessage(uint8_t *senderPid);
+#define receive_message(senderPid) _receiveMessage((uint32_t)bridge_sendMessage, senderPid)
+Envelope* __SVC_0 _receiveMessage(uint32_t k_func, uint8_t *senderPid);
+
+// delayedSend
+extern int8_t bridge_delayedSend(uint8_t pid, Envelope *envelope, uint32_t delay);
+#define delayed_send(pid, envelope, delay) _sendMessage((uint32_t)bridge_sendMessage, pid, envelope, delay)
+int8_t __SVC_0 _sendMessage(uint32_t k_func, uint8_t pid, Envelope *envelope, uint32_t delay);
 
 #endif
 
