@@ -45,12 +45,11 @@ void k_memInfoInit(
     uint8_t trackOwners
 );
 
-int8_t k_validMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid);
-void k_setOwner(MemInfo *memInfo, uint32_t addr, ProcId oid);
+int8_t k_changeOwner(MemInfo *memInfo, uint32_t addr, ProcId oid);
 
 #ifdef TESTING
+int8_t k_validMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid);
 ProcId *k_findOwnerSlot(MemInfo *memInfo, uint32_t addr);
-void k_setOwner(MemInfo *memInfo, uint32_t addr, ProcId oid);
 uint8_t k_isOwner(MemInfo *memInfo, uint32_t addr, ProcId oid);
 uint32_t k_getAlignedStartAddress(uint32_t startAddr, uint32_t blockSizeBytes);
 #endif
