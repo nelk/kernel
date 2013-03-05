@@ -28,35 +28,35 @@ typedef enum ProcState ProcState;
 
 typedef struct PCB PCB;
 struct PCB {
-  uint32_t *stack;
-  ProcId pid;
-  ProcState state;
-  uint32_t *startLoc;
+    uint32_t *stack;
+    ProcId pid;
+    ProcState state;
+    uint32_t *startLoc;
 
-  uint32_t priority;
+    uint32_t priority;
 
-  ssize_t rqIndex;
-  ssize_t memqIndex;
+    ssize_t rqIndex;
+    ssize_t memqIndex;
 };
 
 typedef struct ProcInfo ProcInfo;
 struct ProcInfo {
-  PCB processes[NUM_PROCS]; // Actual process blocks
-  PCB *currentProcess;
-  PCB *nullProcess;
+    PCB processes[NUM_PROCS]; // Actual process blocks
+    PCB *currentProcess;
+    PCB *nullProcess;
 
-  PQ prq; // Process ready queue
-  PQEntry procQueue[NUM_PROCS];
+    PQ prq; // Process ready queue
+    PQEntry procQueue[NUM_PROCS];
 
-  PQ memq; // Memory blocked queue
-  PQEntry memQueue[NUM_PROCS];
+    PQ memq; // Memory blocked queue
+    PQEntry memQueue[NUM_PROCS];
 };
 
 enum ReleaseReason {
-  CHANGED_PRIORITY,
-  MEMORY_FREED,
-  OOM,
-  YIELD,
+    CHANGED_PRIORITY,
+    MEMORY_FREED,
+    OOM,
+    YIELD,
 };
 typedef enum ReleaseReason ReleaseReason;
 
