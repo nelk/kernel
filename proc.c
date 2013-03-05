@@ -100,10 +100,10 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
 
     // We need to set these three variables depending on the release reason
     ProcState targetState = READY;
-    // We push the currently executing process onto this queue
-    PQ *dstQueue = NULL;
     // We pull the next process to execute from the source queue
     PQ *srcQueue = NULL;
+    // We push the currently executing process onto this queue
+    PQ *dstQueue = NULL;
 
     // TODO - delayed send check
 
