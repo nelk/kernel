@@ -60,6 +60,7 @@ enum ReleaseReason {
     CHANGED_PRIORITY,
     MEMORY_FREED,
     MESSAGE_RECEIVED,
+    MESSAGE_SENT,
     OOM,
     YIELD,
 };

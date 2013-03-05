@@ -3,7 +3,6 @@
 #include "bridge.h"
 #include "mem.h"
 #include "proc.h"
-#include "message.h"
 
 extern MemInfo gMem;
 extern ProcInfo procInfo;
@@ -13,7 +12,7 @@ uint32_t bridge_releaseProcessor(void) {
 }
 
 uint32_t bridge_setProcessPriority(uint8_t pid, uint8_t priority) {
-    return k_setProcessPriority(&procInfo, (ProcId)pid, priority);
+    return k_setProcessPriority(&procInfo, pid, priority);
 }
 
 int16_t bridge_getProcessPriority(uint8_t pid) {
@@ -61,13 +60,13 @@ int8_t bridge_releaseMemoryBlock(void *blk) {
 
 
 int8_t bridge_sendMessage(uint8_t pid, Envelope *envelope) {
-    k_sendMessage(&gMem, &procInfo, pid, envelope);
+    return k_sendMessage(&gMem, &procInfo, pid, envelope);
 }
 
-int8_t bridge_receiveMessage(uint8_t *senderPid) {
-    k_receiveMessage(&gMem, &procInfo, senderPid);
+Envelope *bridge_receiveMessage(uint8_t *senderPid) {
+    return k_receiveMessage(&gMem, &procInfo, senderPid);
 }
 
-int8_t bridge_delayedSend(uint8_t pid, Envelop *envelope, uint32_t delay) {
-    k_delayedSend(&gMem, &procInfo, pid, envelope, delay);
+int8_t bridge_delayedSend(uint8_t pid, Envelope *envelope, uint32_t delay) {
+    return k_delayedSend(&gMem, &procInfo, pid, envelope, delay);
 }

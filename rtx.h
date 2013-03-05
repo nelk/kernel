@@ -15,7 +15,7 @@
  * uint8_t is_out_of_memory(void)
  *
  * int8_t send_message(uint8_t pid, Envelope *envelope)
- * int8_t received_message(uint8_t *senderPid) // output parameter
+ * Envelope *received_message(uint8_t *senderPid) // output parameter
  * int8_t delayed_send(uint8_t pid, Envelope *envelope, uint32_t delay)
  */
 
@@ -45,7 +45,7 @@ uint32_t __SVC_0 _tryAcquireMemoryBlock(uint32_t k_func);
 // acquireMemoryBlock
 extern void *bridge_acquireMemoryBlock(void);
 #define request_memory_block() ((void*)(_acquireMemoryBlock((uint32_t)bridge_acquireMemoryBlock)))
-uint32_t __SVC_0 _acquireMemoryBlock(uint32_t k_func);
+void* __SVC_0 _acquireMemoryBlock(uint32_t k_func);
 
 // releaseMemoryBlock
 extern int8_t bridge_releaseMemoryBlock(void *blk);
@@ -59,9 +59,9 @@ extern int8_t bridge_sendMessage(uint8_t pid, Envelope *envelope);
 int8_t __SVC_0 _sendMessage(uint32_t k_func, uint8_t pid, Envelope *envelope);
 
 // receiveMessage
-extern int8_t bridge_receiveMessage(uint8_t *senderPid);
+extern Envelope *bridge_receiveMessage(uint8_t *senderPid);
 #define receive_message(senderPid) _receiveMessage((uint32_t)bridge_sendMessage, senderPid)
-int8_t __SVC_0 _receiveMessage(uint32_t k_func, uint8_t *senderPid);
+Envelope* __SVC_0 _receiveMessage(uint32_t k_func, uint8_t *senderPid);
 
 // delayedSend
 extern int8_t bridge_delayedSend(uint8_t pid, Envelope *envelope, uint32_t delay);

@@ -45,6 +45,8 @@ void k_memInfoInit(
     uint8_t trackOwners
 );
 
+int8_t k_validMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid);
+void k_setOwner(MemInfo *memInfo, uint32_t addr, ProcId oid);
 
 #ifdef TESTING
 ProcId *k_findOwnerSlot(MemInfo *memInfo, uint32_t addr);

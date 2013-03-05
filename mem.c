@@ -117,7 +117,7 @@ void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
     return ret;
 }
 
-int8_t k_validateMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid) {
+int8_t k_validMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid) {
     uint32_t addr;
     uint32_t addrOffset;
     uint32_t blockOffset;
@@ -156,7 +156,10 @@ int8_t k_releaseMemoryBlock(MemInfo *memInfo, void *mem, ProcId oid) {
     uint32_t addr;
     FreeBlock *fb;
 
-    k_validateMemoryBlock(memInfo, mem, oid);
+    int8_t isValid = k_validMemoryBlock(memInfo, mem, oid);
+    if (isValid != SUCCESS) {
+        return isValid;
+    }
 
     addr = (uint32_t)mem;
 

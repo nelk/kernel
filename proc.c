@@ -121,6 +121,7 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
         case YIELD:
         case CHANGED_PRIORITY:
         case MESSAGE_RECEIVED:
+        case MESSAGE_SENT:
             srcQueue = &(k_procInfo->prq);
             dstQueue = &(k_procInfo->prq);
             targetState = READY;

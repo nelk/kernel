@@ -23,7 +23,7 @@ typedef enum EnvelopeHeaderData EnvelopeHeaderData;
 
 int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, ProcId pid, Envelope *envelope);
 
-int8_t k_receiveMessage(MemInfo *memInfo, ProcInfo *procInfo, ProcId *senderPid);
+Envelope *k_receiveMessage(MemInfo *memInfo, ProcInfo *procInfo, ProcId *senderPid);
 
 int8_t k_delayedSend(MemInfo *memInfo, ProcInfo *procInfo, ProcId pid, Envelope *envelope, uint32_t delay);
 

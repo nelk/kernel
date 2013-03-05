@@ -11,12 +11,12 @@ int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, ProcId pid, Envelope 
         return 1;
     }
     // Check memory block
-    if (k_validateMemoryBlock(memInfo, envelope, pid) != 0) { // TODO (alex) - should we be using SUCCESS here? Maybe have global return codes like SUCCESS that's not just for memory?
+    if (k_validMemoryBlock(memInfo, envelope, pid) != 0) { // TODO (alex) - should we be using SUCCESS here? Maybe have global return codes like SUCCESS that's not just for memory?
         return 2;
     }
 
     // Set to new owner
-    k_setOwner(memInfo, (uint32_t)envelope, pid);
+    k_setOwner(memInfo, (uint32_t)envelope, PROC_ID_KERNEL);
 
     currentProc = procInfo->currentProcess;
     receivingProc = &(procInfo->processes[pid]);
@@ -24,6 +24,7 @@ int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, ProcId pid, Envelope 
     // Add to message queue
     nextMessage = currentProc->messageQueue;
     envelope->header[NEXT_ENVELOPE] = (uint32_t)nextMessage;
+    envelope->senderPid = currentProc->pid; // Force sender PID to be correct
     currentProc->messageQueue = envelope;
 
     // Unblock receiver
@@ -32,14 +33,33 @@ int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, ProcId pid, Envelope 
         pqAdd(&(procInfo->prq), receivingProc);
         // Preempt if unblocked process has higher priority - note that receiver is not guaranteed to run
         if (receivingProc->priority < currentProc->priority) {
-            k_releaseProcessor(procInfo, MESSAGE_RECEIVED);
+            k_releaseProcessor(procInfo, MESSAGE_SENT);
         }
     }
     return 0;
 }
 
-int8_t k_receiveMessage(MemInfo *memInfo, ProcInfo *procInfo, uint8_t *senderPid) {
-    // TODO
+Envelope *k_receiveMessage(MemInfo *memInfo, ProcInfo *procInfo, uint8_t *senderPid) {
+    PCB *currentProc;
+    Envelope *message;
+
+    // Check if message exists
+    currentProc = procInfo->currentProcess;
+    message = currentProc->messageQueue;
+    while (message == NULL) {
+        // Block receiver
+        currentProc->state = BLOCKED_MESSAGE;
+        k_releaseProcessor(procInfo, MESSAGE_RECEIVED);
+        message = currentProc->messageQueue;
+    }
+    currentProc->messageQueue = (Envelope *)message->header[NEXT_ENVELOPE];
+    message->header[NEXT_ENVELOPE] = 0; // Clear this so user doesn't have next message pointer
+    k_setOwner(memInfo, (uint32_t)message, currentProc->pid);
+
+    if (senderPid != NULL) {
+        *senderPid = message->senderPid; // Set out param
+    }
+    return message;
 }
 
 int8_t k_delayedSend(MemInfo *memInfo, ProcInfo *procInfo, uint8_t pid, Envelope *envelope, uint32_t delay) {
