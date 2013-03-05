@@ -11,29 +11,29 @@ ProcInfo procInfo;
 void k_memInitGlobal(void);
 
 int main () {
-	SystemInit();
-	__disable_irq();
-	uart_init(UART_NUM);
-	uart_put_string(UART_NUM, "Starting up!\r\n");
+    SystemInit();
+    __disable_irq();
+    uart_init(UART_NUM);
+    uart_put_string(UART_NUM, "Starting up!\r\n");
 
-	k_memInitGlobal();
-  k_initProcesses(&procInfo);
-  __enable_irq();
+    k_memInitGlobal();
+    k_initProcesses(&procInfo);
+    __enable_irq();
 
-  // Transition to unprivileged level and release processor; default MSP is used
-  __set_CONTROL(__get_CONTROL() | BIT(0));
-	release_processor();
-	return 0;
+    // Transition to unprivileged level and release processor; default MSP is used
+    __set_CONTROL(__get_CONTROL() | BIT(0));
+    release_processor();
+    return 0;
 }
 
 // Initialize global variables.
 void k_memInitGlobal(void) {
-  uint32_t memStartAddr = (uint32_t)&Image$$RW_IRAM1$$ZI$$Limit;
-  k_memInfoInit(
-    &gMem,
-    memStartAddr, // startAddr
-    0x10008000,   // endAddr
-    1 << 10,      // blockSizeBytes = 128 bytes
-    1             // trackOwners = true
-  );
+    uint32_t memStartAddr = (uint32_t)&Image$$RW_IRAM1$$ZI$$Limit;
+    k_memInfoInit(
+            &gMem,
+            memStartAddr, // startAddr
+            0x10008000,   // endAddr
+            1 << 10,      // blockSizeBytes = 128 bytes
+            1             // trackOwners = true
+            );
 }
