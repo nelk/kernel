@@ -481,6 +481,26 @@
               <FileType>5</FileType>
               <FilePath>.\bridge.h</FilePath>
             </File>
+            <File>
+              <FileName>timer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\timer.c</FilePath>
+            </File>
+            <File>
+              <FileName>timer.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\timer.h</FilePath>
+            </File>
+            <File>
+              <FileName>uart.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\uart.h</FilePath>
+            </File>
+            <File>
+              <FileName>uart_irq.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\uart_irq.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>
