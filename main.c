@@ -7,6 +7,7 @@
 
 extern uint32_t Image$$RW_IRAM1$$ZI$$Limit;
 MemInfo gMem;
+MessageInfo messageInfo;
 ProcInfo procInfo;
 
 void k_memInitGlobal(void);
@@ -19,6 +20,7 @@ int main () {
 
     k_memInitGlobal();
     k_initProcesses(&procInfo);
+    k_initMessages(&gMem, &messageInfo);
     __enable_irq();
 
     // Transition to unprivileged level and release processor; default MSP is used
