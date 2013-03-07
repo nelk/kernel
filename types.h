@@ -2,9 +2,11 @@
 #define TYPES_H
 
 #include <stdint.h>
-#include <sys/types.h>
 
 #include "heap.h"
+
+// Keil Related Types
+typedef uint32_t ssize_t;
 
 // Memory-related types
 
