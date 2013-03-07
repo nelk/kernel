@@ -23,9 +23,9 @@ extern ClockInfo gClockInfo;
  */
 __asm void TIMER0_IRQHandler(void) {
     PRESERVE8
-    IMPORT k_timerIRQHandler
+    IMPORT c_TIMER0_IRQHandler
     PUSH{r4-r11, lr}
-    BL k_timerIRQHandler
+    BL c_TIMER0_IRQHandler
     POP{r4-r11, pc}
 }
 
