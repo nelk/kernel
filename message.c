@@ -1,5 +1,12 @@
 
 #include "message.h"
+#include "message_pq.h"
+
+
+void k_initMessages(MemInfo *memInfo, MessageInfo *messageInfo) {
+    // TODO - allocate store as block...
+    mpqInit(&(messageInfo->mpq), messageInfo->messageStore, 500);
+}
 
 int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, ProcId pid, Envelope *envelope) {
     PCB *currentProc;
@@ -22,6 +29,7 @@ int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, ProcId pid, Envelope 
     nextMessage = currentProc->endOfMessageQueue;
     envelope->header[NEXT_ENVELOPE] = (uint32_t)nextMessage;
     envelope->senderPid = currentProc->pid; // Force sender PID to be correct
+    envelope->destPid = pid;
     currentProc->endOfMessageQueue = envelope;
     if (currentProc->messageQueue == NULL) {
         currentProc->messageQueue = envelope;
@@ -63,6 +71,13 @@ Envelope *k_receiveMessage(MemInfo *memInfo, ProcInfo *procInfo, uint8_t *sender
     return message;
 }
 
-int8_t k_delayedSend(MemInfo *memInfo, ProcInfo *procInfo, uint8_t pid, Envelope *envelope, uint32_t delay) {
-    // TODO
+int8_t k_delayedSend(MemInfo *memInfo, MessageInfo *messageInfo, ProcInfo *procInfo, uint8_t pid, Envelope *envelope, uint32_t delay) {
+    k_setOwner(memInfo, (uint32_t)envelope, PROC_ID_KERNEL);
+    envelope->header[SEND_TIME] = delay; // TODO(alex) - Set this to clock time + delay
+    envelope->senderPid = procInfo->currentProcess->pid;
+    envelope->destPid = pid;
+
+    mpqAdd(&(messageInfo->mpq), envelope);
+    return 0;
 }
+

@@ -3,7 +3,7 @@
 #include "mem.h"
 
 
-int8_t k_validMemoryBlock(MemInfo *memInfo, uint32_t addr, ProcId oid) {
+int8_t k_validMemoryBlock(MemInfo *memInfo, uint32_t addr) {
     uint32_t addrOffset;
     uint32_t blockOffset;
 
@@ -27,11 +27,6 @@ int8_t k_validMemoryBlock(MemInfo *memInfo, uint32_t addr, ProcId oid) {
         return ERR_UNALIGNED;
     }
 
-    // Make sure this is allocated, and is owned by this process.
-    if (!k_isOwner(memInfo, addr, oid)) {
-        return ERR_PERM;
-    }
-
     return SUCCESS;
 }
 
@@ -47,14 +42,14 @@ ProcId *k_findOwnerSlot(MemInfo *memInfo, uint32_t addr) {
 
 // See note on k_findOwnerSlot
 int8_t k_changeOwner(MemInfo *memInfo, uint32_t addr, ProcId oid) {
-    int8_t isValid = k_validMemoryBlock(memInfo, addr, oid);
+    int8_t isValid = k_validMemoryBlock(memInfo, addr);
     if (isValid != SUCCESS) {
         return isValid;
     }
 
     ProcId *ownerSlot = NULL;
     if (!(memInfo->trackOwners)) {
-        return 1;
+        return SUCCESS;
     }
     ownerSlot = k_findOwnerSlot(memInfo, addr);
     *ownerSlot = oid;
@@ -161,6 +156,11 @@ int8_t k_releaseMemoryBlock(MemInfo *memInfo, uint32_t addr, ProcId oid) {
     int8_t isValid = k_changeOwner(memInfo, addr, PROC_ID_NONE);
     if (isValid != SUCCESS) {
         return isValid;
+    }
+
+    // Make sure this is allocated, and is owned by this process.
+    if (!k_isOwner(memInfo, addr, oid)) {
+        return ERR_PERM;
     }
 
     // Add to free list
