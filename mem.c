@@ -58,6 +58,7 @@ int8_t k_changeOwner(MemInfo *memInfo, uint32_t addr, ProcId oid) {
     }
     ownerSlot = k_findOwnerSlot(memInfo, addr);
     *ownerSlot = oid;
+    return SUCCESS;
 }
 
 // Checks if addr is owned by oid, see note on k_findOwnerSlot
@@ -157,6 +158,8 @@ void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
 
 int8_t k_releaseMemoryBlock(MemInfo *memInfo, uint32_t addr, ProcId oid) {
     FreeBlock *fb = NULL;
+
+    // TODO(sanjay): not validating that addr is owned by oid
 
     int8_t isValid = k_changeOwner(memInfo, addr, PROC_ID_NONE);
     if (isValid != SUCCESS) {
