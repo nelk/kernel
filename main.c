@@ -6,6 +6,7 @@
 #include "uart_polling.h"
 
 extern uint32_t Image$$RW_IRAM1$$ZI$$Limit;
+ClockInfo gClockInfo;
 MemInfo gMem;
 MessageInfo messageInfo;
 ProcInfo procInfo;
@@ -21,6 +22,7 @@ int main () {
     k_memInitGlobal();
     k_initProcesses(&procInfo);
     k_initMessages(&gMem, &messageInfo);
+    k_initClock(&gClockInfo);
     __enable_irq();
 
     // Transition to unprivileged level and release processor; default MSP is used

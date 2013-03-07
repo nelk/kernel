@@ -111,4 +111,11 @@ enum ReleaseReason {
 };
 typedef enum ReleaseReason ReleaseReason;
 
+// Interrupt process-related types
+
+typedef struct ClockInfo ClockInfo;
+struct ClockInfo {
+    uint32_t totalTIme;
+};
+
 #endif

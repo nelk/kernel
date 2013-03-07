@@ -17,6 +17,8 @@
  * int8_t send_message(uint8_t pid, Envelope *envelope)
  * Envelope *received_message(uint8_t *senderPid) // output parameter
  * int8_t delayed_send(uint8_t pid, Envelope *envelope, uint32_t delay)
+ *
+ * uint32_t getTime(void)
  */
 
 #define __SVC_0  __svc_indirect(0)
@@ -67,6 +69,12 @@ Envelope* __SVC_0 _receiveMessage(uint32_t k_func, uint8_t *senderPid);
 extern int8_t bridge_delayedSend(uint8_t pid, Envelope *envelope, uint32_t delay);
 #define delayed_send(pid, envelope, delay) _sendMessage((uint32_t)bridge_sendMessage, pid, envelope, delay)
 int8_t __SVC_0 _sendMessage(uint32_t k_func, uint8_t pid, Envelope *envelope, uint32_t delay);
+
+
+// getTime
+extern uint32_t bridge_getTime(void);
+#define getTime() _getTime((uint32_t)bridge_getTime)
+uint32_t __SVC_0 _getTime(uint32_t k_func);
 
 #endif
 

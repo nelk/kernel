@@ -17,5 +17,7 @@ int8_t bridge_sendMessage(uint8_t pid, void *envelope);
 Envelope *bridge_receiveMessage(uint8_t *senderPid);
 int8_t bridge_delayedSend(uint8_t pid, void *envelope, uint32_t delay);
 
+uint32_t bridge_getTime(void);
+
 #endif
 

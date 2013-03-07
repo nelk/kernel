@@ -3,10 +3,12 @@
 #include "bridge.h"
 #include "mem.h"
 #include "proc.h"
+#include "timer.h"
 
+extern ClockInfo gClockInfo;
 extern MemInfo gMem;
-extern ProcInfo procInfo;
 extern MessageInfo messageInfo;
+extern ProcInfo procInfo;
 
 uint32_t bridge_releaseProcessor(void) {
     return k_releaseProcessor(&procInfo, YIELD);
@@ -70,4 +72,8 @@ Envelope *bridge_receiveMessage(uint8_t *senderPid) {
 
 int8_t bridge_delayedSend(uint8_t pid, Envelope *envelope, uint32_t delay) {
     return k_delayedSend(&gMem, &messageInfo, &procInfo, pid, envelope, delay);
+}
+
+uint32_t bridge_getTime(void) {
+    return k_getTime(gClockInfo);
 }
