@@ -217,33 +217,33 @@ int testMemOperations() {
 
 
     // Test happy path
-    int ret = k_releaseMemoryBlock((&memInfo), thirdBlock, thirdPid);
+    int ret = k_releaseMemoryBlock((&memInfo), (uint32_t)thirdBlock, thirdPid);
     assert(ret == SUCCESS);
     assert(k_isOwner((&memInfo), (uint32_t)thirdBlock, PROC_ID_NONE));
     assert((&memInfo)->firstFree != NULL);
 
     // Test double-free fails
-    ret = k_releaseMemoryBlock((&memInfo), thirdBlock, thirdPid);
+    ret = k_releaseMemoryBlock((&memInfo), (uint32_t)thirdBlock, thirdPid);
     assert(ret == ERR_PERM);
 
     // Test wrong owner fails
-    ret = k_releaseMemoryBlock((&memInfo), secondBlock, thirdPid);
+    ret = k_releaseMemoryBlock((&memInfo), (uint32_t)secondBlock, thirdPid);
     assert(ret == ERR_PERM);
 
     // Test internal block pointer fails
-    ret = k_releaseMemoryBlock((&memInfo), (void*)((uint32_t)secondBlock + 1), secondPid);
+    ret = k_releaseMemoryBlock((&memInfo), (uint32_t)secondBlock + 1, secondPid);
     assert(ret == ERR_UNALIGNED);
 
     // Test before beginning of memory
     ret = k_releaseMemoryBlock(
         (&memInfo),
-        (void *)((&memInfo)->startMemoryAddress - 1),
+        (&memInfo)->startMemoryAddress - 1,
         PROC_ID_ALLOCATOR
     );
     assert(ret == ERR_OUTOFRANGE);
 
     // Test after end of memory
-    ret = k_releaseMemoryBlock((&memInfo), (void *)(&memInfo)->endMemoryAddress, PROC_ID_KERNEL);
+    ret = k_releaseMemoryBlock((&memInfo), (&memInfo)->endMemoryAddress, PROC_ID_KERNEL);
     assert(ret == ERR_OUTOFRANGE);
 
     // Test after nextAvailableAddress. We shouldn't allow
@@ -253,7 +253,7 @@ int testMemOperations() {
     uint32_t attackArenaAddr = (&memInfo)->startMemoryAddress + (&memInfo)->arenaSizeBytes;
     uint32_t attackAddr = attackArenaAddr + (&memInfo)->blockSizeBytes;
     k_changeOwner((&memInfo), attackAddr, firstPid);
-    ret = k_releaseMemoryBlock((&memInfo), (void *)attackAddr, firstPid);
+    ret = k_releaseMemoryBlock((&memInfo), attackAddr, firstPid);
     assert(ret == ERR_OUTOFRANGE);
 
     // Test OOM
