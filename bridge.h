@@ -20,4 +20,3 @@ int8_t bridge_delayedSend(uint8_t pid, void *envelope, uint32_t delay);
 uint32_t bridge_getTime(void);
 
 #endif
-

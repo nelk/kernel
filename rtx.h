@@ -77,4 +77,3 @@ extern uint32_t bridge_getTime(void);
 uint32_t __SVC_0 _getTime(uint32_t k_func);
 
 #endif
-
