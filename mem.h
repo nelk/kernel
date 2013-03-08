@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "types.h"
+#include "kernel_types.h"
 #include "proc.h"
 
 typedef struct FreeBlock FreeBlock;
