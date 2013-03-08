@@ -6,6 +6,8 @@
  */
 
 #include <LPC17xx.h>
+#include "rtx.h"
+#include "types.h"
 #include "uart.h"
 
 volatile uint8_t g_UART0_TX_empty=1;
@@ -172,7 +174,12 @@ void c_UART0_IRQHandler(void)
 		}	
 	} else if (IIR_IntId & IIR_THRE) { 
 		/* THRE Interrupt, transmit holding register empty*/
-		
+
+		// TODO(sanjay): send a message to the CRT process, masquerading
+		// as the CRT process. This tells it that we are good
+		// to send the next character.
+		// NOTE(sanjay): Make sure that this is contant time, we are in an ISR.
+
 		LSR_Val = pUart->LSR;
 		if(LSR_Val & LSR_THRE) {
 			g_UART0_TX_empty = 1; /* ready to transmit */ 
@@ -226,3 +233,69 @@ void uart_send_string( uint32_t n_uart, uint8_t *p_buffer, uint32_t len )
 	return;
 }
 
+void crt_proc(void) {
+	ProcId CRT_PID = 16; // TODO(sanjay): figure out how to get this for real
+	uint8_t sendPending = 0;
+	uint8_t readIndex = 0;
+	Envelope *head = NULL;
+	Envelope *tail = NULL;
+	Envelope *temp = NULL;
+	while (1) {
+		Envelope *nextMsg = receive_message(NULL);
+		if (nextMsg == NULL) {
+			continue;
+		}
+
+		if (nextMsg->srcPid == CRT_PID) {
+			// "message from me" is actually code for "message from ISR"
+			sendPending = 0;
+		} else {
+			// This is from a user process, enqueue it for output
+			nextMsg->next = NULL;
+			if (tail == NULL) {
+				head = nextMsg;
+				tail = nextMsg;
+			} else {
+				tail->next = nextMsg;
+				tail = nextMsg;
+			}
+		}
+
+		// if there's already a send pending, then there's nothing we can do
+		// so just loop again.
+		if (sendPending) {
+			continue;
+		}
+
+		// Otherwise, we can write a character, so we try and get the next
+		// character to output.
+
+		// If we don't have anything queued, give up.
+get_char:
+		if (head == NULL) {
+			continue;
+		}
+
+		// If we reached a NULL byte or end of buffer, then we pop this
+		// envelope from our queue, release its memory, and then retry.
+		if (readIndex >= MESSAGEDATA_SIZE_BYTES ||
+			head->messageData[readIndex] == '\0') {
+			readIndex = 0;
+			temp = head;
+			head = head->next;
+			if (head == NULL) {
+				tail = NULL;
+			}
+			release_memory_block((void*)temp);
+			goto get_char;
+		}
+
+		// we are now guaranteed that head is not NULL and
+		// head->messageData[readIndex] != '\0', so we output it.
+
+		// TODO(sanjay): output head->messageData[readIndex] here
+
+		readIndex++;
+		sendPending = 1;
+	}
+}
