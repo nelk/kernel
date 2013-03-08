@@ -39,7 +39,6 @@ struct MemInfo {
 // Process-control related types
 
 #define NUM_PROCS (6)
-#define MAX_PRIORITY (4)
 
 #define PROC_ID_KERNEL    (0x80)
 #define PROC_ID_ALLOCATOR (0x81)
@@ -53,6 +52,11 @@ enum ProcState {
     RUNNING,
 };
 typedef enum ProcState ProcState;
+
+#define USER_PRIORITY_MASK ((uint32_t)0xff)
+#define KERN_PRIORITY_MASK (~(USER_PRIORITY_MASK))
+#define KERN_PRIORITY_SHIFT (8)
+#define MAX_PRIORITY (USER_PRIORITY_MASK)
 
 typedef struct PCB PCB;
 struct PCB {
