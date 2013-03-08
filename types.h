@@ -7,7 +7,7 @@
 #include "heap.h"
 
 // Keil Related Types
-typedef uint32_t ssize_t;
+typedef int32_t ssize_t;
 
 // Memory-related types
 
