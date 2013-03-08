@@ -186,34 +186,41 @@ uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) 
         return EINVAL;
     }
 
-    priority = (priority & USER_PRIORITY_MASK);
+    modifiedProcess = &(procInfo->processes[pid]);
 
-    if (pid == procInfo->currentProcess->pid) {
-        oldPriority = procInfo->currentProcess->priority;
-        priority = priority | (oldPriority & KERN_PRIORITY_MASK);
-        procInfo->currentProcess->priority = priority;
-        if (oldPriority <= priority) { // If we made the priority of this process better, don't preempt it.
-            return SUCCESS;
-        }
-    } else {
-        modifiedProcess = &(procInfo->processes[pid]);
-        if (modifiedProcess == procInfo->nullProcess) { // We don't allow changing the priority of the null process
-            return EINVAL;
-        }
-        oldPriority = modifiedProcess->priority;
-        priority = priority | (oldPriority & KERN_PRIORITY_MASK);
-        modifiedProcess->priority = priority;
-        pqChangedPriority(&(procInfo->prq), modifiedProcess);
-        pqChangedPriority(&(procInfo->memq), modifiedProcess);
+    // We don't allow changing the priority of the null process
+    if (modifiedProcess == procInfo->nullProcess) {
+        return EINVAL;
     }
 
-    // TODO(alex): Create function/struct to define comparison for priorities (also use it in pqLess).
-    topProcess = pqTop(&(procInfo->prq)); // We'll preempt this process if the top process has a better priority.
+    oldPriority = modifiedProcess->priority;
+    priority =
+        (priority & USER_PRIORITY_MASK) |
+        (oldPriority & KERN_PRIORITY_MASK);
+    modifiedProcess->priority = priority;
+
+    // These are safe to call if the specified PCB is not in the particular
+    // queue.
+    pqChangedPriority(&(procInfo->prq), modifiedProcess);
+    pqChangedPriority(&(procInfo->memq), modifiedProcess);
+
+    // If we just improved our own priority, do not preempt.
+    if (procInfo->currentProcess == modifiedProcess && oldPriority >= priority) {
+        return SUCCESS;
+    }
+
+    // TODO(alex): Create function/struct to define comparison for priorities
+    // (also use it in pqLess).
+
+    // Otherwise, we'll preempt this process if the top process has a better
+    // priority.
+    topProcess = pqTop(&(procInfo->prq));
     if (topProcess->priority >= procInfo->currentProcess->priority) {
         return SUCCESS;
     }
 
-    // Preempt the current process; note that the changed process won't necessarily be the one to run
+    // Preempt the current process; note that the changed process won't
+    // necessarily be the one to run
     k_releaseProcessor(procInfo, CHANGED_PRIORITY);
     return SUCCESS;
 }
