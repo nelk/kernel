@@ -7,7 +7,7 @@
 
 #include <LPC17xx.h>
 #include "rtx.h"
-#include "types.h"
+#include "kernel_types.h"
 #include "uart.h"
 
 volatile uint8_t g_UART0_TX_empty=1;
@@ -240,8 +240,10 @@ void crt_proc(void) {
 	Envelope *head = NULL;
 	Envelope *tail = NULL;
 	Envelope *temp = NULL;
+    Envelope *nextMsg = NULL;
+
 	while (1) {
-		Envelope *nextMsg = receive_message(NULL);
+		 nextMsg = (Envelope *)receive_message(NULL);
 		if (nextMsg == NULL) {
 			continue;
 		}
