@@ -65,8 +65,8 @@ struct PCB {
     ssize_t rqIndex;
     ssize_t memqIndex;
 
-    struct Envelope *messageQueue;
-    struct Envelope *endOfMessageQueue;
+    struct Envelope *mqHead;
+    struct Envelope *mqTail;
 };
 
 typedef struct PQEntry PQEntry;
@@ -117,13 +117,15 @@ typedef enum ReleaseReason ReleaseReason;
 // TODO(alex) - move Envelope to user-facing header (user_message.h) or aggregate user-facing types header.
 typedef struct Envelope Envelope;
 struct Envelope {
-    uint32_t header[3];
+    Envelope *next;
 
-    // User Data
-    uint32_t senderPid;
-    uint32_t destPid;
+    uint32_t sendTime;
+
+    ProcId srcPid;
+    ProcId dstPid;
+
     uint32_t messageType;
-    char messageData[BLOCKSIZE_BYTES - 6*sizeof(uint32_t)];
+    char messageData[MESSAGEDATA_SIZE_BYTES];
 };
 
 typedef struct MessagePQ MessagePQ;

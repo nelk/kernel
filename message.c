@@ -8,9 +8,18 @@ void k_initMessages(MemInfo *memInfo, MessageInfo *messageInfo) {
     mpqInit(&(messageInfo->mpq), messageInfo->messageStore, 500);
 }
 
+void k_zeroEnvelope(Envelope *envelope) {
+    envelope->next = NULL;
+    envelope->sendTime = 0;
+    envelope->srcPid = 0;
+    envelope->dstPid = 0;
+}
+
 int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, ProcId receiverPid, ProcId senderPid) {
-    PCB *receivingProc;
-    Envelope *nextMessage;
+    PCB *currentProc = NULL;
+    PCB *receivingProc = NULL;
+
+    k_zeroEnvelope(envelope);
 
     // Check pid
     if (pid >= NUM_PROCS) {
@@ -24,14 +33,17 @@ int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, P
     receivingProc = &(procInfo->processes[pid]);
 
     // Add to message queue
-    nextMessage = receivingProc->endOfMessageQueue;
-    envelope->header[NEXT_ENVELOPE] = (uint32_t)nextMessage;
-    envelope->senderPid = senderPid; // Force sender PID to be correct
-    envelope->destPid = receiverPid;
-    receivingProc->endOfMessageQueue = envelope;
-    if (receivingProc->messageQueue == NULL) {
-        receivingProc->messageQueue = envelope;
+    envelope->next = NULL;
+    if (receivingProc->mqTail == NULL) {
+        receivingProc->mqHead = envelope;
+        receivingProc->mqTail = envelope;
+    } else {
+        receivingProc->mqTail->next = envelope;
+        receivingProc->mqTail = envelope;
     }
+
+    envelope->srcPid = currentProc->pid;
+    envelope->dstPid = pid;
 
     // Unblock receiver
     if (receivingProc->state == BLOCKED_MESSAGE) {
@@ -46,31 +58,43 @@ int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, P
 }
 
 Envelope *k_receiveMessage(MemInfo *memInfo, ProcInfo *procInfo, MessageInfo *messageInfo, ClockInfo *clockInfo) {
-    PCB *currentProc;
-    Envelope *message;
+    PCB *currentProc = NULL;
+    Envelope *message = NULL;
 
     // Check if message exists
     currentProc = procInfo->currentProcess;
-    while (currentProc->messageQueue == NULL) {
+    message = currentProc->mqHead;
+    while (message == NULL) {
         // Block receiver
         k_releaseProcessor(memInfo, procInfo, messageInfo, clockInfo, MESSAGE_RECEIVE);
+        message = currentProc->mqHead;
     }
-    message = currentProc->messageQueue;
-    currentProc->messageQueue = (Envelope *)message->header[NEXT_ENVELOPE];
-    if (currentProc->messageQueue == NULL) {
-        currentProc->endOfMessageQueue = NULL;
+
+    // snip out of linked list
+    currentProc->mqHead = message->next;
+    if (currentProc->mqHead == NULL) {
+        currentProc->mqTail = NULL;
     }
-    message->header[NEXT_ENVELOPE] = 0; // Clear this so user doesn't have next message pointer
+
+    // Clear this so user doesn't have next message pointer
+    message->next = NULL;
+
+    // Change ownership
     k_changeOwner(memInfo, (uint32_t)message, currentProc->pid);
 
     return message;
 }
 
-int8_t k_delayedSend(MemInfo *memInfo, MessageInfo *messageInfo, ProcInfo *procInfo, uint8_t pid, Envelope *envelope, uint32_t delay) {
+int8_t k_delayedSend(MemInfo *memInfo, ProcInfo *procInfo, MessageInfo *messageInfo, ClockInfo *clockInfo, uint8_t pid, Envelope *envelope, uint32_t delay) {
+    k_zeroEnvelope(envelope);
     k_changeOwner(memInfo, (uint32_t)envelope, PROC_ID_KERNEL);
-    envelope->header[SEND_TIME] = k_getTime() + delay;
-    envelope->senderPid = procInfo->currentProcess->pid;
-    envelope->destPid = pid;
+
+    envelope->sendTime = k_getTime(clockInfo) + delay;
+
+    // TODO(sanjay): this seems to do no sanity checking of anything...
+
+    envelope->srcPid = procInfo->currentProcess->pid;
+    envelope->dstPid = pid;
 
     mpqAdd(&(messageInfo->mpq), envelope);
     return 0;
