@@ -43,11 +43,11 @@ ProcId *k_findOwnerSlot(MemInfo *memInfo, uint32_t addr) {
 // See note on k_findOwnerSlot
 int8_t k_changeOwner(MemInfo *memInfo, uint32_t addr, ProcId oid) {
     int8_t isValid = k_validMemoryBlock(memInfo, addr);
+    ProcId *ownerSlot = NULL;
     if (isValid != SUCCESS) {
         return isValid;
     }
 
-    ProcId *ownerSlot = NULL;
     if (!(memInfo->trackOwners)) {
         return SUCCESS;
     }

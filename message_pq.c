@@ -49,7 +49,7 @@ void mpqSwap(void *vCtx, size_t i, size_t j) {
     temp = ctx->store[i];
 }
 
-uint32_t mpqAdd(PQ *q, PCB *pcb) {
+uint32_t mpqAdd(MessagePQ *q, PCB *pcb) {
     PQEntry newEntry;
 
     if (q->size >= q->cap) {
