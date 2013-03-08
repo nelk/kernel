@@ -251,12 +251,12 @@ void crt_proc(void) {
 			// This is from a user process, enqueue it for output
 			nextMsg->next = NULL;
 			if (tail == NULL) {
-		        head = nextMsg;
+				head = nextMsg;
 				tail = nextMsg;
-		    } else {
+			} else {
 				tail->next = nextMsg;
 				tail = nextMsg;
-		    }
+			}
 		}
 
 		// if there's already a send pending, then there's nothing we can do
