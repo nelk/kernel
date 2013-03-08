@@ -2,6 +2,8 @@
 #include <stddef.h>
 
 #include <LPC17xx.h>
+
+#include "kernel_types.h"
 #include "mem.h"
 #include "proc.h"
 #include "pq.h"
