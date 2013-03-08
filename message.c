@@ -15,14 +15,14 @@ void k_zeroEnvelope(Envelope *envelope) {
     envelope->dstPid = 0;
 }
 
-int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, ProcId receiverPid, ProcId senderPid) {
+int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, ProcId srcPid, ProcId dstPid) {
     PCB *currentProc = NULL;
     PCB *receivingProc = NULL;
 
     k_zeroEnvelope(envelope);
 
     // Check pid
-    if (pid >= NUM_PROCS) {
+    if (dstPid >= NUM_PROCS) {
         return 1;
     }
     // Set to new owner (and check if valid)
@@ -117,6 +117,6 @@ void k_processDelayedMessages(MessageInfo *messageInfo, ProcInfo *procInfo, MemI
         }
 
         mpqRemove(messageQueue, 0);
-        k_sendMessage(memInfo, procInfo, message, message->dstPid, message->srcPid);
+        k_sendMessage(memInfo, procInfo, message, message->srcPid, message->dstPid);
     }
 }

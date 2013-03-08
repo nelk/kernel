@@ -65,7 +65,7 @@ int8_t bridge_releaseMemoryBlock(void *blk) {
 
 
 int8_t bridge_sendMessage(uint8_t pid, Envelope *envelope) {
-    int8_t releaseProcessor = k_sendMessage(&gMemInfo, &gProcInfo, envelope, pid, gProcInfo.currentProcess->pid);
+    int8_t releaseProcessor = k_sendMessage(&gMemInfo, &gProcInfo, envelope, gProcInfo.currentProcess->pid, pid);
     if (releaseProcessor == -1) {   // TODO: Replace with enums.
         k_releaseProcessor(&gProcInfo, &gMemInfo, &gMessageInfo, &gClockInfo, MESSAGE_SENT);
     }
