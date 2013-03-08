@@ -12,7 +12,7 @@ int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, P
 
 Envelope *k_receiveMessage(MessageInfo *messageInfo, MemInfo *memInfo, ProcInfo *procInfo, ClockInfo *clockInfo);
 
-int8_t k_delayedSend(MessageInfo *messageInfo, MemInfo *memInfo, ProcInfo *procInfo, ClockInfo *clockInfo, ProcId pid, Envelope *envelope, uint32_t delay);
+int8_t k_delayedSend(MessageInfo *messageInfo, MemInfo *memInfo, ProcId pid, Envelope *envelope, uint32_t delay);
 
 void k_processDelayedMessages(MessageInfo *messageInfo, ProcInfo *procInfo, MemInfo *memInfo, ClockInfo *clockInfo);
 

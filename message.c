@@ -1,4 +1,4 @@
-
+#include "kernel_types.h"
 #include "message.h"
 #include "message_pq.h"
 #include "timer.h"
@@ -66,7 +66,7 @@ Envelope *k_receiveMessage(MessageInfo *messageInfo, MemInfo *memInfo, ProcInfo 
     message = currentProc->mqHead;
     while (message == NULL) {
         // Block receiver
-        k_releaseProcessor(memInfo, procInfo, messageInfo, clockInfo, MESSAGE_RECEIVE);
+        k_releaseProcessor(procInfo, memInfo, messageInfo, clockInfo, MESSAGE_RECEIVE);
         message = currentProc->mqHead;
     }
 
@@ -85,7 +85,7 @@ Envelope *k_receiveMessage(MessageInfo *messageInfo, MemInfo *memInfo, ProcInfo 
     return message;
 }
 
-int8_t k_delayedSend(MessageInfo *messageInfo, MemInfo *memInfo, ProcInfo *procInfo, ClockInfo *clockInfo, uint8_t pid, Envelope *envelope, uint32_t delay) {
+int8_t k_delayedSend(MessageInfo *messageInfo, MemInfo *memInfo, uint8_t pid, Envelope *envelope, uint32_t delay) {
     k_zeroEnvelope(envelope);
     k_changeOwner(memInfo, (uint32_t)envelope, PROC_ID_KERNEL);
 
@@ -101,7 +101,7 @@ int8_t k_delayedSend(MessageInfo *messageInfo, MemInfo *memInfo, ProcInfo *procI
 }
 
 void k_processDelayedMessages(MessageInfo *messageInfo, ProcInfo *procInfo, MemInfo *memInfo, ClockInfo *clockInfo) {
-    MessageQueue *messageQueue = messageInfo->mpq;
+    MessagePQ *messageQueue = &(messageInfo->mpq);
     Envelope *message = NULL;
     uint32_t currentTime = k_getTime(clockInfo);
 

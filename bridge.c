@@ -75,13 +75,13 @@ int8_t bridge_sendMessage(uint8_t pid, Envelope *envelope) {
 Envelope *bridge_receiveMessage(uint8_t *senderPid) {
     Envelope *envelope = k_receiveMessage(&gMessageInfo, &gMemInfo, &gProcInfo, &gClockInfo);
     if (senderPid != NULL && envelope != NULL) {
-        *senderPid = envelope->senderPid; // Set out param
+        *senderPid = envelope->srcPid; // Set out param
     }
     return envelope;
 }
 
 int8_t bridge_delayedSend(uint8_t pid, Envelope *envelope, uint32_t delay) {
-    return k_delayedSend(&gMessageInfo, &gMemInfo, &gProcInfo, pid, envelope, delay);
+    return k_delayedSend(&gMessageInfo, &gMemInfo, pid, envelope, delay);
 }
 
 

@@ -1,8 +1,10 @@
 #include <LPC17xx.h>
 #include "kernel_types.h"
 #include "mem.h"
+#include "message.h"
 #include "proc.h"
 #include "rtx.h"
+#include "timer.h"
 #include "uart_polling.h"
 
 extern uint32_t Image$$RW_IRAM1$$ZI$$Limit;
