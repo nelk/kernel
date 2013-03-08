@@ -7,7 +7,7 @@
 
 extern uint32_t Image$$RW_IRAM1$$ZI$$Limit;
 ClockInfo gClockInfo;
-MemInfo gMem;
+MemInfo gMemInfo;
 MessageInfo gMessageInfo;
 ProcInfo gProcInfo;
 
@@ -20,8 +20,8 @@ int main () {
     uart_put_string(UART_NUM, "Starting up!\r\n");
 
     k_memInitGlobal();
-    k_initProcesses(&gMem, &gProcInfo);
-    k_initMessages(&gMem, &gMessageInfo);
+    k_initProcesses(&gMemInfo, &gProcInfo);
+    k_initMessages(&gMemInfo, &gMessageInfo);
     k_initClock(&gClockInfo);
     __enable_irq();
 
@@ -35,7 +35,7 @@ int main () {
 void k_memInitGlobal(void) {
     uint32_t memStartAddr = (uint32_t)&Image$$RW_IRAM1$$ZI$$Limit;
     k_memInfoInit(
-            &gMem,
+            &gMemInfo,
             memStartAddr,           // startAddr
             0x10008000,             // endAddr
             BLOCKSIZE_BYTES,        // blockSizeBytes = 128 bytes

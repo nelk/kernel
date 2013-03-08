@@ -3,8 +3,10 @@
 
 #include <LPC17xx.h>
 #include "mem.h"
+#include "message.h"
 #include "proc.h"
 #include "pq.h"
+#include "timer.h"
 #include "user.h"
 
 extern void __rte(void);
@@ -94,7 +96,7 @@ void k_initProcesses(MemInfo *memInfo, ProcInfo *procInfo) {
     procInfo->currentProcess = NULL;
 }
 
-uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
+uint32_t k_releaseProcessor(MemInfo *memInfo, ProcInfo *procInfo, MessageInfo *messageInfo, ClockInfo *clockInfo, ReleaseReason reason) {
     PCB *nextProc = NULL;
     ProcState oldState = NEW;
 
@@ -104,6 +106,20 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
     PQ *srcQueue = NULL;
     // We push the currently executing process onto this queue
     PQ *dstQueue = NULL;
+
+    // Delayed send related variables
+    MessageQueue *messageQueue = messageInfo->mpq;
+
+    uint32_t currentTime = k_getTime(clockInfo);
+
+    if (messageQueue != NULL && messageQueue->size > 0) {
+        message = mpqTop(messageQueue);
+        while (message != NULL && message->header[SEND_TIME] <= currentTime) {
+            mpqRemove(messageQueue, 0);
+            k_sendMessage(memInfo, procInfo, message, message->destPid, message->senderPid);
+            message = mpqTop(messageQueue);
+        }
+    }
 
     switch (reason) {
         case MEMORY_FREED:
@@ -170,7 +186,7 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
  *  If current process priority was changed to better priority, continue running
  *  Otherwise, if current process priority is worse than top priority in queue, preempt
  */
-uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) {
+uint32_t k_setProcessPriority(MemInfo *memInfo, ProcInfo *procInfo, MessageInfo *messageInfo, ClockInfo *clockInfo, ProcId pid, uint8_t priority) {
     PCB *topProcess = NULL;
     PCB *modifiedProcess = NULL;
     uint8_t oldPriority;
@@ -208,8 +224,8 @@ uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) 
     }
 
     // Preempt the current process; note that the changed process won't necessarily be the one to run
-    k_releaseProcessor(procInfo, CHANGED_PRIORITY);
-		
+    k_releaseProcessor(memInfo, procInfo, messageInfo, clockInfo, CHANGED_PRIORITY);
+
 		//TODO (shale): make this an enum
 		return 0;
 }

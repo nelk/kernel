@@ -146,7 +146,7 @@ struct MessageInfo {
 
 typedef struct ClockInfo ClockInfo;
 struct ClockInfo {
-    uint32_t totalTIme;
+    uint32_t totalTime;
 };
 
 #endif

@@ -8,8 +8,7 @@ void k_initMessages(MemInfo *memInfo, MessageInfo *messageInfo) {
     mpqInit(&(messageInfo->mpq), messageInfo->messageStore, 500);
 }
 
-int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, ProcId pid, Envelope *envelope) {
-    PCB *currentProc;
+int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, ProcId receiverPid, ProcId senderPid) {
     PCB *receivingProc;
     Envelope *nextMessage;
 
@@ -22,17 +21,16 @@ int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, ProcId pid, Envelope 
         return 2;
     }
 
-    currentProc = procInfo->currentProcess;
     receivingProc = &(procInfo->processes[pid]);
 
     // Add to message queue
-    nextMessage = currentProc->endOfMessageQueue;
+    nextMessage = receivingProc->endOfMessageQueue;
     envelope->header[NEXT_ENVELOPE] = (uint32_t)nextMessage;
-    envelope->senderPid = currentProc->pid; // Force sender PID to be correct
-    envelope->destPid = pid;
-    currentProc->endOfMessageQueue = envelope;
-    if (currentProc->messageQueue == NULL) {
-        currentProc->messageQueue = envelope;
+    envelope->senderPid = senderPid; // Force sender PID to be correct
+    envelope->destPid = receiverPid;
+    receivingProc->endOfMessageQueue = envelope;
+    if (receivingProc->messageQueue == NULL) {
+        receivingProc->messageQueue = envelope;
     }
 
     // Unblock receiver
@@ -40,14 +38,14 @@ int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, ProcId pid, Envelope 
         receivingProc->state = READY;
         pqAdd(&(procInfo->prq), receivingProc);
         // Preempt if unblocked process has higher priority - note that receiver is not guaranteed to run
-        if (receivingProc->priority < currentProc->priority) {
-            k_releaseProcessor(procInfo, MESSAGE_SENT);
+        if (receivingProc->priority < procInfo->currentProcess->priority) {
+            return -1;
         }
     }
     return 0;
 }
 
-Envelope *k_receiveMessage(MemInfo *memInfo, ProcInfo *procInfo, uint8_t *senderPid) {
+Envelope *k_receiveMessage(MemInfo *memInfo, ProcInfo *procInfo, MessageInfo *messageInfo, ClockInfo *clockInfo) {
     PCB *currentProc;
     Envelope *message;
 
@@ -55,7 +53,7 @@ Envelope *k_receiveMessage(MemInfo *memInfo, ProcInfo *procInfo, uint8_t *sender
     currentProc = procInfo->currentProcess;
     while (currentProc->messageQueue == NULL) {
         // Block receiver
-        k_releaseProcessor(procInfo, MESSAGE_RECEIVE);
+        k_releaseProcessor(memInfo, procInfo, messageInfo, clockInfo, MESSAGE_RECEIVE);
     }
     message = currentProc->messageQueue;
     currentProc->messageQueue = (Envelope *)message->header[NEXT_ENVELOPE];
@@ -65,9 +63,6 @@ Envelope *k_receiveMessage(MemInfo *memInfo, ProcInfo *procInfo, uint8_t *sender
     message->header[NEXT_ENVELOPE] = 0; // Clear this so user doesn't have next message pointer
     k_changeOwner(memInfo, (uint32_t)message, currentProc->pid);
 
-    if (senderPid != NULL) {
-        *senderPid = message->senderPid; // Set out param
-    }
     return message;
 }
 
