@@ -501,6 +501,16 @@
               <FileType>1</FileType>
               <FilePath>.\uart_irq.c</FilePath>
             </File>
+            <File>
+              <FileName>kernel_types.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\kernel_types.h</FilePath>
+            </File>
+            <File>
+              <FileName>common_types.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\common_types.h</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>
