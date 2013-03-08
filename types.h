@@ -3,10 +3,11 @@
 
 #include <stdint.h>
 
+#include "common.h"
 #include "heap.h"
 
 // Keil Related Types
-typedef uint32_t ssize_t;
+typedef int32_t ssize_t;
 
 // Memory-related types
 
@@ -111,4 +112,33 @@ enum ReleaseReason {
 };
 typedef enum ReleaseReason ReleaseReason;
 
+// Message - based:
+
+// TODO(alex) - move Envelope to user-facing header (user_message.h) or aggregate user-facing types header.
+typedef struct Envelope Envelope;
+struct Envelope {
+    uint32_t header[3];
+
+    // User Data
+    uint32_t senderPid;
+    uint32_t destPid;
+    uint32_t messageType;
+    char messageData[BLOCKSIZE_BYTES - 6*sizeof(uint32_t)];
+};
+
+typedef struct MessagePQ MessagePQ;
+struct MessagePQ {
+    heap storeMgr;
+    Envelope **store;
+    size_t size;
+    size_t cap;
+
+    uint32_t seq;
+};
+
+typedef struct MessageInfo MessageInfo;
+struct MessageInfo {
+    MessagePQ mpq; // Delayed Message PQ
+    Envelope *messageStore[500];
+};
 #endif

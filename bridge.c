@@ -41,7 +41,7 @@ int8_t bridge_releaseMemoryBlock(void *blk) {
     int8_t status = SUCCESS;
     PCB *firstBlocked = NULL;
 
-    status = k_releaseMemoryBlock(&gMem, blk, procInfo.currentProcess->pid);
+    status = k_releaseMemoryBlock(&gMem, (uint32_t)blk, procInfo.currentProcess->pid);
     if (status != SUCCESS) {
         return status;
     }

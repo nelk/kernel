@@ -110,7 +110,7 @@ void memoryMuncherProcess(void) {
     void *tempBlock = NULL;
     mmNode *tempNode = NULL;
 
-    while (true) {
+    while (1) {
         tempBlock = try_request_memory_block();
         if (tempBlock == NULL) {
             break;
