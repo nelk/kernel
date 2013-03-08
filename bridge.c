@@ -22,11 +22,11 @@ int16_t bridge_getProcessPriority(uint8_t pid) {
 
 
 void *bridge_tryAcquireMemoryBlock(void) {
-    return k_acquireMemoryBlock(&gMem, procInfo.currentProcess->pid);
+    return (void *)k_acquireMemoryBlock(&gMem, procInfo.currentProcess->pid);
 }
 
 void *bridge_acquireMemoryBlock(void) {
-    void *mem = NULL;
+    uint32_t mem = 0;
 
     mem = k_acquireMemoryBlock(&gMem, procInfo.currentProcess->pid);
     while (mem == NULL) {
@@ -34,7 +34,7 @@ void *bridge_acquireMemoryBlock(void) {
         mem = k_acquireMemoryBlock(&gMem, procInfo.currentProcess->pid);
     }
 
-    return mem;
+    return (void*)mem;
 }
 
 int8_t bridge_releaseMemoryBlock(void *blk) {

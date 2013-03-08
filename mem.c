@@ -16,7 +16,7 @@ int8_t k_validMemoryBlock(MemInfo *memInfo, uint32_t addr) {
         addr >= memInfo->nextAvailableAddress ||
         addr >= memInfo->endMemoryAddress
     ) {
-        return ERR_OUTOFRANGE;
+        return EINVAL;
     }
 
     addrOffset = addr - memInfo->startMemoryAddress;
@@ -24,7 +24,7 @@ int8_t k_validMemoryBlock(MemInfo *memInfo, uint32_t addr) {
 
     // Disallow addresses in the middle of blocks
     if (blockOffset != 0) {
-        return ERR_UNALIGNED;
+        return EINVAL;
     }
 
     return SUCCESS;
@@ -40,29 +40,44 @@ ProcId *k_findOwnerSlot(MemInfo *memInfo, uint32_t addr) {
     return header + index + memInfo->startMemoryAddress;
 }
 
-// See note on k_findOwnerSlot
-int8_t k_changeOwner(MemInfo *memInfo, uint32_t addr, ProcId oid) {
-    int8_t isValid = k_validMemoryBlock(memInfo, addr);
-    ProcId *ownerSlot = NULL;
-    if (isValid != SUCCESS) {
-        return isValid;
-    }
-
-    if (!(memInfo->trackOwners)) {
-        return SUCCESS;
-    }
-    ownerSlot = k_findOwnerSlot(memInfo, addr);
-    *ownerSlot = oid;
-    return SUCCESS;
-}
-
 // Checks if addr is owned by oid, see note on k_findOwnerSlot
-uint8_t k_isOwner(MemInfo *memInfo, uint32_t addr, ProcId oid) {
+// Assumes addr is owned by this memInfo, hence unsafe.
+uint8_t k_isOwnerUnsafe(MemInfo *memInfo, uint32_t addr, ProcId oid) {
     if (!(memInfo->trackOwners)) {
         return 1;
     }
     return (*k_findOwnerSlot(memInfo, addr) == oid);
 }
+
+void k_setOwnerUnsafe(MemInfo *memInfo, uint32_t addr, ProcId newOid) {
+    ProcId *ownerSlot = NULL;
+    if (!memInfo->trackOwners) {
+        return;
+    }
+    ownerSlot = k_findOwnerSlot(memInfo, addr);
+    *ownerSlot = newOid;
+}
+
+int8_t k_changeOwner(
+    MemInfo *memInfo,
+    uint32_t addr,
+    ProcId fromOid,
+    ProcId toOid
+) {
+    int8_t isValid = k_validMemoryBlock(memInfo, addr);
+    if (isValid != SUCCESS) {
+        return isValid;
+    }
+
+    if (!k_isOwnerUnsafe(memInfo, addr, fromOid)) {
+        return EPERM;
+    }
+
+    k_setOwnerUnsafe(memInfo, addr, toOid);
+    return SUCCESS;
+}
+
+
 
 uint32_t k_getAlignedStartAddress(uint32_t start, uint32_t blockSizeBytes) {
     uint32_t offset = start % blockSizeBytes;
@@ -105,9 +120,9 @@ void k_memInfoInit(
 
 // Acquire a memory block. Will set the block's owner to the
 // passed in owner id (oid).
-void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
+uint32_t k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
     FreeBlock *curFirstFree = NULL;
-    void *ret = NULL;
+    uint32_t ret = 0;
     ProcId *header = NULL;
     uint8_t didAllocateHeader = 0;
     uint32_t memOffset = 0;
@@ -116,8 +131,9 @@ void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
     if (memInfo->firstFree != NULL) {
         curFirstFree = memInfo->firstFree;
         memInfo->firstFree = curFirstFree->prev;
-        ret = (void *)curFirstFree;
-        k_changeOwner(memInfo, (uint32_t)ret, oid);
+        ret = (uint32_t)curFirstFree;
+        // It's on free list, we can assume it's a legitimate address
+        k_setOwnerUnsafe(memInfo, ret, oid);
         return ret;
     }
 
@@ -131,10 +147,11 @@ void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
 
     // Check if we're out of memory
     if (memInfo->nextAvailableAddress >= memInfo->endMemoryAddress) {
-        return NULL;
+        // TODO(sanjay): this is incredibly unsemantic,
+        // use a bool "out_of_memory" out param instead
+        return 0;
     }
 
-    // NOTE: this breaks if your memory starts at 0x0.
     if (didAllocateHeader) {
         *header = PROC_ID_ALLOCATOR;
         ++header;
@@ -144,8 +161,8 @@ void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
         }
     }
 
-    ret = (void *)memInfo->nextAvailableAddress;
-    k_changeOwner(memInfo, (uint32_t)ret, oid);
+    ret = memInfo->nextAvailableAddress;
+    k_setOwnerUnsafe(memInfo, ret, oid);
     memInfo->nextAvailableAddress += memInfo->blockSizeBytes;
 
     return ret;
@@ -154,16 +171,11 @@ void *k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
 int8_t k_releaseMemoryBlock(MemInfo *memInfo, uint32_t addr, ProcId oid) {
     FreeBlock *fb = NULL;
 
-    // TODO(sanjay): not validating that addr is owned by oid
-
-    int8_t isValid = k_changeOwner(memInfo, addr, PROC_ID_NONE);
+    // Change owner from oid -> PROC_ID_NONE, this will validate
+    // that oid currently owns addr
+    int8_t isValid = k_changeOwner(memInfo, addr, oid, PROC_ID_NONE);
     if (isValid != SUCCESS) {
         return isValid;
-    }
-
-    // Make sure this is allocated, and is owned by this process.
-    if (!k_isOwner(memInfo, addr, oid)) {
-        return ERR_PERM;
     }
 
     // Add to free list
