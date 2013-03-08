@@ -19,7 +19,7 @@ int main () {
     uart_put_string(UART_NUM, "Starting up!\r\n");
 
     k_memInitGlobal();
-    k_initProcesses(&procInfo);
+    k_initProcesses(&gMem, &procInfo);
     k_initMessages(&gMem, &messageInfo);
     __enable_irq();
 
