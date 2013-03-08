@@ -34,7 +34,8 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
         process = &(procInfo->processes[i]);
         process->pid = i;
         process->state = NEW;
-        process->messageQueue = NULL;
+        process->mqHead = NULL;
+        process->mqTail = NULL;
         // TODO(nelk): Assert that these memory blocks are contiguous
         // Stack grows backwards, not forwards. We allocate two memory blocks.
         k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL);
@@ -212,7 +213,7 @@ uint32_t k_setProcessPriority(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo 
     }
 
     // Preempt the current process; note that the changed process won't necessarily be the one to run
-    k_releaseProcessor(memInfo, procInfo, messageInfo, clockInfo, CHANGED_PRIORITY);
+    k_releaseProcessor(procInfo, memInfo, messageInfo, clockInfo, CHANGED_PRIORITY);
 
 		//TODO (shale): make this an enum
 		return 0;
