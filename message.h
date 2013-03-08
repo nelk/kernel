@@ -7,12 +7,14 @@
 #include "mem.h"
 #include "proc.h"
 
-void k_initMessages(MemInfo *memInfo, MessageInfo *messageInfo);
+void k_initMessages(MessageInfo *messageInfo, MemInfo *memInfo);
 
 int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, ProcId receiverPid, ProcId senderPid);
 
-Envelope *k_receiveMessage(MemInfo *memInfo, ProcInfo *procInfo, MessageInfo *messageInfo, ClockInfo *clockInfo);
+Envelope *k_receiveMessage(MessageInfo *messageInfo, MemInfo *memInfo, ProcInfo *procInfo, ClockInfo *clockInfo);
 
-int8_t k_delayedSend(MemInfo *memInfo, ProcInfo *procInfo, MessageInfo *messageInfo, ClockInfo *clockInfo, ProcId pid, Envelope *envelope, uint32_t delay);
+int8_t k_delayedSend(MessageInfo *messageInfo, MemInfo *memInfo, ProcInfo *procInfo, ClockInfo *clockInfo, ProcId pid, Envelope *envelope, uint32_t delay);
+
+void k_processDelayedMessages(MessageInfo *messageInfo, ProcInfo *procInfo, MemInfo *memInfo, ClockInfo *clockInfo);
 
 #endif

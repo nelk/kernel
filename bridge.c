@@ -11,7 +11,7 @@ extern MessageInfo gMessageInfo;
 extern ProcInfo gProcInfo;
 
 uint32_t bridge_releaseProcessor(void) {
-    return k_releaseProcessor(&gMemInfo, &gProcInfo, &gMessageInfo, &gClockInfo, YIELD);
+    return k_releaseProcessor(&gProcInfo, &gMemInfo, &gMessageInfo, &gClockInfo, YIELD);
 }
 
 uint32_t bridge_setProcessPriority(uint8_t pid, uint8_t priority) {
@@ -32,7 +32,7 @@ void *bridge_acquireMemoryBlock(void) {
 
     mem = k_acquireMemoryBlock(&gMemInfo, gProcInfo.currentProcess->pid);
     while (mem == NULL) {
-        k_releaseProcessor(&gMemInfo, &gProcInfo, &gMessageInfo, &gClockInfo, OOM);
+        k_releaseProcessor(&gProcInfo, &gMemInfo, &gMessageInfo, &gClockInfo, OOM);
         mem = k_acquireMemoryBlock(&gMemInfo, gProcInfo.currentProcess->pid);
     }
 
@@ -57,21 +57,21 @@ int8_t bridge_releaseMemoryBlock(void *blk) {
         return SUCCESS;
     }
 
-    k_releaseProcessor(&gMemInfo, &gProcInfo, &gMessageInfo, &gClockInfo, MEMORY_FREED);
+    k_releaseProcessor(&gProcInfo, &gMemInfo, &gMessageInfo, &gClockInfo, MEMORY_FREED);
     return SUCCESS;
 }
 
 
 int8_t bridge_sendMessage(uint8_t pid, Envelope *envelope) {
     int8_t releaseProcessor = k_sendMessage(&gMemInfo, &gProcInfo, pid, envelope, gProcInfo.currentProcess->pid);
-    if (releaseProcessor == -1) {
-        k_releaseProcessor(&gMemInfo, &gProcInfo, &gMessageInfo, &gClockInfo, MESSAGE_SENT);
+    if (releaseProcessor == -1) {   // TODO: Replace with enums.
+        k_releaseProcessor(&gProcInfo, &gMemInfo, &gMessageInfo, &gClockInfo, MESSAGE_SENT);
     }
     return releaseProcessor;
 }
 
 Envelope *bridge_receiveMessage(uint8_t *senderPid) {
-    Envelope *envelope = k_receiveMessage(&gMemInfo, &gProcInfo, &gMessageInfo, &gClockInfo);
+    Envelope *envelope = k_receiveMessage(&gMessageInfo, &gMemInfo, &gProcInfo, &gClockInfo);
     if (senderPid != NULL) {
         *senderPid = envelope->senderPid; // Set out param
     }
@@ -79,10 +79,10 @@ Envelope *bridge_receiveMessage(uint8_t *senderPid) {
 }
 
 int8_t bridge_delayedSend(uint8_t pid, Envelope *envelope, uint32_t delay) {
-    return k_delayedSend(&gMemInfo, &gMessageInfo, &gProcInfo, pid, envelope, delay);
+    return k_delayedSend(&gMessageInfo, &gMemInfo, &gProcInfo, pid, envelope, delay);
 }
 
 
 uint32_t bridge_getTime(void) {
-    return k_getTime(gClockInfo);
+    return k_getTime(&gClockInfo);
 }

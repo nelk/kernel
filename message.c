@@ -3,7 +3,7 @@
 #include "message_pq.h"
 #include "timer.h"
 
-void k_initMessages(MemInfo *memInfo, MessageInfo *messageInfo) {
+void k_initMessages(MessageInfo *messageInfo, MemInfo *memInfo) {
     // TODO - allocate store as block...
     mpqInit(&(messageInfo->mpq), messageInfo->messageStore, 500);
 }
@@ -57,7 +57,7 @@ int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, P
     return 0;
 }
 
-Envelope *k_receiveMessage(MemInfo *memInfo, ProcInfo *procInfo, MessageInfo *messageInfo, ClockInfo *clockInfo) {
+Envelope *k_receiveMessage(MessageInfo *messageInfo, MemInfo *memInfo, ProcInfo *procInfo, ClockInfo *clockInfo) {
     PCB *currentProc = NULL;
     Envelope *message = NULL;
 
@@ -85,7 +85,7 @@ Envelope *k_receiveMessage(MemInfo *memInfo, ProcInfo *procInfo, MessageInfo *me
     return message;
 }
 
-int8_t k_delayedSend(MemInfo *memInfo, ProcInfo *procInfo, MessageInfo *messageInfo, ClockInfo *clockInfo, uint8_t pid, Envelope *envelope, uint32_t delay) {
+int8_t k_delayedSend(MessageInfo *messageInfo, MemInfo *memInfo, ProcInfo *procInfo, ClockInfo *clockInfo, uint8_t pid, Envelope *envelope, uint32_t delay) {
     k_zeroEnvelope(envelope);
     k_changeOwner(memInfo, (uint32_t)envelope, PROC_ID_KERNEL);
 
@@ -100,3 +100,23 @@ int8_t k_delayedSend(MemInfo *memInfo, ProcInfo *procInfo, MessageInfo *messageI
     return 0;
 }
 
+void k_processDelayedMessages(MessageInfo *messageInfo, ProcInfo *procInfo, MemInfo *memInfo, ClockInfo *clockInfo) {
+    MessageQueue *messageQueue = messageInfo->mpq;
+    Envelope *message = NULL;
+    uint32_t currentTime = k_getTime(clockInfo);
+
+    if (messageQueue == NULL || messageQueue->size <= 0) {
+        return;
+    }
+
+    while (1) {
+        message = mpqTop(messageQueue);
+
+        if (message == NULL || message->sendTime > currentTime) {
+            return;
+        }
+
+        mpqRemove(messageQueue, 0);
+        k_sendMessage(memInfo, procInfo, message, message->dstPid, message->srcPid);
+    }
+}
