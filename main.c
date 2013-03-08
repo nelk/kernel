@@ -9,7 +9,7 @@ extern uint32_t Image$$RW_IRAM1$$ZI$$Limit;
 ClockInfo gClockInfo;
 MemInfo gMem;
 MessageInfo gMessageInfo;
-ProcInfo procInfo;
+ProcInfo gProcInfo;
 
 void k_memInitGlobal(void);
 
@@ -20,7 +20,7 @@ int main () {
     uart_put_string(UART_NUM, "Starting up!\r\n");
 
     k_memInitGlobal();
-    k_initProcesses(&procInfo);
+    k_initProcesses(&gProcInfo);
     k_initMessages(&gMem, &gMessageInfo);
     k_initClock(&gClockInfo);
     __enable_irq();

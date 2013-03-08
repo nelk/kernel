@@ -119,7 +119,7 @@ void k_timerIRQHandler(ClockInfo *clockInfo, MessageInfo *messageInfo) {
 
     if (messageQueue != NULL && messageQueue->size > 0) {
         message = mpqTop(messageQueue);
-        while (message != NULL && message->header[SEND_TIME] >= clockInfo->totalTime) {
+        while (message != NULL && message->header[SEND_TIME] <= clockInfo->totalTime) {
             mpqRemove(messageQueue, 0);
             // The current implementation of k_sendMessage will call k_releaseProcessor.
             // This will ensure that the next process we run will be the highest priority,
