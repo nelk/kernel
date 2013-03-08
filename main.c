@@ -1,5 +1,5 @@
 #include <LPC17xx.h>
-#include "common.h"
+#include "common_types.h"
 #include "mem.h"
 #include "proc.h"
 #include "rtx.h"

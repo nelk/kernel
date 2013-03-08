@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "common.h"
+#include "common_types.h"
 #include "heap.h"
 
 // Keil Related Types

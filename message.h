@@ -1,7 +1,7 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 
-#include "common.h"
+#include "common_types.h"
 #include "types.h"
 #include "message_pq.h"
 #include "mem.h"
