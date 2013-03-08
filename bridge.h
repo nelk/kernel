@@ -13,9 +13,9 @@ void *bridge_acquireMemoryBlock(void);
 void *bridge_tryAcquireMemoryBlock(void);
 int8_t bridge_releaseMemoryBlock(void *blk);
 
-int8_t bridge_sendMessage(uint8_t pid, void *envelope);
+int8_t bridge_sendMessage(uint8_t pid, Envelope *envelope);
 Envelope *bridge_receiveMessage(uint8_t *senderPid);
-int8_t bridge_delayedSend(uint8_t pid, void *envelope, uint32_t delay);
+int8_t bridge_delayedSend(uint8_t pid, Envelope *envelope, uint32_t delay);
 
 #endif
 
