@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include "common.h"
+
 /**
  * User Land API
  *

@@ -34,10 +34,6 @@ struct MemInfo {
 #define NUM_PROCS (6)
 #define MAX_PRIORITY (4)
 
-// ProcId is used to store pids and is typedef'd
-// to distinguish it from regular integers.
-typedef uint8_t ProcId;
-
 #define PROC_ID_KERNEL    (0x80)
 #define PROC_ID_ALLOCATOR (0x81)
 #define PROC_ID_NONE      (0xff)
@@ -50,8 +46,6 @@ enum ProcState {
     RUNNING,
 };
 typedef enum ProcState ProcState;
-
-struct Envelope;
 
 typedef struct PCB PCB;
 struct PCB {
@@ -113,20 +107,6 @@ enum ReleaseReason {
 typedef enum ReleaseReason ReleaseReason;
 
 // Message - based:
-
-// TODO(alex) - move Envelope to user-facing header (user_message.h) or aggregate user-facing types header.
-typedef struct Envelope Envelope;
-struct Envelope {
-    Envelope *next;
-
-    uint32_t sendTime;
-
-    ProcId srcPid;
-    ProcId dstPid;
-
-    uint32_t messageType;
-    char messageData[MESSAGEDATA_SIZE_BYTES];
-};
 
 typedef struct MessagePQ MessagePQ;
 struct MessagePQ {
