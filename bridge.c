@@ -15,7 +15,7 @@ uint32_t bridge_releaseProcessor(void) {
 }
 
 uint32_t bridge_setProcessPriority(uint8_t pid, uint8_t priority) {
-    return k_setProcessPriority(&gProcInfo, pid, priority);
+    return k_setProcessPriority(&gProcInfo, &gMemInfo, &gMessageInfo, &gClockInfo, pid, priority);
 }
 
 int16_t bridge_getProcessPriority(uint8_t pid) {
