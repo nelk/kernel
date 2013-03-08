@@ -2,7 +2,9 @@
 
 #include "bridge.h"
 #include "mem.h"
+#include "message.h"
 #include "proc.h"
+#include "pq.h"
 #include "timer.h"
 
 extern ClockInfo gClockInfo;
