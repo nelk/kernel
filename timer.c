@@ -1,7 +1,6 @@
 #include <LPC17xx.h>
 
 #include "timer.h"
-#include "types.h"
 
 #define BIT(X) (1<<X)
 
