@@ -3,7 +3,10 @@
 
 #include <stdint.h>
 
-#include "types.h"
+#include "mem.h"
+#include "message.h"
+#include "pq.h"
+#include "kernel_types.h"
 
 void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo);
 uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *messageInfo, ClockInfo *clockInfo, ReleaseReason reason);

@@ -1,7 +1,8 @@
 #ifndef BRIDGE_H
 #define BRIDGE_H
 
-#include "types.h"
+#include "message.h"
+#include "kernel_types.h"
 
 uint32_t bridge_releaseProcessor(void);
 
