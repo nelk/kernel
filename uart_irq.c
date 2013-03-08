@@ -174,9 +174,9 @@ void c_UART0_IRQHandler(void)
 		/* THRE Interrupt, transmit holding register empty*/
 
 		// TODO(sanjay): send a message to the CRT process, masquerading
-		//				 as the CRT process. This tells it that we are good
-		//				 to send the next message.
-		// 				 Make sure that send is contant time, we are in an ISR.
+		// as the CRT process. This tells it that we are good
+		// to send the next character.
+		// NOTE(sanjay): Make sure that this is contant time, we are in an ISR.
 
 		LSR_Val = pUart->LSR;
 		if(LSR_Val & LSR_THRE) {
