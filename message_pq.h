@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #include "heap.h"
-#include "types.h"
+#include "kernel_types.h"
 #include "message.h"
 
 
