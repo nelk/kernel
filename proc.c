@@ -33,6 +33,7 @@ void k_initProcesses(MemInfo *memInfo, ProcInfo *procInfo) {
         process->pid = i;
         process->state = NEW;
         process->mqHead = NULL;
+        process->mqTail = NULL;
         // TODO(nelk): Assert that these memory blocks are contiguous
         // Stack grows backwards, not forwards. We allocate two memory blocks.
         k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL);
