@@ -1,5 +1,5 @@
-#ifndef COMMON
-#define COMMON
+#ifndef COMMON_TYPES
+#define COMMON_TYPES
 
 // exposed so we can expose the size of messages in the envelopes
 #define BLOCKSIZE_BYTES (1 << 7)
