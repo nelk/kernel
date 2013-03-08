@@ -281,11 +281,11 @@ get_char:
 			readIndex = 0;
 			temp = head;
 			head = head->next;
-		    if (head == NULL) {
-		        tail = NULL;
-		    }
-		    release_memory_block((void*)temp);
-		    goto get_char;
+			if (head == NULL) {
+				tail = NULL;
+			}
+			release_memory_block((void*)temp);
+			goto get_char;
 		}
 
 		// we are now guaranteed that head is not NULL and
