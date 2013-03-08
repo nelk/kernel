@@ -8,7 +8,7 @@
 extern uint32_t Image$$RW_IRAM1$$ZI$$Limit;
 ClockInfo gClockInfo;
 MemInfo gMem;
-MessageInfo messageInfo;
+MessageInfo gMessageInfo;
 ProcInfo procInfo;
 
 void k_memInitGlobal(void);
@@ -21,7 +21,7 @@ int main () {
 
     k_memInitGlobal();
     k_initProcesses(&procInfo);
-    k_initMessages(&gMem, &messageInfo);
+    k_initMessages(&gMem, &gMessageInfo);
     k_initClock(&gClockInfo);
     __enable_irq();
 

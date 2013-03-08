@@ -5,6 +5,6 @@
 
 uint32_t k_getTime(ClockInfo *clockInfo);
 void k_initClock(ClockInfo *clockInfo);
-void k_timerIRQHandler(ClockInfo *clockInfo);
+void k_timerIRQHandler(ClockInfo *clockInfo, MessageInfo *messageInfo);
 
 #endif

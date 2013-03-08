@@ -105,8 +105,6 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
     // We push the currently executing process onto this queue
     PQ *dstQueue = NULL;
 
-    // TODO - delayed send check
-
     switch (reason) {
         case MEMORY_FREED:
             srcQueue = &(k_procInfo->memq);

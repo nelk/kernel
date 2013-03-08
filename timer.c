@@ -7,12 +7,16 @@
  */
 
 #include <LPC17xx.h>
+#include "message.h"
+#include "message_pq.h"
 #include "timer.h"
 #include "types.h"
 
 #define BIT(X) (1<<X)
 
+
 extern ClockInfo gClockInfo;
+extern MessageInfo gMessageInfo;
 
 /**
  * @brief: use CMSIS ISR for TIMER0 IRQ Handler
@@ -30,11 +34,11 @@ __asm void TIMER0_IRQHandler(void) {
 }
 
 void c_TIMER0_IRQHandler(void) {
-    k_timerIRQHandler(gClockInfo);
+    k_timerIRQHandler(&gClockInfo, &gMessageInfo);
 }
 
 uint32_t k_getTime(ClockInfo *clockInfo) {
-	return clockInfo.totalTime;
+	return clockInfo->totalTime;
 }
 
 void k_initClock(ClockInfo *clockInfo) {
@@ -101,12 +105,26 @@ void k_initClock(ClockInfo *clockInfo) {
     /* Step 4.5: Enable the TCR. See table 427 on pg494 of LPC17xx_UM. */
     pTimer->TCR = 1;
 
-    clockInfo.totalTime = 0;
+    clockInfo->totalTime = 0;
 }
 
-void k_timerIRQHandler(ClockInfo *clockInfo) {
+void k_timerIRQHandler(ClockInfo *clockInfo, MessageInfo *messageInfo) {
+    MessagePQ *messageQueue = &(messageInfo->mpq);
+    Envelope *message = NULL;
     // ack interrupt, see section 21.6.1 on pg 493 of LPC17XX_UM
     LPC_TIM0->IR = BIT(0);
 
-    ++clockInfo.totalTime;
+    ++clockInfo->totalTime;
+
+    if (messageQueue != NULL && messageQueue->size > 0) {
+        message = mpqTop(messageQueue);
+        while (message != NULL && message->messageData[SEND_TIME] >= clockInfo->totalTime) {
+            mpqRemove(messageQueue, 0);
+            // The current implementation of k_sendMessage will call k_releaseProcessor.
+            // This will ensure that the next process we run will be the highest priority,
+            // out of the processes in both the ready queue and processes we unblock.
+            bridge_sendMessage(message->senderPid, message);
+            message = mpqTop(messageQueue);
+        }
+    }
 }

@@ -7,7 +7,7 @@
 
 extern ClockInfo gClockInfo;
 extern MemInfo gMem;
-extern MessageInfo messageInfo;
+extern MessageInfo gMessageInfo;
 extern ProcInfo procInfo;
 
 uint32_t bridge_releaseProcessor(void) {
@@ -71,7 +71,7 @@ Envelope *bridge_receiveMessage(uint8_t *senderPid) {
 }
 
 int8_t bridge_delayedSend(uint8_t pid, Envelope *envelope, uint32_t delay) {
-    return k_delayedSend(&gMem, &messageInfo, &procInfo, pid, envelope, delay);
+    return k_delayedSend(&gMem, &gMessageInfo, &procInfo, pid, envelope, delay);
 }
 
 uint32_t bridge_getTime(void) {
