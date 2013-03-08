@@ -26,7 +26,7 @@ int16_t bridge_getProcessPriority(uint8_t pid) {
 
 
 void *bridge_tryAcquireMemoryBlock(void) {
-    return (void *)k_acquireMemoryBlock(&gMem, gProcInfo.currentProcess->pid);
+    return (void *)k_acquireMemoryBlock(&gMemInfo, gProcInfo.currentProcess->pid);
 }
 
 void *bridge_acquireMemoryBlock(void) {
