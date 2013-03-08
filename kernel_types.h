@@ -134,4 +134,12 @@ struct MessageInfo {
     MessagePQ mpq; // Delayed Message PQ
     Envelope *messageStore[500];
 };
+
+// Interrupt process-related types
+
+typedef struct ClockInfo ClockInfo;
+struct ClockInfo {
+    uint32_t totalTime;
+};
+
 #endif

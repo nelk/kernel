@@ -37,7 +37,11 @@ uint8_t mpqLess(void *vCtx, size_t i, size_t j) {
     Envelope *lhs = ctx->store[i];
     Envelope *rhs = ctx->store[j];
 
-    return lhs->header[SEND_TIME] < rhs->header[SEND_TIME];
+    if (lhs->sendTime != rhs->sendTime) {
+        return lhs->sendTime < rhs->sendTime;
+    }
+    // Note:  This should very rarely occur.
+    return lhs < rhs;
 }
 
 void mpqSwap(void *vCtx, size_t i, size_t j) {

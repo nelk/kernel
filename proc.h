@@ -8,9 +8,9 @@
 #include "pq.h"
 #include "kernel_types.h"
 
-void k_initProcesses(MemInfo *memInfo, ProcInfo *procInfo);
-uint32_t k_releaseProcessor(ProcInfo *procInfo, ReleaseReason reason);
-uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority);
+void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo);
+uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *messageInfo, ClockInfo *clockInfo, ReleaseReason reason);
+uint32_t k_setProcessPriority(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *messageInfo, ClockInfo *clockInfo, ProcId pid, uint8_t priority);
 int16_t k_getProcessPriority(ProcInfo *procInfo, ProcId pid);
 
 #endif

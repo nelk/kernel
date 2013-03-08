@@ -1,9 +1,9 @@
-
+#include "kernel_types.h"
 #include "message.h"
 #include "message_pq.h"
+#include "timer.h"
 
-
-void k_initMessages(MemInfo *memInfo, MessageInfo *messageInfo) {
+void k_initMessages(MessageInfo *messageInfo, MemInfo *memInfo) {
     // TODO - allocate store as block...
     mpqInit(&(messageInfo->mpq), messageInfo->messageStore, 500);
 }
@@ -15,14 +15,14 @@ void k_zeroEnvelope(Envelope *envelope) {
     envelope->dstPid = 0;
 }
 
-int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, ProcId pid, Envelope *envelope) {
+int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, ProcId srcPid, ProcId dstPid) {
     PCB *currentProc = NULL;
     PCB *receivingProc = NULL;
 
     k_zeroEnvelope(envelope);
 
     // Check pid
-    if (pid >= NUM_PROCS) {
+    if (dstPid >= NUM_PROCS) {
         return 1;
     }
     // Set to new owner (and check if valid)
@@ -30,7 +30,6 @@ int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, ProcId pid, Envelope 
         return 2;
     }
 
-    currentProc = procInfo->currentProcess;
     receivingProc = &(procInfo->processes[pid]);
 
     // Add to message queue
@@ -51,14 +50,14 @@ int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, ProcId pid, Envelope 
         receivingProc->state = READY;
         pqAdd(&(procInfo->prq), receivingProc);
         // Preempt if unblocked process has higher priority - note that receiver is not guaranteed to run
-        if (receivingProc->priority < currentProc->priority) {
-            k_releaseProcessor(procInfo, MESSAGE_SENT);
+        if (receivingProc->priority < procInfo->currentProcess->priority) {
+            return -1;
         }
     }
     return 0;
 }
 
-Envelope *k_receiveMessage(MemInfo *memInfo, ProcInfo *procInfo, uint8_t *senderPid) {
+Envelope *k_receiveMessage(MessageInfo *messageInfo, MemInfo *memInfo, ProcInfo *procInfo, ClockInfo *clockInfo) {
     PCB *currentProc = NULL;
     Envelope *message = NULL;
 
@@ -67,7 +66,7 @@ Envelope *k_receiveMessage(MemInfo *memInfo, ProcInfo *procInfo, uint8_t *sender
     message = currentProc->mqHead;
     while (message == NULL) {
         // Block receiver
-        k_releaseProcessor(procInfo, MESSAGE_RECEIVE);
+        k_releaseProcessor(procInfo, memInfo, messageInfo, clockInfo, MESSAGE_RECEIVE);
         message = currentProc->mqHead;
     }
 
@@ -83,17 +82,14 @@ Envelope *k_receiveMessage(MemInfo *memInfo, ProcInfo *procInfo, uint8_t *sender
     // Change ownership
     k_changeOwner(memInfo, (uint32_t)message, currentProc->pid);
 
-    if (senderPid != NULL) {
-        *senderPid = message->srcPid; // Set out param
-    }
     return message;
 }
 
-int8_t k_delayedSend(MemInfo *memInfo, MessageInfo *messageInfo, ProcInfo *procInfo, uint8_t pid, Envelope *envelope, uint32_t delay) {
+int8_t k_delayedSend(MessageInfo *messageInfo, MemInfo *memInfo, uint8_t pid, Envelope *envelope, uint32_t delay) {
     k_zeroEnvelope(envelope);
     k_changeOwner(memInfo, (uint32_t)envelope, PROC_ID_KERNEL);
 
-    envelope->sendTime = delay; // TODO(alex) - Set this to clock time + delay
+    envelope->sendTime = k_getTime(clockInfo) + delay;
 
     // TODO(sanjay): this seems to do no sanity checking of anything...
 
@@ -104,3 +100,23 @@ int8_t k_delayedSend(MemInfo *memInfo, MessageInfo *messageInfo, ProcInfo *procI
     return 0;
 }
 
+void k_processDelayedMessages(MessageInfo *messageInfo, ProcInfo *procInfo, MemInfo *memInfo, ClockInfo *clockInfo) {
+    MessagePQ *messageQueue = &(messageInfo->mpq);
+    Envelope *message = NULL;
+    uint32_t currentTime = k_getTime(clockInfo);
+
+    if (messageQueue == NULL || messageQueue->size <= 0) {
+        return;
+    }
+
+    while (1) {
+        message = mpqTop(messageQueue);
+
+        if (message == NULL || message->sendTime > currentTime) {
+            return;
+        }
+
+        mpqRemove(messageQueue, 0);
+        k_sendMessage(memInfo, procInfo, message, message->srcPid, message->dstPid);
+    }
+}

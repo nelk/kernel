@@ -5,8 +5,10 @@
 
 #include "kernel_types.h"
 #include "mem.h"
+#include "message.h"
 #include "proc.h"
 #include "pq.h"
+#include "timer.h"
 #include "user.h"
 
 extern void __rte(void);
@@ -21,7 +23,7 @@ ssize_t *memqStoreIndexFunc(PCB *pcb) {
     return &(pcb->memqIndex);
 }
 
-void k_initProcesses(MemInfo *memInfo, ProcInfo *procInfo) {
+void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     ProcId i;
     int j;
     PCB *process = NULL;
@@ -97,7 +99,7 @@ void k_initProcesses(MemInfo *memInfo, ProcInfo *procInfo) {
     procInfo->currentProcess = NULL;
 }
 
-uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
+uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *messageInfo, ClockInfo *clockInfo, ReleaseReason reason) {
     PCB *nextProc = NULL;
     ProcState oldState = NEW;
 
@@ -108,34 +110,34 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
     // We push the currently executing process onto this queue
     PQ *dstQueue = NULL;
 
-    // TODO - delayed send check
+    k_processDelayedMessages(messageInfo, procInfo, memInfo, clockInfo);
 
     switch (reason) {
         case MEMORY_FREED:
-            srcQueue = &(k_procInfo->memq);
-            dstQueue = &(k_procInfo->prq);
+            srcQueue = &(procInfo->memq);
+            dstQueue = &(procInfo->prq);
             targetState = READY;
             break;
         case OOM:
-            srcQueue = &(k_procInfo->prq);
-            dstQueue = &(k_procInfo->memq);
+            srcQueue = &(procInfo->prq);
+            dstQueue = &(procInfo->memq);
             targetState = BLOCKED;
             break;
         case YIELD:
         case CHANGED_PRIORITY:
         case MESSAGE_SENT:
-            srcQueue = &(k_procInfo->prq);
-            dstQueue = &(k_procInfo->prq);
+            srcQueue = &(procInfo->prq);
+            dstQueue = &(procInfo->prq);
             targetState = READY;
 
             // If it was the null process that yielded, we don't add it to the ready queue.
-            if (k_procInfo->currentProcess == k_procInfo->nullProcess) {
+            if (procInfo->currentProcess == procInfo->nullProcess) {
                 dstQueue = NULL;
             }
             break;
         case MESSAGE_RECEIVE:
-            srcQueue = &(k_procInfo->prq);
-            dstQueue = &(k_procInfo->prq);
+            srcQueue = &(procInfo->prq);
+            dstQueue = &(procInfo->prq);
             targetState = BLOCKED_MESSAGE;
             break;
         default:
@@ -146,21 +148,21 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
         nextProc = pqTop(srcQueue);
         pqRemove(srcQueue, 0);
     } else {
-        nextProc = k_procInfo->nullProcess;
+        nextProc = procInfo->nullProcess;
     }
 
-    if (k_procInfo->currentProcess != NULL) {
+    if (procInfo->currentProcess != NULL) {
         // Save old process info
-        k_procInfo->currentProcess->stack = (uint32_t *) __get_MSP();
-        k_procInfo->currentProcess->state = targetState;
+        procInfo->currentProcess->stack = (uint32_t *) __get_MSP();
+        procInfo->currentProcess->state = targetState;
         if (dstQueue != NULL) {
-            pqAdd(dstQueue, k_procInfo->currentProcess);
+            pqAdd(dstQueue, procInfo->currentProcess);
         }
     }
 
     oldState = nextProc->state;
     nextProc->state = RUNNING;
-    k_procInfo->currentProcess = nextProc;
+    procInfo->currentProcess = nextProc;
     __set_MSP((uint32_t) nextProc->stack);
     if (oldState == NEW) {
         __rte();
@@ -175,7 +177,7 @@ uint32_t k_releaseProcessor(ProcInfo *k_procInfo, ReleaseReason reason) {
  *  If current process priority was changed to better priority, continue running
  *  Otherwise, if current process priority is worse than top priority in queue, preempt
  */
-uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) {
+uint32_t k_setProcessPriority(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *messageInfo, ClockInfo *clockInfo, ProcId pid, uint8_t priority) {
     PCB *topProcess = NULL;
     PCB *modifiedProcess = NULL;
     uint8_t oldPriority;
@@ -223,7 +225,7 @@ uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) 
 
     // Preempt the current process; note that the changed process won't
     // necessarily be the one to run
-    k_releaseProcessor(procInfo, CHANGED_PRIORITY);
+    k_releaseProcessor(procInfo, memInfo, messageInfo, clockInfo, CHANGED_PRIORITY);
     return SUCCESS;
 }
 

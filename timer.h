@@ -1,11 +1,10 @@
-/**
- * @brief timer.h - Timer header file
- * @author Y. Huang
- * @date 2013/02/12
- */
-#ifndef _TIMER_H_
-#define _TIMER_H_
+#ifndef TIMER_H
+#define TIMER_H
 
-extern uint32_t timer_init ( uint8_t n_timer );  /* initialize timer n_timer */
+#include "kernel_types.h"
 
-#endif /* ! _TIMER_H_ */
+uint32_t k_getTime(ClockInfo *clockInfo);
+void k_initClock(ClockInfo *clockInfo);
+void k_timerIRQHandler(ClockInfo *clockInfo);
+
+#endif

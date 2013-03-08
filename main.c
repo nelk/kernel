@@ -1,14 +1,17 @@
 #include <LPC17xx.h>
 #include "kernel_types.h"
 #include "mem.h"
+#include "message.h"
 #include "proc.h"
 #include "rtx.h"
+#include "timer.h"
 #include "uart_polling.h"
 
 extern uint32_t Image$$RW_IRAM1$$ZI$$Limit;
-MemInfo gMem;
-MessageInfo messageInfo;
-ProcInfo procInfo;
+ClockInfo gClockInfo;
+MemInfo gMemInfo;
+MessageInfo gMessageInfo;
+ProcInfo gProcInfo;
 
 void k_memInitGlobal(void);
 
@@ -19,8 +22,9 @@ int main () {
     uart_put_string(UART_NUM, "Starting up!\r\n");
 
     k_memInitGlobal();
-    k_initProcesses(&gMem, &procInfo);
-    k_initMessages(&gMem, &messageInfo);
+    k_initProcesses(&gProcInfo, &gMemInfo);
+    k_initMessages(&gMessageInfo, &gMemInfo);
+    k_initClock(&gClockInfo);
     __enable_irq();
 
     // Transition to unprivileged level and release processor; default MSP is used
@@ -33,7 +37,7 @@ int main () {
 void k_memInitGlobal(void) {
     uint32_t memStartAddr = (uint32_t)&Image$$RW_IRAM1$$ZI$$Limit;
     k_memInfoInit(
-            &gMem,
+            &gMemInfo,
             memStartAddr,           // startAddr
             0x10008000,             // endAddr
             BLOCKSIZE_BYTES,        // blockSizeBytes = 128 bytes
