@@ -7,14 +7,6 @@
 #include "mem.h"
 #include "proc.h"
 
-
-
-enum EnvelopeHeaderData {
-    NEXT_ENVELOPE,
-    SEND_TIME
-};
-typedef enum EnvelopeHeaderData EnvelopeHeaderData;
-
 void k_initMessages(MemInfo *memInfo, MessageInfo *messageInfo);
 
 int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, ProcId pid, Envelope *envelope);

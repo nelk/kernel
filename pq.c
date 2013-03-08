@@ -91,7 +91,7 @@ PCB *pqRemove(PQ *q, size_t i) {
     return removing;
 }
 
-void pqChangedPriority(PQ *q, struct PCB *pcb) {
+void pqChangedPriority(PQ *q, PCB *pcb) {
     ssize_t index = -1;
     PQEntry updatingEntry;
 		
@@ -113,6 +113,7 @@ void pqChangedPriority(PQ *q, struct PCB *pcb) {
 			assert(updatingEntry.pcb == pcb);
 		#endif
     updatingEntry.seqNumber = pqNextSeq(q);
+    q->store[index] = updatingEntry;
     heapInvalidate(&(q->storeMgr), index);
 }
 
