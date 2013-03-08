@@ -132,7 +132,7 @@ uint32_t k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
         curFirstFree = memInfo->firstFree;
         memInfo->firstFree = curFirstFree->prev;
         ret = (uint32_t)curFirstFree;
-        // It's on free list, we can assume it's a legitimage address
+        // It's on free list, we can assume it's a legitimate address
         k_setOwnerUnsafe(memInfo, ret, oid);
         return ret;
     }
