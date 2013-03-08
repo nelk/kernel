@@ -7,6 +7,7 @@ void nullProcess(void);
 void schizophrenicProcess(void);
 void memoryMuncherProcess(void);
 void releaseProcess(void);
+void clockProcess(void);
 
 #endif
 
