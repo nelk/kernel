@@ -16,9 +16,8 @@ void k_zeroEnvelope(Envelope *envelope) {
 }
 
 int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, ProcId pid, Envelope *envelope) {
-    PCB *currentProc;
-    PCB *receivingProc;
-    Envelope *nextMessage;
+    PCB *currentProc = NULL;
+    PCB *receivingProc = NULL;
 
     k_zeroEnvelope(envelope);
 
