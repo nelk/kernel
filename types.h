@@ -32,7 +32,6 @@ struct MemInfo {
 // Process-control related types
 
 #define NUM_PROCS (6)
-#define MAX_PRIORITY (4)
 
 // ProcId is used to store pids and is typedef'd
 // to distinguish it from regular integers.
@@ -52,6 +51,11 @@ enum ProcState {
 typedef enum ProcState ProcState;
 
 struct Envelope;
+
+#define USER_PRIORITY_MASK ((uint32_t)0xff)
+#define KERN_PRIORITY_MASK (~(USER_PRIORITY_MASK))
+#define KERN_PRIORITY_SHIFT (8)
+#define MAX_PRIORITY (USER_PRIORITY_MASK)
 
 typedef struct PCB PCB;
 struct PCB {

@@ -59,37 +59,37 @@ void k_initProcesses(MemInfo *memInfo, ProcInfo *procInfo) {
     // Null Process
     process = &(procInfo->processes[0]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) nullProcess);
-    process->priority = 4;
+    process->priority = (2 << KERN_PRIORITY_SHIFT) | MAX_PRIORITY;
     procInfo->nullProcess = process;
 
     // Fun Process
     process = &(procInfo->processes[1]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) funProcess);
-    process->priority = 3;
+    process->priority = (1 << KERN_PRIORITY_SHIFT) | 3;
     pqAdd(&(procInfo->prq), process);
 
     // Schizo Process
     process = &(procInfo->processes[2]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) schizophrenicProcess);
-    process->priority = 3;
+    process->priority = (1 << KERN_PRIORITY_SHIFT) | 3;
     pqAdd(&(procInfo->prq), process);
 
     // fib Process
     process = &(procInfo->processes[3]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) fibProcess);
-    process->priority = 2;
+    process->priority = (1 << KERN_PRIORITY_SHIFT) | 2;
     pqAdd(&(procInfo->prq), process);
 
     // memory muncher Process
     process = &(procInfo->processes[4]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) memoryMuncherProcess);
-    process->priority = 1;
+    process->priority = (1 << KERN_PRIORITY_SHIFT) | 1;
     pqAdd(&(procInfo->prq), process);
 
     // release Process
     process = &(procInfo->processes[5]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) releaseProcess);
-    process->priority = 0;
+    process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
 
     procInfo->currentProcess = NULL;
@@ -179,26 +179,29 @@ uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) 
     uint8_t oldPriority;
 
     if (procInfo->currentProcess == NULL) {
-        return 1;
+        // TODO(sanjay): this error code seems a little inappropriate...
+        return EINVAL;
     }
     if (pid >= NUM_PROCS) {
-        return 1;
+        return EINVAL;
     }
-    if (priority >= MAX_PRIORITY) { // We are not allowing any process to be set to the worst priority (The null process begins at the worst priority).
-        return 2;
-    }
+
+    priority = (priority & USER_PRIORITY_MASK);
 
     if (pid == procInfo->currentProcess->pid) {
         oldPriority = procInfo->currentProcess->priority;
+        priority = priority | (oldPriority & KERN_PRIORITY_MASK);
         procInfo->currentProcess->priority = priority;
         if (oldPriority <= priority) { // If we made the priority of this process better, don't preempt it.
-            return 0;
+            return SUCCESS;
         }
     } else {
         modifiedProcess = &(procInfo->processes[pid]);
         if (modifiedProcess == procInfo->nullProcess) { // We don't allow changing the priority of the null process
-            return 1;
+            return EINVAL;
         }
+        oldPriority = modifiedProcess->priority;
+        priority = priority | (oldPriority & KERN_PRIORITY_MASK);
         modifiedProcess->priority = priority;
         pqChangedPriority(&(procInfo->prq), modifiedProcess);
         pqChangedPriority(&(procInfo->memq), modifiedProcess);
@@ -207,21 +210,21 @@ uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) 
     // TODO(alex): Create function/struct to define comparison for priorities (also use it in pqLess).
     topProcess = pqTop(&(procInfo->prq)); // We'll preempt this process if the top process has a better priority.
     if (topProcess->priority >= procInfo->currentProcess->priority) {
-        return 0;
+        return SUCCESS;
     }
 
     // Preempt the current process; note that the changed process won't necessarily be the one to run
     k_releaseProcessor(procInfo, CHANGED_PRIORITY);
-
-		//TODO (shale): make this an enum
-		return 0;
+    return SUCCESS;
 }
 
 int16_t k_getProcessPriority(ProcInfo *procInfo, ProcId pid) {
+    uint8_t priority = 0;
     if (pid >= NUM_PROCS) {
         return -1;
     }
 
-    return (int16_t)(procInfo->processes[pid].priority);
+    priority = (procInfo->processes[pid].priority & USER_PRIORITY_MASK);
+    return (int16_t)(priority);
 }
 
