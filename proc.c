@@ -209,6 +209,9 @@ uint32_t k_setProcessPriority(ProcInfo *procInfo, ProcId pid, uint8_t priority) 
 
     // Preempt the current process; note that the changed process won't necessarily be the one to run
     k_releaseProcessor(procInfo, CHANGED_PRIORITY);
+		
+		//TODO (shale): make this an enum
+		return 0;
 }
 
 int16_t k_getProcessPriority(ProcInfo *procInfo, ProcId pid) {

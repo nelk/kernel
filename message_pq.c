@@ -49,17 +49,12 @@ void mpqSwap(void *vCtx, size_t i, size_t j) {
     temp = ctx->store[i];
 }
 
-uint32_t mpqAdd(PQ *q, PCB *pcb) {
-    PQEntry newEntry;
-
+uint32_t mpqAdd(MessagePQ *q, Envelope *env) {
     if (q->size >= q->cap) {
         return 1;
     }
 
-    newEntry.pcb = pcb;
-    newEntry.seqNumber = mpqNextSeq(q);
-
-    q->store[q->size] = newEntry;
+    q->store[q->size] = env;
     ++(q->size);
     heapAdd(&(q->storeMgr));
     return 0;

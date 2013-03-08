@@ -1,4 +1,7 @@
 #include <stddef.h>
+#ifdef TESTING
+#include <assert.h>
+#endif
 #include "pq.h"
 #include "proc.h"
 
@@ -91,18 +94,24 @@ PCB *pqRemove(PQ *q, size_t i) {
 void pqChangedPriority(PQ *q, struct PCB *pcb) {
     ssize_t index = -1;
     PQEntry updatingEntry;
-
-    assert(q->getIndexInStore != NULL);
+		
+		#ifdef TESTING
+			assert(q->getIndexInStore != NULL);
+		#endif
     index = *(q->getIndexInStore(pcb));
 
     if (index == -1) {
         return;
     }
 
-    assert(index < q->size);
+		#ifdef TESTING
+			assert(index < q->size);
+		#endif
     updatingEntry = q->store[index];
 
-    assert(updatingEntry.pcb == pcb);
+		#ifdef TESTING
+			assert(updatingEntry.pcb == pcb);
+		#endif
     updatingEntry.seqNumber = pqNextSeq(q);
     heapInvalidate(&(q->storeMgr), index);
 }
