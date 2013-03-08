@@ -56,7 +56,7 @@ int8_t __SVC_0 _releaseMemoryBlock(uint32_t k_func, void *blk);
 // sendMessage
 extern int8_t bridge_sendMessage(uint8_t pid, Envelope *envelope);
 #define send_message(pid, envelope) _sendMessage((uint32_t)bridge_sendMessage, pid, envelope)
-int8_t __SVC_0 _sendMessage(uint32_t k_func, uint8_t pid, Envelope *envelope);
+int8_t __SVC_0 _sendMessage(uint32_t k_func, uint8_t pid, Envelope *envelope, uint32_t delay);
 
 // receiveMessage
 extern Envelope *bridge_receiveMessage(uint8_t *senderPid);

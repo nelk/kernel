@@ -109,7 +109,9 @@ void pqChangedPriority(PQ *q, struct PCB *pcb) {
 		#endif
     updatingEntry = q->store[index];
 
-    assert(updatingEntry.pcb == pcb);
+		#ifdef TESTING
+			assert(updatingEntry.pcb == pcb);
+		#endif
     updatingEntry.seqNumber = pqNextSeq(q);
     heapInvalidate(&(q->storeMgr), index);
 }
