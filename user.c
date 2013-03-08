@@ -1,6 +1,5 @@
 #include <stddef.h>
 
-#include "proc.h"
 #include "rtx.h"
 #include "uart_polling.h"
 #include "user.h"
@@ -156,4 +155,127 @@ void releaseProcess(void) {
 
     //set_process_priority(4, get_process_priority(1)); // funProcess pid = 1
     printProcess("releaseProcess\r\n");
+}
+
+// Clock-related
+
+typedef enum ClockCmdType ClockCmdType;
+enum ClockCmdType {
+    PRINT_TIME,
+    RESET_TIME,
+    SET_TIME,
+    TERMINATE,
+};
+
+typedef struct ClockCmd ClockCmd;
+struct ClockCmd {
+    ClockCmdType cmdType;
+
+    uint32_t currentTime;
+    uint32_t offset;
+    uint32_t isRunning;
+
+    ProcId myPid;
+
+    Envelope *selfEnvelope;
+    Envelope *receivedEnvelope;
+};
+
+void initClockCommand(ClockCmd *command) {
+    command->cmdType = TERMINATE;
+
+    command->currentTime = 0;
+    command->offset = 0;
+    command->isRunning = 0;
+
+    command->myPid = 0; // TODO: Maybe add user API to get own PID.
+
+    command->selfEnvelope = (Envelope *)request_memory_block();
+    command->receivedEnvelope = NULL;
+}
+
+void parseClockMessage(ClockCmd *command) {
+    uint8_t status = 0;
+    if (envelope->srcPid == myPid) {
+        command->cmdType = PRINT_TIME;
+        return;
+    }
+
+    // TODO: Parse envelope message, set proper command type.
+
+    switch(command->cmdType) {
+        case RESET_TIME:
+            command->offset = command->currentTime;
+            command->isRunning = 1;
+            command->cmdType = PRINT_TIME;
+            break;
+        case SET_TIME:
+            status = parseTime(command->receivedEnvelope->messageData, command->offset);
+            if (status == 0) {
+                command->isRunning = 1;
+                command->cmdType = PRINT_TIME;
+            } else {
+                uart_put_string(UART_NUM, "Please give input in the form \"%WS hh:mm:ss\" with valid values.");
+                if (command->isRunning) {
+                    command->cmdType = PRINT_TIME;
+                }
+            }
+            break;
+        case TERMINATE:
+            command->isRunning = 0;
+            break;
+        default:
+            break;
+    }
+
+    release_memory_block(envelope);
+}
+
+uint8_t parseTime(char[] message, uint32_t *offset) {
+    // TODO: Parse message.  Give error code if formatting is incorrect
+    // or values are out of bounds.  Also, use enums/generic defines for codes.
+    return 0;
+}
+
+void printTime(uint32_t currentTime, uint32_t offset) {
+    uint32_t clockTime = 0;
+
+    clockTime = (currentTime + offset) % (SECONDS_IN_DAY * MILLISECONDS_IN_SECOND);
+    clockTime /= MILLISECONDS_IN_SECOND;
+
+    // Print hours.
+    print_uint32(clockTime / SECONDS_IN_HOUR);
+    clockTime %= SECONDS_IN_HOUR;
+
+    uart_put_string(UART_NUM, ":");
+
+    // Print minutes.
+    print_uint32(clockTime / SECONDS_IN_MINUTE);
+    clockTime %= SECONDS_IN_MINUTE;
+
+    uart_put_string(UART_NUM, ":");
+
+    // Print seconds.
+    print_uint32(clockTime);
+    uart_put_string(UART_NUM, "\r\n");
+}
+
+void clockProcess(void) {
+    ClockCmd command;
+
+    initClockCommand(&command);
+
+    // TODO: Register commands %WR, %WS hh:mm:ss, and %WT with keyboard decoder.
+
+    while (1) {
+        command->receivedEnvelope = receive_message(NULL);
+        command->currentTime = getTime();
+
+        parseClockMessage(receivedEnvelope, &command);
+
+        if (command->cmdType == PRINT_TIME) {
+            printTime(currentTime, offset);
+            delayed_send(myPid, selfEnvelope, 1000);
+        }
+    }
 }
