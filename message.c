@@ -1,7 +1,7 @@
 
 #include "message.h"
 #include "message_pq.h"
-
+#include "timer.h"
 
 void k_initMessages(MemInfo *memInfo, MessageInfo *messageInfo) {
     // TODO - allocate store as block...
@@ -73,7 +73,7 @@ Envelope *k_receiveMessage(MemInfo *memInfo, ProcInfo *procInfo, uint8_t *sender
 
 int8_t k_delayedSend(MemInfo *memInfo, MessageInfo *messageInfo, ProcInfo *procInfo, uint8_t pid, Envelope *envelope, uint32_t delay) {
     k_setOwner(memInfo, (uint32_t)envelope, PROC_ID_KERNEL);
-    envelope->header[SEND_TIME] = delay; // TODO(alex) - Set this to clock time + delay
+    envelope->header[SEND_TIME] = k_getTime() + delay;
     envelope->senderPid = procInfo->currentProcess->pid;
     envelope->destPid = pid;
 
