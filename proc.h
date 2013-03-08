@@ -6,7 +6,7 @@
 #include "mem.h"
 #include "message.h"
 #include "pq.h"
-#include "types.h"
+#include "kernel_types.h"
 
 void k_initProcesses(MemInfo *memInfo, ProcInfo *procInfo);
 uint32_t k_releaseProcessor(ProcInfo *procInfo, ReleaseReason reason);
