@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #include "heap.h"
-#include "types.h"
+#include "kernel_types.h"
 
 void pqInit(PQ *q, PQEntry *heap, size_t pqStoreSize, storeIndexFunc fn);
 PCB* pqTop(PQ *q);
