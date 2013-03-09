@@ -70,13 +70,17 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (2 << KERN_PRIORITY_SHIFT) | MAX_PRIORITY;
     procInfo->nullProcess = process;
 
-    // TODO (Jon) - put clock process here (CLOCK_PID)
+    // Clock Process
+    process = &(procInfo->processes[CLOCK_PID]); // Push process function address onto stack
+    *(process->startLoc) = ((uint32_t) clockProcess);
+    process->priority = (0 << KERN_PRIORITY_SHIFT) | 2;
+    pqAdd(&(procInfo->prq), process);
 
     // CRT Process
     process = &(procInfo->processes[CRT_PID]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) crt_proc);
     process->priority = (0 << KERN_PRIORITY_SHIFT) | 0;
-    procInfo->nullProcess = process;
+    pqAdd(&(procInfo->prq), process);
 
     // Keboard Process
     process = &(procInfo->processes[KEYBOARD_PID]); // Push process function address onto stack

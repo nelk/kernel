@@ -367,10 +367,16 @@ void printTime(uint32_t currentTime, uint32_t offset) {
 
 void clockProcess(void) {
     ClockCmd command;
+    Envelope *envelope = NULL;
 
     initClockCommand(&command);
 
-    // TODO: Register commands %WR, %WS hh:mm:ss, and %WT with keyboard decoder.
+    envelope = (Envelope *)request_memory_block();
+    envelope->dstPid = KEYBOARD_PID;
+    envelope->messageData[0] = 'w';
+    // TODO (alex) - make message type matter
+    send_message(KEYBOARD_PID, envelope);
+    envelope = NULL;
 
     while (1) {
         command.receivedEnvelope = receive_message(NULL);
