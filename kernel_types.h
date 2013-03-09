@@ -44,6 +44,8 @@ struct MemInfo {
 #define PROC_ID_ALLOCATOR (0x81)
 #define PROC_ID_NONE      (0xff)
 
+#define UART_IN_BUF_SIZE (64)
+
 enum ProcState {
     BLOCKED,
     BLOCKED_MESSAGE,
@@ -105,6 +107,16 @@ struct ProcInfo {
 
     PQ memq; // Memory blocked queue
     PQEntry memQueue[NUM_PROCS];
+
+    char *uartInputBuffer;
+
+    // UART keyboard input data
+    char inputBuf[UART_IN_BUF_SIZE];
+    volatile uint32_t readIndex; // Next read index
+    volatile uint32_t writeIndex; // Next write index
+    volatile uint32_t inputBufOverflow;
+    Envelope *currentEnv; // This is initialized to new block
+    uint32_t currentEnvIndex;
 };
 
 enum ReleaseReason {
