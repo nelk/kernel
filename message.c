@@ -25,7 +25,7 @@ int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, P
         return 1;
     }
     // Set to new owner (and check if valid)
-    if (k_changeOwner(memInfo, (uint32_t)envelope, srcPid, dstPid) != 0) { // TODO (alex) - should we be using SUCCESS here? Maybe have global return codes like SUCCESS that's not just for memory?
+    if (k_changeOwner(memInfo, (uint32_t)envelope, srcPid, PROC_ID_KERNEL) != 0) { // TODO (alex) - should we be using SUCCESS here? Maybe have global return codes like SUCCESS that's not just for memory?
         return 2;
     }
 
@@ -79,7 +79,7 @@ Envelope *k_receiveMessage(MessageInfo *messageInfo, MemInfo *memInfo, ProcInfo 
     message->next = NULL;
 
     // Change ownership
-    k_changeOwner(memInfo, (uint32_t)message, message->srcPid, currentProc->pid);
+    k_changeOwner(memInfo, (uint32_t)message, PROC_ID_KERNEL, currentProc->pid);
 
     return message;
 }
@@ -87,7 +87,7 @@ Envelope *k_receiveMessage(MessageInfo *messageInfo, MemInfo *memInfo, ProcInfo 
 int8_t k_sendDelayedMessage(MessageInfo *messageInfo, ClockInfo *clockInfo, MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, ProcId srcPid, ProcId dstPid, uint32_t delay) {
     k_zeroEnvelope(envelope);
 	// TODO: (shale) verify if this call is necessary.
-    k_changeOwner(memInfo, (uint32_t)envelope, srcPid, dstPid);
+    k_changeOwner(memInfo, (uint32_t)envelope, srcPid, PROC_ID_KERNEL);
 
     envelope->sendTime = k_getTime(clockInfo) + delay;
 
