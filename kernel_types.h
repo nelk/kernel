@@ -9,7 +9,7 @@
 // Keil Related Types
 typedef int32_t ssize_t;
 
-// Keyboard Hotkey related consts. These all map to characters, and will break everything if they are '%'.
+// Keyboard Hotkey related consts. This will break everything if it is '%'.
 #define SHOW_DEBUG_PROCESSES ('!')
 
 // Memory-related types
