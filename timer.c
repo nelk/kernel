@@ -101,5 +101,5 @@ void k_timerIRQHandler(ClockInfo *clockInfo) {
     // ack interrupt, see section 21.6.1 on pg 493 of LPC17XX_UM
     LPC_TIM0->IR = BIT(0);
 
-    ++clockInfo->totalTime;
+    ++(clockInfo->totalTime);
 }
