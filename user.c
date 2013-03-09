@@ -175,8 +175,6 @@ struct ClockCmd {
     uint32_t offset;
     uint32_t isRunning;
 
-    ProcId myPid;
-
     Envelope *selfEnvelope;
     Envelope *receivedEnvelope;
 };
