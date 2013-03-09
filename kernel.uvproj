@@ -412,6 +412,31 @@
           <GroupName>source_code</GroupName>
           <Files>
             <File>
+              <FileName>bridge.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bridge.c</FilePath>
+            </File>
+            <File>
+              <FileName>bridge.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\bridge.h</FilePath>
+            </File>
+            <File>
+              <FileName>common_types.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\common_types.h</FilePath>
+            </File>
+            <File>
+              <FileName>HAL.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\HAL.c</FilePath>
+            </File>
+            <File>
+              <FileName>kernel_types.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\kernel_types.h</FilePath>
+            </File>
+            <File>
               <FileName>main.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\main.c</FilePath>
@@ -462,21 +487,6 @@
               <FilePath>.\rtx.h</FilePath>
             </File>
             <File>
-              <FileName>HAL.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\HAL.c</FilePath>
-            </File>
-            <File>
-              <FileName>bridge.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\bridge.c</FilePath>
-            </File>
-            <File>
-              <FileName>bridge.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\bridge.h</FilePath>
-            </File>
-            <File>
               <FileName>timer.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\timer.c</FilePath>
@@ -495,16 +505,6 @@
               <FileName>uart_irq.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\uart_irq.c</FilePath>
-            </File>
-            <File>
-              <FileName>kernel_types.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\kernel_types.h</FilePath>
-            </File>
-            <File>
-              <FileName>common_types.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\common_types.h</FilePath>
             </File>
           </Files>
         </Group>
