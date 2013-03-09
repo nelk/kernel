@@ -237,27 +237,39 @@ uint8_t parseTime(char *message, uint32_t *offset) {
     }
 
     // Read hours field.
+    if (message[4] < '0' || message[4] > '9' || message[5] < '0' || message[5] > '9') {
+        return EINVAL;
+    }
+
     field = get_uint32(message, 4, 2);
 
-    if (field > 23 || message[4] < '0' || message[4] > '9' || message[5] < '0' || message[5] > '9') {
+    if (field > 23) {
         return EINVAL;
     }
 
     tempOffset += (field * SECONDS_IN_HOUR * MILLISECONDS_IN_SECOND);
 
     // Read minutes field.
+    if (message[7] < '0' || message[7] > '9' || message[8] < '0' || message[8] > '9') {
+        return EINVAL;
+    }
+
     field = get_uint32(message, 7, 2);
 
-    if (field > 59 || message[7] < '0' || message[7] > '9' || message[8] < '0' || message[8] > '9') {
+    if (field > 59) {
         return EINVAL;
     }
 
     tempOffset += (field * SECONDS_IN_MINUTE * MILLISECONDS_IN_SECOND);
 
     // Read seconds field.
+    if (message[10] < '0' || message[10] > '9' || message[11] < '0' || message[11] > '9') {
+        return EINVAL;
+    }
+
     field = get_uint32(message, 10, 2);
 
-    if (field > 59 || message[10] < '0' || message[10] > '9' || message[11] < '0' || message[11] > '9') {
+    if (field > 59) {
         return EINVAL;
     }
 
@@ -270,7 +282,7 @@ uint8_t parseTime(char *message, uint32_t *offset) {
 
 void parseClockMessage(ClockCmd *command) {
     uint8_t status = 0;
-    char firstChar[2];
+    char firstChar[2] = {0};
     Envelope *envelope = command->receivedEnvelope;
 
     if (envelope->srcPid == CLOCK_PID) {
