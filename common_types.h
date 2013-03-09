@@ -1,5 +1,12 @@
-#ifndef COMMON_TYPES
-#define COMMON_TYPES
+#ifndef COMMON_TYPES_H
+#define COMMON_TYPES_H
+
+// Error-codes
+
+#define SUCCESS (0)
+#define ENOMEM  (1)
+#define EPERM   (2)
+#define EINVAL  (3)
 
 // exposed so we can expose the size of messages in the envelopes
 #define BLOCKSIZE_BYTES (1 << 7)
