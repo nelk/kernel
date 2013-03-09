@@ -506,6 +506,26 @@
               <FileType>5</FileType>
               <FilePath>.\user.h</FilePath>
             </File>
+            <File>
+              <FileName>heap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\heap.c</FilePath>
+            </File>
+            <File>
+              <FileName>heap.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\heap.h</FilePath>
+            </File>
+            <File>
+              <FileName>message_pq.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\message_pq.c</FilePath>
+            </File>
+            <File>
+              <FileName>message_pq.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\message_pq.h</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>
