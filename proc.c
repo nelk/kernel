@@ -15,6 +15,8 @@ extern void __rte(void);
 extern void  __set_MSP(uint32_t);
 extern uint32_t __get_MSP(void);
 
+void processUartInput(ProcInfo *procInfo, MemInfo *memInfo);w
+
 ssize_t *rqStoreIndexFunc(PCB *pcb) {
     return &(pcb->rqIndex);
 }
@@ -100,6 +102,14 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     pqAdd(&(procInfo->prq), process);
 
     procInfo->currentProcess = NULL;
+
+
+    // Init UART keyboard global input data
+    procInfo->readIndex = 0;
+    procInfo->writeIndex = 0;
+    procInfo->inputBufOverflow = 0;
+    procInfo->currentEnv = NULL;
+    procInfo->currentEnvIndex = 0;
 }
 
 void k_processUartOutput(ProcInfo *procInfo, MemInfo *memInfo) {
@@ -123,6 +133,7 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
     PQ *dstQueue = NULL;
 
     k_processUartOutput(procInfo, memInfo);
+    processUartInput(procInfo, memInfo);
     k_processDelayedMessages(messageInfo, procInfo, memInfo, clockInfo);
 
     switch (reason) {
@@ -254,5 +265,35 @@ int16_t k_getProcessPriority(ProcInfo *procInfo, ProcId pid) {
 
 ProcId k_getPid(ProcInfo *procInfo) {
     return procInfo->currentProcess->pid;
+
+void processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
+    ProcId keyboardPid;
+    uint32_t localReader = procInfo->readIndex;
+    uint32_t localWriter = procInfo->writeIndex;
+
+    while (procInfo->currentEnv != NULL && localReader != localWriter) {
+        char new_char = procInfo->inputBuf[localReader];
+        localReader = (localReader + 1) % UART_IN_BUF_SIZE;
+
+        if (new_char == '\n') {
+            if (procInfo->inputBufOverflow) {
+                // Reuse current envelope
+                procInfo->currentEnvIndex = 0;
+                procInfo->inputBufOverflow = 0;
+                continue;
+            }
+            k_sendMessage(memInfo, procInfo, procInfo->currentEnv, keyboardPid, keyboardPid); // No preemption
+            procInfo->currentEnv = (Envelope *)k_acquire_memory_block(memInfo, keyboardPid);
+            procInfo->currentEnvIndex = 0;
+            continue;
+        }
+        if (procInfo->currentEnvIndex >= 96) { // Constantified
+            procInfo->inputBufOverflow = 1;
+            continue;
+        }
+        procInfo->currentEnv->messageBody[procInfo->currentEnvIndex] = new_char;
+        ++currentEnvIndex;
+    }
+    procInfo->readIndex = localReader;
 }
 
