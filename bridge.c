@@ -82,7 +82,7 @@ Envelope *bridge_receiveMessage(uint8_t *senderPid) {
 }
 
 int8_t bridge_sendDelayedMessage(uint8_t pid, Envelope *envelope, uint32_t delay) {
-    return k_sendDelayedMessage(&gMemInfo, &gProcInfo, envelope, gProcInfo.currentProcess->pid, pid, delay);
+    return k_sendDelayedMessage(&gMessageInfo, &gClockInfo, &gMemInfo, &gProcInfo, envelope, gProcInfo.currentProcess->pid, pid, delay);
 }
 
 

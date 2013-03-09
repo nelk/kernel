@@ -84,7 +84,7 @@ Envelope *k_receiveMessage(MessageInfo *messageInfo, MemInfo *memInfo, ProcInfo 
     return message;
 }
 
-int8_t k_sendDelayedMessage(MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, ProcId srcPid, ProcId dstPid, uint32_t delay) {
+int8_t k_sendDelayedMessage(MessageInfo *messageInfo, ClockInfo *clockInfo, MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, ProcId srcPid, ProcId dstPid, uint32_t delay) {
     k_zeroEnvelope(envelope);
 	// TODO: (shale) verify if this call is necessary.
     k_changeOwner(memInfo, (uint32_t)envelope, srcPid, dstPid);
