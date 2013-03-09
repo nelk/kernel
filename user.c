@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <stdio.h>
 
 #include "rtx.h"
 #include "uart_polling.h"
@@ -66,10 +67,10 @@ void print_uint32(uint32_t i) {
 }
 
 void fibProcess(void) {
-    uint8_t temp;
-    uint8_t cur;
-    uint8_t prev;
-    uint8_t idx;
+    uint32_t temp;
+    uint32_t cur;
+    uint32_t prev;
+    uint32_t idx;
 	
 		Envelope *envelope = (Envelope *)request_memory_block();
 		envelope->messageData[0] = 'f';
@@ -91,12 +92,11 @@ void fibProcess(void) {
             prev = cur;
             cur = cur + temp;
             idx++;
-
-            // uart_put_string(UART_NUM, "fib(");
-            print_uint32(idx);
-            // uart_put_string(UART_NUM, ") = ");
-            print_uint32(cur);
-            // uart_put_string(UART_NUM, "\r\n");
+					
+						envelope = (Envelope *)request_memory_block();
+						sprintf(envelope->messageData, "fib(%d) = %d\r\n", idx, cur);
+						send_message(CRT_PID, envelope);
+						envelope = NULL;
 
             if (idx % 5 == 0) {
                 release_processor();
