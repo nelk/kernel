@@ -70,6 +70,17 @@ void fibProcess(void) {
     uint8_t cur;
     uint8_t prev;
     uint8_t idx;
+	
+		Envelope *envelope = (Envelope *)request_memory_block();
+		envelope->messageData[0] = 'f';
+		envelope->messageData[1] = 'o';
+		envelope->messageData[2] = 'o';
+		envelope->messageData[3] = '\r';
+		envelope->messageData[4] = '\n';
+		envelope->messageData[5] = '\0';
+		send_message(CRT_PID, envelope);
+		envelope = NULL;
+	
 
     while (1) {
         prev = 1;
