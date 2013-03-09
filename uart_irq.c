@@ -281,7 +281,7 @@ get_char:
 char toLowerAndIsLetter(char c) {
     if (c >= 'a' && c <= 'z') {
         return c;
-    } else if (c >= 'A' && c <= 'A') {
+    } else if (c >= 'A' && c <= 'Z') {
         return c - 'A' + 'a';
     }
     return '\0';
@@ -289,7 +289,7 @@ char toLowerAndIsLetter(char c) {
 
 void uart_keyboard_proc(void) {
     Envelope *message = NULL;
-    ProcId registry['z' - 'a'] = {0};
+    ProcId registry['z' - 'a' + 1] = {0};
     ProcId destPid = 0;
 
     while (1) {
@@ -298,7 +298,7 @@ void uart_keyboard_proc(void) {
             continue;
         }
 
-        if (message->srcPid == KEYBOARD_PID) { // Register character with pid
+        if (message->srcPid != KEYBOARD_PID) { // Register character with pid
             char c = toLowerAndIsLetter(message->messageData[0]);
             if (c == '\0') goto reject;
             registry[c - 'a'] = message->srcPid;

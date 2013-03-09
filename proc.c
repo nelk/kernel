@@ -82,7 +82,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (0 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
 
-    // Keboard Process
+    // Keyboard Process
     process = &(procInfo->processes[KEYBOARD_PID]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) uart_keyboard_proc);
     process->priority = (0 << KERN_PRIORITY_SHIFT) | 1;
@@ -92,7 +92,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process = &(procInfo->processes[FIRST_USER_PID + 0]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) schizophrenicProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 3;
-    pqAdd(&(procInfo->prq), process);
+    // pqAdd(&(procInfo->prq), process);
 
     // Fib Process
     process = &(procInfo->processes[FIRST_USER_PID + 1]); // Push process function address onto stack
@@ -104,22 +104,21 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process = &(procInfo->processes[FIRST_USER_PID + 2]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) memoryMuncherProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 1;
-    pqAdd(&(procInfo->prq), process);
+    // pqAdd(&(procInfo->prq), process);
 
     // Release Process
     process = &(procInfo->processes[FIRST_USER_PID + 3]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) releaseProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
-    pqAdd(&(procInfo->prq), process);
+    // pqAdd(&(procInfo->prq), process);
 
     procInfo->currentProcess = NULL;
-
 
     // Init UART keyboard global input data
     procInfo->readIndex = 0;
     procInfo->writeIndex = 0;
     procInfo->inputBufOverflow = 0;
-    procInfo->currentEnv = NULL;
+		procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
     procInfo->currentEnvIndex = 0;
 }
 
@@ -131,7 +130,7 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
         char new_char = procInfo->inputBuf[localReader];
         localReader = (localReader + 1) % UART_IN_BUF_SIZE;
 
-        if (new_char == '\n') {
+        if (new_char == '\r') {
             if (procInfo->inputBufOverflow) {
                 // Reuse current envelope
                 procInfo->currentEnvIndex = 0;
@@ -202,7 +201,7 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
             break;
         case MESSAGE_RECEIVE:
             srcQueue = &(procInfo->prq);
-            dstQueue = &(procInfo->prq);
+            dstQueue = NULL;
             targetState = BLOCKED_MESSAGE;
             break;
         default:

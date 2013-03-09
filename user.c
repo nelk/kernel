@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <stdio.h>
 
 #include "rtx.h"
 #include "uart_polling.h"
@@ -66,10 +67,11 @@ void print_uint32(uint32_t i) {
 }
 
 void fibProcess(void) {
-    uint8_t temp;
-    uint8_t cur;
-    uint8_t prev;
-    uint8_t idx;
+    uint32_t temp;
+    uint32_t cur;
+    uint32_t prev;
+    uint32_t idx;
+        Envelope *envelope = NULL;
 
     while (1) {
         prev = 1;
@@ -81,11 +83,11 @@ void fibProcess(void) {
             cur = cur + temp;
             idx++;
 
-            // uart_put_string(UART_NUM, "fib(");
-            print_uint32(idx);
-            // uart_put_string(UART_NUM, ") = ");
-            print_uint32(cur);
-            // uart_put_string(UART_NUM, "\r\n");
+                        envelope = (Envelope *)request_memory_block();
+                        // TODO: Replace with self-rolled method.
+                        sprintf(envelope->messageData, "fib(%d) = %d\r\n", idx, cur);
+                        send_message(CRT_PID, envelope);
+                        envelope = NULL;
 
             if (idx % 5 == 0) {
                 release_processor();
@@ -172,14 +174,14 @@ struct ClockCmd {
     ClockCmdType cmdType;
 
     uint32_t currentTime;
-    uint32_t offset;
+    int32_t offset;
     uint32_t isRunning;
 
     Envelope *selfEnvelope;
     Envelope *receivedEnvelope;
 };
 
-void write_uint32(uint32_t number, char *buffer, uint8_t *startIndex) {
+void write_uint32(uint32_t number, char *buffer, uint8_t *startIndex, uint8_t isClock) {
     uint32_t tempNumber = number;
     uint8_t numDigits = 0;
 
@@ -190,6 +192,10 @@ void write_uint32(uint32_t number, char *buffer, uint8_t *startIndex) {
 
     if (number == 0) {
         numDigits = 1;
+    }
+
+    if (isClock && number < 10) {
+        numDigits = 2;
     }
 
     buffer = buffer + *startIndex;
@@ -208,7 +214,7 @@ uint32_t get_uint32(char *buffer, uint8_t startIndex, uint8_t length) {
 
     for(; i < length; ++i) {
         number *= 10;
-        number += (uint32_t)(buffer[i] - '0');
+        number += (uint32_t)(buffer[i + startIndex] - '0');
     }
 
     return number;
@@ -225,9 +231,9 @@ void initClockCommand(ClockCmd *command) {
     command->receivedEnvelope = NULL;
 }
 
-uint8_t parseTime(char *message, uint32_t *offset) {
+uint8_t parseTime(char *message, int32_t *offset) {
     uint32_t field = 0;
-    uint32_t tempOffset = 0;
+    uint32_t requestedTime = 0;
 
     // Check for any invalid characters.
     if (message[0] != '%' || message[1] != 'W' || message[2] != 'S' ||
@@ -246,7 +252,7 @@ uint8_t parseTime(char *message, uint32_t *offset) {
         return EINVAL;
     }
 
-    tempOffset += (field * SECONDS_IN_HOUR * MILLISECONDS_IN_SECOND);
+    requestedTime += (field * SECONDS_IN_HOUR * MILLISECONDS_IN_SECOND);
 
     // Read minutes field.
     if (message[7] < '0' || message[7] > '9' || message[8] < '0' || message[8] > '9') {
@@ -259,7 +265,7 @@ uint8_t parseTime(char *message, uint32_t *offset) {
         return EINVAL;
     }
 
-    tempOffset += (field * SECONDS_IN_MINUTE * MILLISECONDS_IN_SECOND);
+    requestedTime += (field * SECONDS_IN_MINUTE * MILLISECONDS_IN_SECOND);
 
     // Read seconds field.
     if (message[10] < '0' || message[10] > '9' || message[11] < '0' || message[11] > '9') {
@@ -272,55 +278,56 @@ uint8_t parseTime(char *message, uint32_t *offset) {
         return EINVAL;
     }
 
-    tempOffset += (field * MILLISECONDS_IN_SECOND);
-    *offset = tempOffset;
+    requestedTime += (field * MILLISECONDS_IN_SECOND);
+
+    *offset = requestedTime - get_time();
 
     return SUCCESS;
 }
 
 
 void parseClockMessage(ClockCmd *command) {
+        // Note:  when setting the command type to PRINT_TIME,
+        // it will set isRunning to true and send a delayed message
+        // to itself.
     uint8_t status = 0;
-    char firstChar[2] = {0};
     Envelope *envelope = command->receivedEnvelope;
 
     if (envelope->srcPid == CLOCK_PID) {
-        command->cmdType = PRINT_TIME;
+        if (command->isRunning) {
+                    command->cmdType = PRINT_TIME;
+                }
         return;
     } else if (envelope->srcPid != KEYBOARD_PID) {
         release_memory_block(envelope);
         return;
     }
 
-    firstChar[0] = envelope->messageData[2];
-    firstChar[1] = '\0';
-
-    if (firstChar == "R") {
-        command->cmdType = RESET_TIME;
-    } else if (firstChar == "T") {
-        command->cmdType = TERMINATE;
-    } else if (firstChar == "S") {
-        command->cmdType = SET_TIME;
-    } else {
-        return;
+    switch (envelope->messageData[2]) {
+        case 'R':
+            command->cmdType = RESET_TIME;
+            break;
+        case 'T':
+            command->cmdType = TERMINATE;
+            break;
+        case 'S':
+            command->cmdType = SET_TIME;
+            break;
+        default:
+            return;
     }
 
     switch(command->cmdType) {
         case RESET_TIME:
-            command->offset = command->currentTime;
-            command->isRunning = 1;
-            command->cmdType = PRINT_TIME;
+            command->offset = -1 * (int32_t)command->currentTime;
+            if (command->isRunning == 0) {
+                            command->cmdType = PRINT_TIME;
+                        }
             break;
         case SET_TIME:
             status = parseTime(envelope->messageData, &(command->offset));
-            if (status == SUCCESS) {
-                command->isRunning = 1;
+            if (status == SUCCESS && command->isRunning == 0) {
                 command->cmdType = PRINT_TIME;
-            } else {
-                // uart_put_string(UART_NUM, "Please give input in the form \"%WS hh:mm:ss\" with valid values.");
-                if (command->isRunning) {
-                    command->cmdType = PRINT_TIME;
-                }
             }
             break;
         case TERMINATE:
@@ -340,25 +347,25 @@ void printTime(uint32_t currentTime, uint32_t offset) {
     Envelope *printMessage = (Envelope *)request_memory_block();
     char *messageData = printMessage->messageData;
 
-    clockTime = (currentTime - offset) % (SECONDS_IN_DAY * MILLISECONDS_IN_SECOND);
+    clockTime = (currentTime + offset) % (SECONDS_IN_DAY * MILLISECONDS_IN_SECOND);
     clockTime /= MILLISECONDS_IN_SECOND;
 
     // Print hours.
     field = clockTime / SECONDS_IN_HOUR;
     clockTime %= SECONDS_IN_HOUR;
-    write_uint32(field, messageData, &index);
+    write_uint32(field, messageData, &index, 1);
 
     messageData[index++] = ':';
 
     // Print minutes.
     field = clockTime / SECONDS_IN_MINUTE;
     clockTime %= SECONDS_IN_MINUTE;
-    write_uint32(field, messageData, &index);
+    write_uint32(field, messageData, &index, 1);
 
     messageData[index++] = ':';
 
     // Print seconds.
-    write_uint32(clockTime, messageData, &index);
+    write_uint32(clockTime, messageData, &index, 1);
     messageData[index++] = '\r';
     messageData[index++] = '\n';
     messageData[index++] = '\0';
@@ -386,6 +393,7 @@ void clockProcess(void) {
 
         if (command.cmdType == PRINT_TIME) {
             printTime(command.currentTime, command.offset);
+                        command.isRunning = 1;
             delayed_send(CLOCK_PID, command.selfEnvelope, 1000);
         }
     }
