@@ -199,18 +199,8 @@ void c_UART0_IRQHandler(void)
 		}	    
 	} else { /* IIR_CTI and reserved combination are not implemented */
 		return;
-	}	
-}
-
-void uart_send_string( uint32_t n_uart, uint8_t *p_buffer, uint32_t len )
-{
-	LPC_UART_TypeDef *pUart;
-
-	if(n_uart == 0 ) { /* UART0 is implemented */
-		pUart = (LPC_UART_TypeDef *)LPC_UART0;
-	} else { /* other UARTs are not implemented */
-		return;
 	}
+}
 
 void uart_send_char_isr(ProcInfo *procInfo) {
 	procInfo->uartOutputComplete = 1;
