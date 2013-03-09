@@ -113,7 +113,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     // pqAdd(&(procInfo->prq), process);
 
     procInfo->currentProcess = NULL;
-		
+
     // Init UART keyboard global input data
     procInfo->readIndex = 0;
     procInfo->writeIndex = 0;
@@ -201,7 +201,7 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
             break;
         case MESSAGE_RECEIVE:
             srcQueue = &(procInfo->prq);
-			dstQueue = NULL;
+            dstQueue = NULL;
             targetState = BLOCKED_MESSAGE;
             break;
         default:

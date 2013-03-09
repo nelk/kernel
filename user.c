@@ -71,7 +71,7 @@ void fibProcess(void) {
     uint32_t cur;
     uint32_t prev;
     uint32_t idx;
-		Envelope *envelope = NULL;
+        Envelope *envelope = NULL;
 
     while (1) {
         prev = 1;
@@ -83,11 +83,11 @@ void fibProcess(void) {
             cur = cur + temp;
             idx++;
 
-						envelope = (Envelope *)request_memory_block();
-						// TODO: Replace with self-rolled method.
-						sprintf(envelope->messageData, "fib(%d) = %d\r\n", idx, cur);
-						send_message(CRT_PID, envelope);
-						envelope = NULL;
+                        envelope = (Envelope *)request_memory_block();
+                        // TODO: Replace with self-rolled method.
+                        sprintf(envelope->messageData, "fib(%d) = %d\r\n", idx, cur);
+                        send_message(CRT_PID, envelope);
+                        envelope = NULL;
 
             if (idx % 5 == 0) {
                 release_processor();
@@ -287,16 +287,16 @@ uint8_t parseTime(char *message, int32_t *offset) {
 
 
 void parseClockMessage(ClockCmd *command) {
-		// Note:  when setting the command type to PRINT_TIME,
-		// it will set isRunning to true and send a delayed message
-		// to itself.
+        // Note:  when setting the command type to PRINT_TIME,
+        // it will set isRunning to true and send a delayed message
+        // to itself.
     uint8_t status = 0;
     Envelope *envelope = command->receivedEnvelope;
 
     if (envelope->srcPid == CLOCK_PID) {
         if (command->isRunning) {
-					command->cmdType = PRINT_TIME;
-				}
+                    command->cmdType = PRINT_TIME;
+                }
         return;
     } else if (envelope->srcPid != KEYBOARD_PID) {
         release_memory_block(envelope);
@@ -321,8 +321,8 @@ void parseClockMessage(ClockCmd *command) {
         case RESET_TIME:
             command->offset = -1 * (int32_t)command->currentTime;
             if (command->isRunning == 0) {
-							command->cmdType = PRINT_TIME;
-						}
+                            command->cmdType = PRINT_TIME;
+                        }
             break;
         case SET_TIME:
             status = parseTime(envelope->messageData, &(command->offset));
@@ -393,7 +393,7 @@ void clockProcess(void) {
 
         if (command.cmdType == PRINT_TIME) {
             printTime(command.currentTime, command.offset);
-						command.isRunning = 1;
+                        command.isRunning = 1;
             delayed_send(CLOCK_PID, command.selfEnvelope, 1000);
         }
     }
