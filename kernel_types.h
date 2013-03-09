@@ -26,6 +26,11 @@ struct MemInfo {
     uint8_t trackOwners;
 
     struct FreeBlock *firstFree;
+
+    // accounting info
+    uint32_t numSuccessfulAllocs;
+    uint32_t numFailedAllocs;
+    uint32_t numFreeCalls;
 };
 
 
