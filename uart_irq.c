@@ -302,45 +302,53 @@ void uart_keyboard_proc(void) {
 
         if (message->srcPid != KEYBOARD_PID) { // Register character with pid
             char c = toLowerAndIsLetter(message->messageData[0]);
-            if (c == '\0') goto reject;
+            if (c == '\0') {
+                release_memory_block(message);
+                continue;
+            }
             registry[c - 'a'] = message->srcPid;
 
-            // Set copy for crt proc this message (since original is not being sent anywhere)
-            messageCopy = message;
-            message = NULL;
+            release_memory_block(message);
         } else {
             char c = message->messageData[0];
-            if (c != '%') goto reject;
-            c = toLowerAndIsLetter(message->messageData[1]);
-            if (c == '\0') goto reject;
-            destPid = registry[c - 'a'];
-            if (destPid == 0) goto reject;
-
-            // Create copy to send to crt proc
-            messageCopy = request_memory_block();
-            if (messageCopy != NULL) {
-                messageCopy->srcPid = message->srcPid;
-                messageCopy->dstPid = message->dstPid;
-                messageCopy->messageType = message->messageType;
-                messageCopy->sendTime = message->sendTime;
-                for (copyIndex = 0; copyIndex < MESSAGEDATA_SIZE_BYTES; ++copyIndex) {
-                    messageCopy->messageData[copyIndex] = message->messageData[copyIndex];
+            uint8_t reject = 1;
+            if (c != '%') {
+                c = toLowerAndIsLetter(message->messageData[1]);
+                if (c == '\0') {
+                    destPid = registry[c - 'a'];
+                    if (destPid == 0) {
+                        reject = 0;
+                    }
                 }
             }
 
-            // Send the message to the proc that registered with this character
-            send_message(destPid, message);
-            message = NULL;
-        }
+            if (reject) {
+                // Set copy for crt proc this message (since original is not being sent anywhere)
+                messageCopy = message;
+                message = NULL;
+            } else {
+                // Create copy to send to crt proc
+                messageCopy = request_memory_block();
+                if (messageCopy != NULL) {
+                    messageCopy->srcPid = message->srcPid;
+                    messageCopy->dstPid = message->dstPid;
+                    messageCopy->messageType = message->messageType;
+                    messageCopy->sendTime = message->sendTime;
+                    for (copyIndex = 0; copyIndex < MESSAGEDATA_SIZE_BYTES; ++copyIndex) {
+                        messageCopy->messageData[copyIndex] = message->messageData[copyIndex];
+                    }
 
-        // Echo message to crt proc
-        if (messageCopy != NULL) {
+                }
+
+                // Send the message to the proc that registered with this character
+                send_message(destPid, message);
+                message = NULL;
+            }
+
+            // Send copy of message to CRT proc
             send_message(CRT_PID, messageCopy);
             messageCopy = NULL;
         }
-        continue;
-reject:
-        release_memory_block(message);
     }
 }
 
