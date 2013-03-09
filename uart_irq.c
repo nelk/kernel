@@ -339,15 +339,16 @@ void uart_keyboard_proc(void) {
                     }
 
                 }
-
                 // Send the message to the proc that registered with this character
                 send_message(destPid, message);
                 message = NULL;
             }
 
             // Send copy of message to CRT proc
-            send_message(CRT_PID, messageCopy);
-            messageCopy = NULL;
+            if (messageCopy != NULL) {
+                send_message(CRT_PID, messageCopy);
+                messageCopy = NULL;
+            }
         }
     }
 }
