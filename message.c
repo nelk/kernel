@@ -87,14 +87,14 @@ Envelope *k_receiveMessage(MessageInfo *messageInfo, MemInfo *memInfo, ProcInfo 
 int8_t k_sendDelayedMessage(MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, ProcId srcPid, ProcId dstPid, uint32_t delay) {
     k_zeroEnvelope(envelope);
 	// TODO: (shale) verify if this call is necessary.
-    k_changeOwner(memInfo, (uint32_t)envelope, PROC_ID_KERNEL);
+    k_changeOwner(memInfo, (uint32_t)envelope, srcPid, dstPid);
 
     envelope->sendTime = k_getTime(clockInfo) + delay;
 
     // TODO(sanjay): this seems to do no sanity checking of anything...
 
-    envelope->srcPid = procInfo->currentProcess->pid;
-    envelope->dstPid = pid;
+    envelope->srcPid = srcPid;
+    envelope->dstPid = dstPid;
 
     mpqAdd(&(messageInfo->mpq), envelope);
     return 0;
