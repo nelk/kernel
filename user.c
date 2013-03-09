@@ -204,7 +204,6 @@ void write_uint32(uint32_t number, char *buffer, uint8_t *startIndex) {
 
 uint32_t get_uint32(char *buffer, uint8_t startIndex, uint8_t length) {
     uint32_t number = 0;
-    uint32_t base = 1;
     uint32_t i = 0;
 
     for(; i < length; ++i) {
@@ -226,60 +225,6 @@ void initClockCommand(ClockCmd *command) {
 
     command->selfEnvelope = (Envelope *)request_memory_block();
     command->receivedEnvelope = NULL;
-}
-
-void parseClockMessage(ClockCmd *command) {
-    uint8_t status = 0;
-    char firstChars[2];
-    Envelope *envelope = command->receivedEnvelope;
-
-    if (envelope->srcPid == myPid) {
-        command->cmdType = PRINT_TIME;
-        return;
-    } else if (envelope->srcPid != KEYBOARD_PID) {
-        release_memory_block(envelope);
-        return;
-    }
-
-    firstChar[0] = envelope->messageData[2];
-    firstChar[1] = '\0';
-
-    if (firstChar == "R") {
-        command->cmdType = RESET_TIME;
-    } else if (firstChar == "T") {
-        command->cmdType = TERMINATE;
-    } else if (firstChar == "S") {
-        command->cmdType = SET_TIME;
-    } else {
-        return;
-    }
-
-    switch(command->cmdType) {
-        case RESET_TIME:
-            command->offset = command->currentTime;
-            command->isRunning = 1;
-            command->cmdType = PRINT_TIME;
-            break;
-        case SET_TIME:
-            status = parseTime(&(envelope->messageData), &(command->offset));
-            if (status == SUCCESS) {
-                command->isRunning = 1;
-                command->cmdType = PRINT_TIME;
-            } else {
-                // uart_put_string(UART_NUM, "Please give input in the form \"%WS hh:mm:ss\" with valid values.");
-                if (command->isRunning) {
-                    command->cmdType = PRINT_TIME;
-                }
-            }
-            break;
-        case TERMINATE:
-            command->isRunning = 0;
-            break;
-        default:
-            break;
-    }
-
-    release_memory_block(envelope);
 }
 
 uint8_t parseTime(char *message, uint32_t *offset) {
@@ -324,6 +269,59 @@ uint8_t parseTime(char *message, uint32_t *offset) {
 }
 
 
+void parseClockMessage(ClockCmd *command) {
+    uint8_t status = 0;
+    char firstChar[2];
+    Envelope *envelope = command->receivedEnvelope;
+
+    if (envelope->srcPid == CLOCK_PID) {
+        command->cmdType = PRINT_TIME;
+        return;
+    } else if (envelope->srcPid != KEYBOARD_PID) {
+        release_memory_block(envelope);
+        return;
+    }
+
+    firstChar[0] = envelope->messageData[2];
+    firstChar[1] = '\0';
+
+    if (firstChar == "R") {
+        command->cmdType = RESET_TIME;
+    } else if (firstChar == "T") {
+        command->cmdType = TERMINATE;
+    } else if (firstChar == "S") {
+        command->cmdType = SET_TIME;
+    } else {
+        return;
+    }
+
+    switch(command->cmdType) {
+        case RESET_TIME:
+            command->offset = command->currentTime;
+            command->isRunning = 1;
+            command->cmdType = PRINT_TIME;
+            break;
+        case SET_TIME:
+            status = parseTime(envelope->messageData, &(command->offset));
+            if (status == SUCCESS) {
+                command->isRunning = 1;
+                command->cmdType = PRINT_TIME;
+            } else {
+                // uart_put_string(UART_NUM, "Please give input in the form \"%WS hh:mm:ss\" with valid values.");
+                if (command->isRunning) {
+                    command->cmdType = PRINT_TIME;
+                }
+            }
+            break;
+        case TERMINATE:
+            command->isRunning = 0;
+            break;
+        default:
+            break;
+    }
+
+    release_memory_block(envelope);
+}
 
 void printTime(uint32_t currentTime, uint32_t offset) {
     uint32_t clockTime = 0;
@@ -365,14 +363,14 @@ void clockProcess(void) {
     // TODO: Register commands %WR, %WS hh:mm:ss, and %WT with keyboard decoder.
 
     while (1) {
-        command->receivedEnvelope = receive_message(NULL);
-        command->currentTime = get_time();
+        command.receivedEnvelope = receive_message(NULL);
+        command.currentTime = get_time();
 
         parseClockMessage(&command);
 
-        if (command->cmdType == PRINT_TIME) {
-            printTime(command->currentTime, offset);
-            delayed_send(myPid, selfEnvelope, 1000);
+        if (command.cmdType == PRINT_TIME) {
+            printTime(command.currentTime, command.offset);
+            delayed_send(CLOCK_PID, command.selfEnvelope, 1000);
         }
     }
 }
