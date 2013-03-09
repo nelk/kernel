@@ -175,8 +175,6 @@ struct ClockCmd {
     uint32_t offset;
     uint32_t isRunning;
 
-    ProcId myPid;
-
     Envelope *selfEnvelope;
     Envelope *receivedEnvelope;
 };
@@ -220,8 +218,6 @@ void initClockCommand(ClockCmd *command) {
     command->currentTime = 0;
     command->offset = 0;
     command->isRunning = 0;
-
-    command->myPid = CLOCK_PID;
 
     command->selfEnvelope = (Envelope *)request_memory_block();
     command->receivedEnvelope = NULL;
