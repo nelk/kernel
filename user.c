@@ -1,6 +1,5 @@
 #include <stddef.h>
 
-#include "proc.h"
 #include "rtx.h"
 #include "uart_polling.h"
 #include "user.h"
@@ -156,4 +155,232 @@ void releaseProcess(void) {
 
     //set_process_priority(4, get_process_priority(1)); // funProcess pid = 1
     printProcess("releaseProcess\r\n");
+}
+
+// Clock-related
+
+typedef enum ClockCmdType ClockCmdType;
+enum ClockCmdType {
+    PRINT_TIME,
+    RESET_TIME,
+    SET_TIME,
+    TERMINATE,
+};
+
+typedef struct ClockCmd ClockCmd;
+struct ClockCmd {
+    ClockCmdType cmdType;
+
+    uint32_t currentTime;
+    uint32_t offset;
+    uint32_t isRunning;
+
+    Envelope *selfEnvelope;
+    Envelope *receivedEnvelope;
+};
+
+void write_uint32(uint32_t number, char *buffer, uint8_t *startIndex) {
+    uint32_t tempNumber = number;
+    uint8_t numDigits = 0;
+
+    while (tempNumber > 0) {
+        ++numDigits;
+        tempNumber /= 10;
+    }
+
+    if (number == 0) {
+        numDigits = 1;
+    }
+
+    buffer = buffer + *startIndex;
+    *startIndex += numDigits;
+
+    while (numDigits > 0) {
+        buffer[numDigits-1] = (char)((number % 10)+'0');
+        number /= 10;
+        --numDigits;
+    }
+}
+
+uint32_t get_uint32(char *buffer, uint8_t startIndex, uint8_t length) {
+    uint32_t number = 0;
+    uint32_t i = 0;
+
+    for(; i < length; ++i) {
+        number *= 10;
+        number += (uint32_t)(buffer[i] - '0');
+    }
+
+    return number;
+}
+
+void initClockCommand(ClockCmd *command) {
+    command->cmdType = TERMINATE;
+
+    command->currentTime = 0;
+    command->offset = 0;
+    command->isRunning = 0;
+
+    command->selfEnvelope = (Envelope *)request_memory_block();
+    command->receivedEnvelope = NULL;
+}
+
+uint8_t parseTime(char *message, uint32_t *offset) {
+    uint32_t field = 0;
+    uint32_t tempOffset = 0;
+
+    // Check for any invalid characters.
+    if (message[0] != '%' || message[1] != 'W' || message[2] != 'S' ||
+        message[3] != ' ' || message[6] != ':' || message[9] != ':') {
+        return EINVAL;
+    }
+
+    // Read hours field.
+    if (message[4] < '0' || message[4] > '9' || message[5] < '0' || message[5] > '9') {
+        return EINVAL;
+    }
+
+    field = get_uint32(message, 4, 2);
+
+    if (field > 23) {
+        return EINVAL;
+    }
+
+    tempOffset += (field * SECONDS_IN_HOUR * MILLISECONDS_IN_SECOND);
+
+    // Read minutes field.
+    if (message[7] < '0' || message[7] > '9' || message[8] < '0' || message[8] > '9') {
+        return EINVAL;
+    }
+
+    field = get_uint32(message, 7, 2);
+
+    if (field > 59) {
+        return EINVAL;
+    }
+
+    tempOffset += (field * SECONDS_IN_MINUTE * MILLISECONDS_IN_SECOND);
+
+    // Read seconds field.
+    if (message[10] < '0' || message[10] > '9' || message[11] < '0' || message[11] > '9') {
+        return EINVAL;
+    }
+
+    field = get_uint32(message, 10, 2);
+
+    if (field > 59) {
+        return EINVAL;
+    }
+
+    tempOffset += (field * MILLISECONDS_IN_SECOND);
+    *offset = tempOffset;
+
+    return SUCCESS;
+}
+
+
+void parseClockMessage(ClockCmd *command) {
+    uint8_t status = 0;
+    char firstChar[2] = {0};
+    Envelope *envelope = command->receivedEnvelope;
+
+    if (envelope->srcPid == CLOCK_PID) {
+        command->cmdType = PRINT_TIME;
+        return;
+    } else if (envelope->srcPid != KEYBOARD_PID) {
+        release_memory_block(envelope);
+        return;
+    }
+
+    firstChar[0] = envelope->messageData[2];
+    firstChar[1] = '\0';
+
+    if (firstChar == "R") {
+        command->cmdType = RESET_TIME;
+    } else if (firstChar == "T") {
+        command->cmdType = TERMINATE;
+    } else if (firstChar == "S") {
+        command->cmdType = SET_TIME;
+    } else {
+        return;
+    }
+
+    switch(command->cmdType) {
+        case RESET_TIME:
+            command->offset = command->currentTime;
+            command->isRunning = 1;
+            command->cmdType = PRINT_TIME;
+            break;
+        case SET_TIME:
+            status = parseTime(envelope->messageData, &(command->offset));
+            if (status == SUCCESS) {
+                command->isRunning = 1;
+                command->cmdType = PRINT_TIME;
+            } else {
+                // uart_put_string(UART_NUM, "Please give input in the form \"%WS hh:mm:ss\" with valid values.");
+                if (command->isRunning) {
+                    command->cmdType = PRINT_TIME;
+                }
+            }
+            break;
+        case TERMINATE:
+            command->isRunning = 0;
+            break;
+        default:
+            break;
+    }
+
+    release_memory_block(envelope);
+}
+
+void printTime(uint32_t currentTime, uint32_t offset) {
+    uint32_t clockTime = 0;
+    uint32_t field = 0;
+    uint8_t index = 0;
+    Envelope *printMessage = (Envelope *)request_memory_block();
+    char *messageData = printMessage->messageData;
+
+    clockTime = (currentTime - offset) % (SECONDS_IN_DAY * MILLISECONDS_IN_SECOND);
+    clockTime /= MILLISECONDS_IN_SECOND;
+
+    // Print hours.
+    field = clockTime / SECONDS_IN_HOUR;
+    clockTime %= SECONDS_IN_HOUR;
+    write_uint32(field, messageData, &index);
+
+    messageData[index++] = ':';
+
+    // Print minutes.
+    field = clockTime / SECONDS_IN_MINUTE;
+    clockTime %= SECONDS_IN_MINUTE;
+    write_uint32(field, messageData, &index);
+
+    messageData[index++] = ':';
+
+    // Print seconds.
+    write_uint32(clockTime, messageData, &index);
+    messageData[index++] = '\r';
+    messageData[index++] = '\n';
+    messageData[index++] = '\0';
+    send_message(CRT_PID, printMessage);
+}
+
+void clockProcess(void) {
+    ClockCmd command;
+
+    initClockCommand(&command);
+
+    // TODO: Register commands %WR, %WS hh:mm:ss, and %WT with keyboard decoder.
+
+    while (1) {
+        command.receivedEnvelope = receive_message(NULL);
+        command.currentTime = get_time();
+
+        parseClockMessage(&command);
+
+        if (command.cmdType == PRINT_TIME) {
+            printTime(command.currentTime, command.offset);
+            delayed_send(CLOCK_PID, command.selfEnvelope, 1000);
+        }
+    }
 }

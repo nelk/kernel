@@ -1,5 +1,5 @@
-#ifndef TYPES_H
-#define TYPES_H
+#ifndef KERNEL_TYPES_H
+#define KERNEL_TYPES_H
 
 #include <stdint.h>
 
@@ -8,13 +8,6 @@
 
 // Keil Related Types
 typedef int32_t ssize_t;
-
-// Error-codes
-
-#define SUCCESS (0)
-#define ENOMEM  (1)
-#define EPERM   (2)
-#define EINVAL  (3)
 
 // Memory-related types
 
