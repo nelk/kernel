@@ -141,7 +141,17 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
             procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
             procInfo->currentEnvIndex = 0;
             continue;
-        }
+				} else if (localReader - localWriter == 0) {
+					switch (new_char) {
+						// TODO(shale): constantify/decide on what these do.
+						case '!':
+							// No preemption
+							k_sendMessage(memInfo, procInfo, procInfo->currentEnv, KEYBOARD_PID, KEYBOARD_PID);
+							break;
+						default:
+							break;
+					}
+				}
         if (procInfo->currentEnvIndex >= 96) { // Constantified
             procInfo->inputBufOverflow = 1;
             continue;

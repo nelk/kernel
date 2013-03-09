@@ -303,7 +303,9 @@ void uart_keyboard_proc(void) {
             if (c == '\0') goto reject;
             registry[c - 'a'] = message->srcPid;
             release_memory_block(message);
-        } else {
+        } else if (message->messageData[0] == '!') {
+						int a = 1;
+				} else {
             char c = message->messageData[0];
             if (c != '%') goto reject;
             c = toLowerAndIsLetter(message->messageData[1]);
