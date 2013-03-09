@@ -58,4 +58,8 @@ int uart_init(int n_uart); /* initialize the n_uart, interrupt driven */
 /* write a string to the n_uart */
 void uart_send_string( uint32_t n_uart, uint8_t *p_buffer, uint32_t len );
 
+void crt_proc(void);
+
+void uart_keyboard_proc(void);
+
 #endif /* ! _UART_H_ */

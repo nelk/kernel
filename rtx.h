@@ -60,17 +60,17 @@ int8_t __SVC_0 _releaseMemoryBlock(uint32_t k_func, void *blk);
 // sendMessage
 extern int8_t bridge_sendMessage(uint8_t pid, Envelope *envelope);
 #define send_message(pid, envelope) _sendMessage((uint32_t)bridge_sendMessage, pid, envelope)
-int8_t __SVC_0 _sendMessage(uint32_t k_func, uint8_t pid, Envelope *envelope, uint32_t delay);
+int8_t __SVC_0 _sendMessage(uint32_t k_func, uint8_t pid, Envelope *envelope);
 
 // receiveMessage
 extern Envelope *bridge_receiveMessage(uint8_t *senderPid);
-#define receive_message(senderPid) _receiveMessage((uint32_t)bridge_sendMessage, senderPid)
+#define receive_message(senderPid) ((Envelope*)(_receiveMessage((uint32_t)bridge_sendMessage, senderPid)))
 __SVC_0 _receiveMessage(uint32_t k_func, uint8_t *senderPid);
 
 // delayedSend
 extern int8_t bridge_delayedSend(uint8_t pid, Envelope *envelope, uint32_t delay);
-#define delayed_send(pid, envelope, delay) _sendMessage((uint32_t)bridge_sendMessage, pid, envelope, delay)
-int8_t __SVC_0 _sendMessage(uint32_t k_func, uint8_t pid, Envelope *envelope, uint32_t delay);
+#define delayed_send(pid, envelope, delay) _delayedSend((uint32_t)bridge_delayedSend, pid, envelope, delay)
+int8_t __SVC_0 _delayedSend(uint32_t k_func, uint8_t pid, Envelope *envelope, uint32_t delay);
 
 
 // get_time()

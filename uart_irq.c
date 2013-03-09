@@ -10,6 +10,8 @@
 #include "kernel_types.h"
 #include "uart.h"
 
+extern ProcInfo gProcInfo;
+
 volatile uint8_t g_UART0_TX_empty=1;
 volatile uint8_t g_UART0_buffer[BUFSIZE];
 volatile uint32_t g_UART0_count = 0;
@@ -153,11 +155,22 @@ __asm void UART0_IRQHandler(void)
 	BL c_UART0_IRQHandler
 	POP{r4-r11, pc}
 } 
-/**
- * @brief: c UART0 IRQ Handler
- */
-void c_UART0_IRQHandler(void)
-{
+
+void uart_receive_char_isr(ProcInfo *procInfo, char new_char) {
+    int localWriter = procInfo->writeIndex;
+    if ((localWriter + 1) % UART_IN_BUF_SIZE == procInfo->readIndex) {
+        procInfo->inputBufOverflow = 1;
+        return;
+    }
+    procInfo->inputBuf[localWriter] = new_char;
+    procInfo->writeIndex = (localWriter + 1) % UART_IN_BUF_SIZE;
+}
+
+void uart_send_char_isr(ProcInfo *procInfo) {
+	procInfo->uartOutputComplete = 1;
+}
+
+void c_UART0_IRQHandler(void) {
 	uint8_t IIR_IntId;      /* Interrupt ID from IIR */		
 	uint8_t LSR_Val;        /* LSR Value             */
 	uint8_t dummy = dummy;	/* to clear interrupt upon LSR error */
@@ -166,27 +179,14 @@ void c_UART0_IRQHandler(void)
 	/* Reading IIR automatically acknowledges the interrupt */
 	IIR_IntId = (pUart->IIR) >> 1 ; /* skip pending bit in IIR */
 
-	if (IIR_IntId & IIR_RDA) { /* Receive Data Avaialbe */
+	if (IIR_IntId & IIR_RDA) { /* Receive Data Available */
 		/* read UART. Read RBR will clear the interrupt */
-		g_UART0_buffer[g_UART0_count++] = pUart->RBR;
-		if (g_UART0_count == BUFSIZE) {
-			g_UART0_count = 0; /* buffer overflow */
-		}	
+            uart_receive_char_isr(&gProcInfo, pUart->RBR);
 	} else if (IIR_IntId & IIR_THRE) { 
 		/* THRE Interrupt, transmit holding register empty*/
-
-		// TODO(sanjay): send a message to the CRT process, masquerading
-		// as the CRT process. This tells it that we are good
-		// to send the next character.
 		// NOTE(sanjay): Make sure that this is contant time, we are in an ISR.
-
+		uart_send_char_isr(&gProcInfo);
 		LSR_Val = pUart->LSR;
-		if(LSR_Val & LSR_THRE) {
-			g_UART0_TX_empty = 1; /* ready to transmit */ 
-		} else {  
-			g_UART0_TX_empty = 0; /* not ready to transmit */
-		}
-	    
 	} else if (IIR_IntId & IIR_RLS) {
 		LSR_Val = pUart->LSR;
 		if (LSR_Val  & (LSR_OE|LSR_PE|LSR_FE|LSR_RXFE|LSR_BI) ) {
@@ -202,48 +202,24 @@ void c_UART0_IRQHandler(void)
 		*/
 		if (LSR_Val & LSR_RDR) { /* Receive Data Ready */
 			/* read from the uart */
-			g_UART0_buffer[g_UART0_count++] = pUart->RBR; 
-			if ( g_UART0_count == BUFSIZE ) {
-				g_UART0_count = 0;  /* buffer overflow */
-			}	
-		}	    
+            uart_receive_char_isr(&gProcInfo, pUart->RBR);
+		}
 	} else { /* IIR_CTI and reserved combination are not implemented */
 		return;
 	}	
 }
 
-void uart_send_string( uint32_t n_uart, uint8_t *p_buffer, uint32_t len )
-{
-	LPC_UART_TypeDef *pUart;
-
-	if(n_uart == 0 ) { /* UART0 is implemented */
-		pUart = (LPC_UART_TypeDef *)LPC_UART0;
-	} else { /* other UARTs are not implemented */
-		return;
-	}
-
-	while ( len != 0 ) {
-		/* THRE status, contain valid data  */
-		while ( !(g_UART0_TX_empty & 0x01) );	
-		pUart->THR = *p_buffer;
-		g_UART0_TX_empty = 0;  // not empty in the THR until it shifts out
-		p_buffer++;
-		len--;
-	}
-	return;
-}
-
 void crt_proc(void) {
-	ProcId CRT_PID = 16; // TODO(sanjay): figure out how to get this for real
 	uint8_t sendPending = 0;
 	uint8_t readIndex = 0;
 	Envelope *head = NULL;
 	Envelope *tail = NULL;
 	Envelope *temp = NULL;
-    Envelope *nextMsg = NULL;
+	Envelope *nextMsg = NULL;
+	LPC_UART_TypeDef *uart = (LPC_UART_TypeDef *)LPC_UART0;
 
 	while (1) {
-		 nextMsg = (Envelope *)receive_message(NULL);
+		nextMsg = (Envelope *)receive_message(NULL);
 		if (nextMsg == NULL) {
 			continue;
 		}
@@ -295,9 +271,51 @@ get_char:
 		// we are now guaranteed that head is not NULL and
 		// head->messageData[readIndex] != '\0', so we output it.
 
-		// TODO(sanjay): output head->messageData[readIndex] here
+		uart->THR = head->messageData[readIndex];
 
 		readIndex++;
 		sendPending = 1;
 	}
 }
+
+char toLowerAndIsLetter(char c) {
+    if (c >= 'a' && c <= 'z') {
+        return c;
+    } else if (c >= 'A' && c <= 'A') {
+        return c - 'A' + 'a';
+    }
+    return '\0';
+}
+
+void uart_keyboard_proc(void) {
+    Envelope *message = NULL;
+    ProcId registry['z' - 'a'] = {0};
+    ProcId destPid = 0;
+
+    while (1) {
+        message = receive_message(NULL);
+        if (message == NULL) {
+            continue;
+        }
+
+        if (message->srcPid == KEYBOARD_PID) { // Register character with pid
+            char c = toLowerAndIsLetter(message->messageData[0]);
+            if (c == '\0') goto reject;
+            registry[c - 'a'] = message->srcPid;
+            release_memory_block(message);
+        } else {
+            char c = message->messageData[0];
+            if (c != '%') goto reject;
+            c = toLowerAndIsLetter(message->messageData[1]);
+            if (c == '\0') goto reject;
+            destPid = registry[c - 'a'];
+            if (destPid == 0) goto reject;
+            send_message(destPid, message);
+        }
+        continue;
+reject:
+        release_memory_block(message);
+    }
+}
+
+
