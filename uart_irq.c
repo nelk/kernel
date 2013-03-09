@@ -293,6 +293,8 @@ void uart_keyboard_proc(void) {
     uint32_t idx = 0;
     ProcId registry['z' - 'a' + 1] = {0};
     ProcId destPid = 0;
+    char c = '\0';
+    uint8_t reject = 1;
 
     while (1) {
         message = receive_message(NULL);
@@ -303,7 +305,7 @@ void uart_keyboard_proc(void) {
         // If the message is not "from ourself", that means we should
         // register this character with the associated pid
         if (message->srcPid != KEYBOARD_PID) {
-            char c = toLowerAndIsLetter(message->messageData[0]);
+            c = toLowerAndIsLetter(message->messageData[0]);
             if (c == '\0') {
                 release_memory_block(message);
                 continue;
@@ -316,8 +318,8 @@ void uart_keyboard_proc(void) {
 
         // If it is "from ourself", then we send a message to the
         // registered processes.
-        char c = message->messageData[0];
-        uint8_t reject = 1;
+        c = message->messageData[0];
+        reject = 1;
         if (c == '%') {
             c = toLowerAndIsLetter(message->messageData[1]);
             if (c != '\0') {
