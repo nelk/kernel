@@ -181,7 +181,7 @@ struct ClockCmd {
     Envelope *receivedEnvelope;
 };
 
-void write_uint32(uint32_t number, char *buffer, uint8_t *startIndex) {
+void write_uint32(uint32_t number, char *buffer, uint8_t *startIndex, uint8_t isClock) {
     uint32_t tempNumber = number;
     uint8_t numDigits = 0;
 
@@ -190,7 +190,11 @@ void write_uint32(uint32_t number, char *buffer, uint8_t *startIndex) {
         tempNumber /= 10;
     }
 
-    if (number < 10) {
+    if (number == 0) {
+        numDigits = 1;
+    }
+
+    if (isClock && number < 10) {
         numDigits = 2;
     }
 
@@ -275,7 +279,7 @@ uint8_t parseTime(char *message, int32_t *offset) {
     }
 
     requestedTime += (field * MILLISECONDS_IN_SECOND);
-		
+
     *offset = requestedTime - get_time();
 
     return SUCCESS;
@@ -349,19 +353,19 @@ void printTime(uint32_t currentTime, uint32_t offset) {
     // Print hours.
     field = clockTime / SECONDS_IN_HOUR;
     clockTime %= SECONDS_IN_HOUR;
-    write_uint32(field, messageData, &index);
+    write_uint32(field, messageData, &index, 1);
 
     messageData[index++] = ':';
 
     // Print minutes.
     field = clockTime / SECONDS_IN_MINUTE;
     clockTime %= SECONDS_IN_MINUTE;
-    write_uint32(field, messageData, &index);
+    write_uint32(field, messageData, &index, 1);
 
     messageData[index++] = ':';
 
     // Print seconds.
-    write_uint32(clockTime, messageData, &index);
+    write_uint32(clockTime, messageData, &index, 1);
     messageData[index++] = '\r';
     messageData[index++] = '\n';
     messageData[index++] = '\0';
