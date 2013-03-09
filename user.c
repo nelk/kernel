@@ -284,7 +284,6 @@ uint8_t parseTime(char *message, uint32_t *offset) {
     }
 
     tempOffset += (field * MILLISECONDS_IN_SECOND);
-    tempOffset = SECONDS_IN_DAY * MILLISECONDS_IN_SECOND - tempOffset;
     *offset = tempOffset;
 
     return SUCCESS;
@@ -295,7 +294,7 @@ void parseClockMessage(ClockCmd *command) {
     uint8_t status = 0;
     Envelope *envelope = command->receivedEnvelope;
 
-    if (envelope->srcPid == CLOCK_PID) {
+    if (envelope == command->selfEnvelope) {
         command->cmdType = PRINT_TIME;
         return;
     } else if (envelope->srcPid != KEYBOARD_PID) {
