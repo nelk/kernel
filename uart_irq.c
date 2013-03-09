@@ -174,19 +174,9 @@ void c_UART0_IRQHandler(void)
 		}	
 	} else if (IIR_IntId & IIR_THRE) { 
 		/* THRE Interrupt, transmit holding register empty*/
-
-		// TODO(sanjay): send a message to the CRT process, masquerading
-		// as the CRT process. This tells it that we are good
-		// to send the next character.
 		// NOTE(sanjay): Make sure that this is contant time, we are in an ISR.
-
+		uart_send_char_isr(&gProcInfo);
 		LSR_Val = pUart->LSR;
-		if(LSR_Val & LSR_THRE) {
-			g_UART0_TX_empty = 1; /* ready to transmit */ 
-		} else {  
-			g_UART0_TX_empty = 0; /* not ready to transmit */
-		}
-	    
 	} else if (IIR_IntId & IIR_RLS) {
 		LSR_Val = pUart->LSR;
 		if (LSR_Val  & (LSR_OE|LSR_PE|LSR_FE|LSR_RXFE|LSR_BI) ) {
@@ -222,19 +212,12 @@ void uart_send_string( uint32_t n_uart, uint8_t *p_buffer, uint32_t len )
 		return;
 	}
 
-	while ( len != 0 ) {
-		/* THRE status, contain valid data  */
-		while ( !(g_UART0_TX_empty & 0x01) );	
-		pUart->THR = *p_buffer;
-		g_UART0_TX_empty = 0;  // not empty in the THR until it shifts out
-		p_buffer++;
-		len--;
-	}
-	return;
+void uart_send_char_isr(ProcInfo *procInfo) {
+	procInfo->uartOutputComplete = 1;
 }
 
 void crt_proc(void) {
-	ProcId CRT_PID = 16; // TODO(sanjay): figure out how to get this for real
+	ProcId CRT_PID = get_pid();
 	uint8_t sendPending = 0;
 	uint8_t readIndex = 0;
 	Envelope *head = NULL;

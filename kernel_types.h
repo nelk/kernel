@@ -105,6 +105,9 @@ struct ProcInfo {
 
     PQ memq; // Memory blocked queue
     PQEntry memQueue[NUM_PROCS];
+
+    volatile uint8_t uartOutputComplete;
+    Envelope *uartOutputEnv;
 };
 
 enum ReleaseReason {

@@ -29,6 +29,9 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     PCB *process = NULL;
     uint32_t *stack = NULL;
 
+    procInfo->uartOutputComplete = 0;
+    procInfo->uartOutputEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
+
     pqInit(&(procInfo->prq), procInfo->procQueue, NUM_PROCS, &rqStoreIndexFunc);
     pqInit(&(procInfo->memq), procInfo->memQueue, NUM_PROCS, &memqStoreIndexFunc);
 
@@ -99,6 +102,15 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     procInfo->currentProcess = NULL;
 }
 
+void k_processUartOutput(ProcInfo *procInfo, MemInfo *memInfo) {
+    if (!procInfo->uartOutputComplete) {
+        return;
+    }
+
+    k_sendMessage(memInfo, procInfo, procInfo->uartOutputEnv, CRT_PID, CRT_PID);
+    procInfo->uartOutputComplete = 0;
+}
+
 uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *messageInfo, ClockInfo *clockInfo, ReleaseReason reason) {
     PCB *nextProc = NULL;
     ProcState oldState = NEW;
@@ -110,6 +122,7 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
     // We push the currently executing process onto this queue
     PQ *dstQueue = NULL;
 
+    k_processUartOutput(procInfo, memInfo);
     k_processDelayedMessages(messageInfo, procInfo, memInfo, clockInfo);
 
     switch (reason) {
