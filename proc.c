@@ -145,7 +145,7 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
             continue;
         }
         procInfo->currentEnv->messageBody[procInfo->currentEnvIndex] = new_char;
-        ++currentEnvIndex;
+        ++(procInfo->currentEnvIndex);
     }
     procInfo->readIndex = localReader;
 }
