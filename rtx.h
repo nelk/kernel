@@ -73,9 +73,9 @@ extern int8_t bridge_delayedSend(uint8_t pid, Envelope *envelope, uint32_t delay
 int8_t __SVC_0 _sendMessage(uint32_t k_func, uint8_t pid, Envelope *envelope, uint32_t delay);
 
 
-// getTime
+// get_time()
 extern uint32_t bridge_getTime(void);
-#define getTime() _getTime((uint32_t)bridge_getTime)
+#define get_time() _getTime((uint32_t)bridge_getTime)
 uint32_t __SVC_0 _getTime(uint32_t k_func);
 
 // pid()
