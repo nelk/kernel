@@ -240,10 +240,11 @@ void crt_proc(void) {
 	Envelope *head = NULL;
 	Envelope *tail = NULL;
 	Envelope *temp = NULL;
-    Envelope *nextMsg = NULL;
+	Envelope *nextMsg = NULL;
+	LPC_UART_TypeDef *uart = (LPC_UART_TypeDef *)LPC_UART0;
 
 	while (1) {
-		 nextMsg = (Envelope *)receive_message(NULL);
+		nextMsg = (Envelope *)receive_message(NULL);
 		if (nextMsg == NULL) {
 			continue;
 		}
@@ -295,7 +296,7 @@ get_char:
 		// we are now guaranteed that head is not NULL and
 		// head->messageData[readIndex] != '\0', so we output it.
 
-		// TODO(sanjay): output head->messageData[readIndex] here
+		uart->THR = head->messageData[readIndex];
 
 		readIndex++;
 		sendPending = 1;
