@@ -236,18 +236,24 @@ uint8_t parseTime(char *message, int32_t *offset) {
     uint32_t requestedTime = 0;
 
     // Check for any invalid characters.
-    if (message[0] != '%' || message[1] != 'W' || message[2] != 'S' ||
-        message[3] != ' ' || message[6] != ':' || message[9] != ':') {
+    if (message[0] != '%' ||
+				message[1] != 'W' ||
+				message[2] != 'S' ||
+        message[3] != ' ' ||
+				message[4] < '0' || message[4] > '9' ||
+				message[5] < '0' || message[5] > '9' ||
+				message[6] != ':' ||
+				message[7] < '0' || message[7] > '9' ||
+				message[8] < '0' || message[8] > '9' ||
+				message[9] != ':' ||
+				message[10] < '0' || message[10] > '9' ||
+				message[11] < '0' || message[11] > '9') {
         return EINVAL;
     }
 
     // Read hours field.
-    if (message[4] < '0' || message[4] > '9' || message[5] < '0' || message[5] > '9') {
-        return EINVAL;
-    }
-
     field = get_uint32(message, 4, 2);
-
+		
     if (field > 23) {
         return EINVAL;
     }
@@ -255,10 +261,6 @@ uint8_t parseTime(char *message, int32_t *offset) {
     requestedTime += (field * SECONDS_IN_HOUR * MILLISECONDS_IN_SECOND);
 
     // Read minutes field.
-    if (message[7] < '0' || message[7] > '9' || message[8] < '0' || message[8] > '9') {
-        return EINVAL;
-    }
-
     field = get_uint32(message, 7, 2);
 
     if (field > 59) {
@@ -268,10 +270,6 @@ uint8_t parseTime(char *message, int32_t *offset) {
     requestedTime += (field * SECONDS_IN_MINUTE * MILLISECONDS_IN_SECOND);
 
     // Read seconds field.
-    if (message[10] < '0' || message[10] > '9' || message[11] < '0' || message[11] > '9') {
-        return EINVAL;
-    }
-
     field = get_uint32(message, 10, 2);
 
     if (field > 59) {
@@ -350,6 +348,13 @@ void printTime(uint32_t currentTime, uint32_t offset) {
     clockTime = (currentTime + offset) % (SECONDS_IN_DAY * MILLISECONDS_IN_SECOND);
     clockTime /= MILLISECONDS_IN_SECOND;
 
+		// Add ANSI colour codes (prepend).
+		messageData[index++] = '\x1b';
+		messageData[index++] = '[';
+		messageData[index++] = '3';
+		messageData[index++] = (char)((clockTime % 6) + '1');
+		messageData[index++] = 'm';
+	
     // Print hours.
     field = clockTime / SECONDS_IN_HOUR;
     clockTime %= SECONDS_IN_HOUR;
@@ -366,6 +371,13 @@ void printTime(uint32_t currentTime, uint32_t offset) {
 
     // Print seconds.
     write_uint32(clockTime, messageData, &index, 1);
+		
+		// Add ANSI colour codes (append).
+		messageData[index++] = '\x1b';
+		messageData[index++] = '[';
+		messageData[index++] = '0';
+		messageData[index++] = 'm';
+		
     messageData[index++] = '\r';
     messageData[index++] = '\n';
     messageData[index++] = '\0';
