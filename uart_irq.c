@@ -170,8 +170,7 @@ void c_UART0_IRQHandler(void)
 
 	if (IIR_IntId & IIR_RDA) { /* Receive Data Available */
 		/* read UART. Read RBR will clear the interrupt */
-
-        uart_receive_char_isr(pUart->RBR);
+            uart_receive_char_isr(&gProcInfo, pUart->RBR);
 	} else if (IIR_IntId & IIR_THRE) { 
 		/* THRE Interrupt, transmit holding register empty*/
 
@@ -202,22 +201,21 @@ void c_UART0_IRQHandler(void)
 		*/
 		if (LSR_Val & LSR_RDR) { /* Receive Data Ready */
 			/* read from the uart */
-
-            uart_receive_char_isr(pUart->RBR);
+            uart_receive_char_isr(&gProcInfo, pUart->RBR);
 		}
 	} else { /* IIR_CTI and reserved combination are not implemented */
 		return;
 	}	
 }
 
-uint32_t uart_receive_char_isr(char new_char) {
-    int localWriter = gProcInfo->writeIndex;
+void uart_receive_char_isr(ProcInfo *procInfo, char new_char) {
+    int localWriter = procInfo->writeIndex;
     if ((localWriter + 1) % UART_IN_BUF_SIZE == reader) {
-        gProcInfo->inputBufOverflow = 1;
+        procInfo->inputBufOverflow = 1;
         return;
     }
     buffer[localWriter] = new_char:
-    gProcInfo->writerIndex = (localWriter + 1) % UART_IN_BUF_SIZE;
+    procInfo->writerIndex = (localWriter + 1) % UART_IN_BUF_SIZE;
 }
 
 
