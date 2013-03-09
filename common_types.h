@@ -18,9 +18,9 @@
 #define MESSAGEDATA_SIZE_BYTES (96)
 
 #define MILLISECONDS_IN_SECOND  (1000)
-#define SECONDS_IN_DAY          (86400) // 60 * 60 * 24
-#define SECONDS_IN_HOUR         (3600)  // 60 * 60
 #define SECONDS_IN_MINUTE       (60)
+#define SECONDS_IN_HOUR         (3600)  // 60 * 60
+#define SECONDS_IN_DAY          (86400) // 60 * 60 * 24
 
 // ProcId is used to store pids and is typedef'd
 // to distinguish it from regular integers.

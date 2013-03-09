@@ -181,11 +181,11 @@ struct ClockCmd {
     Envelope *receivedEnvelope;
 };
 
-void write_uint32(uint32_t number, char *buffer[], uint8_t *startIndex) {
+void write_uint32(uint32_t number, char *buffer, uint8_t *startIndex) {
     uint32_t base = 1;
 
     if (number == 0) {
-        *buffer[(*startIndex)++] = '0';
+        buffer[(*startIndex)++] = '0';
         return;
     }
 
@@ -196,22 +196,22 @@ void write_uint32(uint32_t number, char *buffer[], uint8_t *startIndex) {
     base /= 10;
 
     while (base > 0) {
-        *buffer[(*startIndex)++] = (number/base) + '0';
+        buffer[(*startIndex)++] = (char)((number/base) + '0');
         number %= base;
         base /= 10;
     }
 }
 
-uint32_t get_uint32(char *buffer[], uint8_t startIndex, uint8_t length) {
+uint32_t get_uint32(char *buffer, uint8_t startIndex, uint8_t length) {
     uint32_t number = 0;
     uint32_t base = 1;
-    length += (startIndex - 1);
+    uint32_t i = 0;
 
-    while (length >= startIndex) {
-        number += ((buffer[length] - '0') * base);
-        base *= 10;
-        --length;
+    for(; i < length; ++i) {
+        number *= 10;
+        number += (uint32_t)(buffer[i] - '0');
     }
+
     return number;
 }
 
@@ -222,7 +222,7 @@ void initClockCommand(ClockCmd *command) {
     command->offset = 0;
     command->isRunning = 0;
 
-    command->myPid = 0; // TODO: Maybe add user API to get own PID.
+    command->myPid = CLOCK_PID;
 
     command->selfEnvelope = (Envelope *)request_memory_block();
     command->receivedEnvelope = NULL;
@@ -230,19 +230,28 @@ void initClockCommand(ClockCmd *command) {
 
 void parseClockMessage(ClockCmd *command) {
     uint8_t status = 0;
+    char firstChars[2];
     Envelope *envelope = command->receivedEnvelope;
 
     if (envelope->srcPid == myPid) {
         command->cmdType = PRINT_TIME;
         return;
+    } else if (envelope->srcPid != KEYBOARD_PID) {
+        release_memory_block(envelope);
+        return;
     }
 
-    if (envelope->messageData == "%WR") {
+    firstChar[0] = envelope->messageData[2];
+    firstChar[1] = '\0';
+
+    if (firstChar == "R") {
         command->cmdType = RESET_TIME;
-    } else if (envelope->messageData == "%WT") {
+    } else if (firstChar == "T") {
         command->cmdType = TERMINATE;
-    } else {
+    } else if (firstChar == "S") {
         command->cmdType = SET_TIME;
+    } else {
+        return;
     }
 
     switch(command->cmdType) {
@@ -257,7 +266,7 @@ void parseClockMessage(ClockCmd *command) {
                 command->isRunning = 1;
                 command->cmdType = PRINT_TIME;
             } else {
-                uart_put_string(UART_NUM, "Please give input in the form \"%WS hh:mm:ss\" with valid values.");
+                // uart_put_string(UART_NUM, "Please give input in the form \"%WS hh:mm:ss\" with valid values.");
                 if (command->isRunning) {
                     command->cmdType = PRINT_TIME;
                 }
@@ -273,7 +282,7 @@ void parseClockMessage(ClockCmd *command) {
     release_memory_block(envelope);
 }
 
-uint8_t parseTime(char *message[], uint32_t *offset) {
+uint8_t parseTime(char *message, uint32_t *offset) {
     uint32_t field = 0;
     uint32_t tempOffset = 0;
 
@@ -321,9 +330,9 @@ void printTime(uint32_t currentTime, uint32_t offset) {
     uint32_t field = 0;
     uint8_t index = 0;
     Envelope *printMessage = (Envelope *)request_memory_block();
-    char *messageData[] = printMessage->messageData;
+    char *messageData = printMessage->messageData;
 
-    clockTime = (currentTime + offset) % (SECONDS_IN_DAY * MILLISECONDS_IN_SECOND);
+    clockTime = (currentTime - offset) % (SECONDS_IN_DAY * MILLISECONDS_IN_SECOND);
     clockTime /= MILLISECONDS_IN_SECOND;
 
     // Print hours.
@@ -345,6 +354,7 @@ void printTime(uint32_t currentTime, uint32_t offset) {
     messageData[index++] = '\r';
     messageData[index++] = '\n';
     messageData[index++] = '\0';
+    send_message(CRT_PID, printMessage);
 }
 
 void clockProcess(void) {
