@@ -358,7 +358,7 @@ void clockProcess(void) {
         command->receivedEnvelope = receive_message(NULL);
         command->currentTime = get_time();
 
-        parseClockMessage(command->receivedEnvelope, &command);
+        parseClockMessage(&command);
 
         if (command->cmdType == PRINT_TIME) {
             printTime(currentTime, offset);
