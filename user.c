@@ -181,7 +181,7 @@ struct ClockCmd {
     Envelope *receivedEnvelope;
 };
 
-void write_uint32(uint32_t number, char *buffer, uint8_t *startIndex, uint8_t isClock) {
+uint8_t write_uint32(uint32_t number, char *buffer, uint8_t minDigits) {
     uint32_t tempNumber = number;
     uint8_t numDigits = 0;
 
@@ -189,23 +189,24 @@ void write_uint32(uint32_t number, char *buffer, uint8_t *startIndex, uint8_t is
         ++numDigits;
         tempNumber /= 10;
     }
-
-    if (number == 0) {
-        numDigits = 1;
-    }
-
-    if (isClock && number < 10) {
-        numDigits = 2;
-    }
-
-    buffer = buffer + *startIndex;
-    *startIndex += numDigits;
+		
+		if (minDigits < 1) {
+			minDigits = 1;
+		}
+		
+		if (numDigits < minDigits) {
+			numDigits = minDigits;
+		}
+		
+		tempNumber = numDigits;
 
     while (numDigits > 0) {
         buffer[numDigits-1] = (char)((number % 10)+'0');
         number /= 10;
         --numDigits;
     }
+		
+		return (uint8_t)tempNumber;
 }
 
 uint32_t get_uint32(char *buffer, uint8_t startIndex, uint8_t length) {
@@ -358,19 +359,20 @@ void printTime(uint32_t currentTime, uint32_t offset) {
     // Print hours.
     field = clockTime / SECONDS_IN_HOUR;
     clockTime %= SECONDS_IN_HOUR;
-    write_uint32(field, messageData, &index, 1);
+    index += write_uint32(field, messageData + index, 2);
 
     messageData[index++] = ':';
 
     // Print minutes.
     field = clockTime / SECONDS_IN_MINUTE;
     clockTime %= SECONDS_IN_MINUTE;
-    write_uint32(field, messageData, &index, 1);
+    index += write_uint32(field, messageData + index, 2);
 
     messageData[index++] = ':';
 
     // Print seconds.
-    write_uint32(clockTime, messageData, &index, 1);
+		field = clockTime;
+    index += write_uint32(field, messageData + index, 2);
 		
 		// Add ANSI colour codes (append).
 		messageData[index++] = '\x1b';
