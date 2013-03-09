@@ -150,9 +150,17 @@ int testMultipleArenas() {
         1                                   // trackOwners
     );
 
+    assert(memInfo.numSuccessfulAllocs == 0);
+    assert(memInfo.numFailedAllocs == 0);
+    assert(memInfo.numFreeCalls == 0);
+
     int firstPid = 1;
     uint32_t firstBlock = k_acquireMemoryBlock(&memInfo, firstPid);
     assert(firstBlock);
+
+    assert(memInfo.numSuccessfulAllocs == 1);
+    assert(memInfo.numFailedAllocs == 0);
+    assert(memInfo.numFreeCalls == 0);
 
     // Check permissions
     assert(k_isOwnerUnsafe(&memInfo, firstBlock, firstPid));
@@ -162,10 +170,18 @@ int testMultipleArenas() {
     k_acquireMemoryBlock(&memInfo, firstPid);
     k_acquireMemoryBlock(&memInfo, firstPid);
 
+    assert(memInfo.numSuccessfulAllocs == 3);
+    assert(memInfo.numFailedAllocs == 0);
+    assert(memInfo.numFreeCalls == 0);
+
     // The next acquire should be in the second arena
     int secondPid = 2;
     uint32_t secondBlock = k_acquireMemoryBlock(&memInfo, secondPid);
     assert(secondBlock);
+
+    assert(memInfo.numSuccessfulAllocs == 4);
+    assert(memInfo.numFailedAllocs == 0);
+    assert(memInfo.numFreeCalls == 0);
 
     // Check permissions
     assert(k_isOwnerUnsafe(&memInfo, firstBlock, firstPid));
@@ -191,9 +207,17 @@ int testMemOperations() {
         1                                   // trackOwners
     );
 
+    assert(memInfo.numSuccessfulAllocs == 0);
+    assert(memInfo.numFailedAllocs == 0);
+    assert(memInfo.numFreeCalls == 0);
+
     int firstPid = 1;
     uint32_t firstBlock = k_acquireMemoryBlock((&memInfo), firstPid);
     assert(firstBlock);
+
+    assert(memInfo.numSuccessfulAllocs == 1);
+    assert(memInfo.numFailedAllocs == 0);
+    assert(memInfo.numFreeCalls == 0);
 
     // Check permissions
     assert(k_isOwnerUnsafe((&memInfo), firstBlock, firstPid));
@@ -203,6 +227,10 @@ int testMemOperations() {
     int secondPid = 2;
     uint32_t secondBlock = k_acquireMemoryBlock((&memInfo), secondPid);
     assert(secondBlock);
+
+    assert(memInfo.numSuccessfulAllocs == 2);
+    assert(memInfo.numFailedAllocs == 0);
+    assert(memInfo.numFreeCalls == 0);
 
     // Check permissions
     assert(k_isOwnerUnsafe((&memInfo), firstBlock, firstPid));
@@ -221,6 +249,9 @@ int testMemOperations() {
     assert(k_isOwnerUnsafe((&memInfo), thirdBlock, thirdPid));
     assert((&memInfo)->firstFree == NULL);
 
+    assert(memInfo.numSuccessfulAllocs == 3);
+    assert(memInfo.numFailedAllocs == 0);
+    assert(memInfo.numFreeCalls == 0);
 
     // Test happy path
     int ret = k_releaseMemoryBlock((&memInfo), thirdBlock, thirdPid);
@@ -228,17 +259,35 @@ int testMemOperations() {
     assert(k_isOwnerUnsafe((&memInfo), thirdBlock, PROC_ID_NONE));
     assert((&memInfo)->firstFree != NULL);
 
+    assert(memInfo.numSuccessfulAllocs == 3);
+    assert(memInfo.numFailedAllocs == 0);
+    assert(memInfo.numFreeCalls == 1);
+
     // Test double-free fails
     ret = k_releaseMemoryBlock((&memInfo), thirdBlock, thirdPid);
     assert(ret == EPERM);
+
+    assert(memInfo.numSuccessfulAllocs == 3);
+    assert(memInfo.numFailedAllocs == 0);
+    assert(memInfo.numFreeCalls == 1);
+
 
     // Test wrong owner fails
     ret = k_releaseMemoryBlock((&memInfo), secondBlock, thirdPid);
     assert(ret == EPERM);
 
+    assert(memInfo.numSuccessfulAllocs == 3);
+    assert(memInfo.numFailedAllocs == 0);
+    assert(memInfo.numFreeCalls == 1);
+
+
     // Test internal block pointer fails
     ret = k_releaseMemoryBlock((&memInfo), secondBlock + 1, secondPid);
     assert(ret == EINVAL);
+
+    assert(memInfo.numSuccessfulAllocs == 3);
+    assert(memInfo.numFailedAllocs == 0);
+    assert(memInfo.numFreeCalls == 1);
 
     // Test before beginning of memory
     ret = k_releaseMemoryBlock(
@@ -248,9 +297,17 @@ int testMemOperations() {
     );
     assert(ret == EINVAL);
 
+    assert(memInfo.numSuccessfulAllocs == 3);
+    assert(memInfo.numFailedAllocs == 0);
+    assert(memInfo.numFreeCalls == 1);
+
     // Test after end of memory
     ret = k_releaseMemoryBlock((&memInfo), (&memInfo)->endMemoryAddress, PROC_ID_KERNEL);
     assert(ret == EINVAL);
+
+    assert(memInfo.numSuccessfulAllocs == 3);
+    assert(memInfo.numFailedAllocs == 0);
+    assert(memInfo.numFreeCalls == 1);
 
     // Test after nextAvailableAddress. We shouldn't allow
     // programs to release memory blocks after that point
@@ -262,12 +319,20 @@ int testMemOperations() {
     ret = k_releaseMemoryBlock((&memInfo), attackAddr, firstPid);
     assert(ret == EINVAL);
 
+    assert(memInfo.numSuccessfulAllocs == 3);
+    assert(memInfo.numFailedAllocs == 0);
+    assert(memInfo.numFreeCalls == 1);
+
     // Test OOM
     (&memInfo)->endMemoryAddress = 0;
     (&memInfo)->firstFree = NULL;
     int oomPid = 4;
     uint32_t oomBlock = k_acquireMemoryBlock((&memInfo), oomPid);
     assert(oomBlock == 0);
+
+    assert(memInfo.numSuccessfulAllocs == 3);
+    assert(memInfo.numFailedAllocs == 1);
+    assert(memInfo.numFreeCalls == 1);
 
     free(backingStorage);
     return PASSED;
