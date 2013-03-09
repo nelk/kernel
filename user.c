@@ -361,7 +361,7 @@ void clockProcess(void) {
         parseClockMessage(&command);
 
         if (command->cmdType == PRINT_TIME) {
-            printTime(currentTime, offset);
+            printTime(command->currentTime, offset);
             delayed_send(myPid, selfEnvelope, 1000);
         }
     }
