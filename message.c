@@ -21,7 +21,7 @@ int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, P
     k_zeroEnvelope(envelope);
 
     // Check pid
-    if (dstPid >= NUM_PROCS) {
+    if (dstPid >= NUM_PROCS || srcPid >= NUM_PROCS) {
         return 1;
     }
     // Set to new owner (and check if valid)
@@ -86,8 +86,11 @@ Envelope *k_receiveMessage(MessageInfo *messageInfo, MemInfo *memInfo, ProcInfo 
 
 int8_t k_sendDelayedMessage(MessageInfo *messageInfo, ClockInfo *clockInfo, MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, ProcId srcPid, ProcId dstPid, uint32_t delay) {
     k_zeroEnvelope(envelope);
-	// TODO: (shale) verify if this call is necessary.
-    k_changeOwner(memInfo, (uint32_t)envelope, srcPid, PROC_ID_KERNEL);
+    // Check pid - the src is from the bridge, but why not...
+    if (dstPid >= NUM_PROCS || srcPid >= NUM_PROCS) {
+        return 1;
+    }
+	// TODO: (shale) validate memory, if necessary.
 
     envelope->sendTime = k_getTime(clockInfo) + delay;
 
