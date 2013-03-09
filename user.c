@@ -337,12 +337,8 @@ void printTime(uint32_t currentTime, uint32_t offset) {
     clockTime = (currentTime + offset) % (SECONDS_IN_DAY * MILLISECONDS_IN_SECOND);
     clockTime /= MILLISECONDS_IN_SECOND;
 
-    // Add ANSI colour codes (prepend).
-    messageData[index++] = '\x1b';
-    messageData[index++] = '[';
-    messageData[index++] = '3';
-    messageData[index++] = (char)((clockTime % 6) + '1');
-    messageData[index++] = 'm';
+    // Add ANSI colour code.
+    index += print_ansi_escape(messageData+index, 31 + (clockTime % 6));
 
     // Print hours.
     field = clockTime / SECONDS_IN_HOUR;
@@ -359,14 +355,11 @@ void printTime(uint32_t currentTime, uint32_t offset) {
     messageData[index++] = ':';
 
     // Print seconds.
-        field = clockTime;
+    field = clockTime;
     index += write_uint32(messageData + index, field, 2);
 
-    // Add ANSI colour codes (append).
-    messageData[index++] = '\x1b';
-    messageData[index++] = '[';
-    messageData[index++] = '0';
-    messageData[index++] = 'm';
+    // Add ANSI reset.
+    index += print_ansi_escape(messageData+index, 0);
 
     messageData[index++] = '\r';
     messageData[index++] = '\n';
