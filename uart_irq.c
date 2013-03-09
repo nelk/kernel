@@ -10,7 +10,7 @@
 #include "kernel_types.h"
 #include "uart.h"
 
-extern ProcInfo *gProcInfo;
+extern ProcInfo gProcInfo;
 
 volatile uint8_t g_UART0_TX_empty=1;
 volatile uint8_t g_UART0_buffer[BUFSIZE];
@@ -155,11 +155,22 @@ __asm void UART0_IRQHandler(void)
 	BL c_UART0_IRQHandler
 	POP{r4-r11, pc}
 } 
-/**
- * @brief: c UART0 IRQ Handler
- */
-void c_UART0_IRQHandler(void)
-{
+
+void uart_receive_char_isr(ProcInfo *procInfo, char new_char) {
+    int localWriter = procInfo->writeIndex;
+    if ((localWriter + 1) % UART_IN_BUF_SIZE == procInfo->readIndex) {
+        procInfo->inputBufOverflow = 1;
+        return;
+    }
+    procInfo->inputBuf[localWriter] = new_char;
+    procInfo->writeIndex = (localWriter + 1) % UART_IN_BUF_SIZE;
+}
+
+void uart_send_char_isr(ProcInfo *procInfo) {
+	procInfo->uartOutputComplete = 1;
+}
+
+void c_UART0_IRQHandler(void) {
 	uint8_t IIR_IntId;      /* Interrupt ID from IIR */		
 	uint8_t LSR_Val;        /* LSR Value             */
 	uint8_t dummy = dummy;	/* to clear interrupt upon LSR error */
@@ -198,32 +209,7 @@ void c_UART0_IRQHandler(void)
 	}	
 }
 
-void uart_receive_char_isr(ProcInfo *procInfo, char new_char) {
-    int localWriter = procInfo->writeIndex;
-    if ((localWriter + 1) % UART_IN_BUF_SIZE == reader) {
-        procInfo->inputBufOverflow = 1;
-        return;
-    }
-    buffer[localWriter] = new_char;
-    procInfo->writerIndex = (localWriter + 1) % UART_IN_BUF_SIZE;
-}
-
-
-void uart_send_string( uint32_t n_uart, uint8_t *p_buffer, uint32_t len )
-{
-	if(n_uart == 0 ) { /* UART0 is implemented */
-		pUart = (LPC_UART_TypeDef *)LPC_UART0;
-	} else { /* other UARTs are not implemented */
-		return;
-	}
-}
-
-void uart_send_char_isr(ProcInfo *procInfo) {
-	procInfo->uartOutputComplete = 1;
-}
-
 void crt_proc(void) {
-	ProcId CRT_PID = get_pid();
 	uint8_t sendPending = 0;
 	uint8_t readIndex = 0;
 	Envelope *head = NULL;
@@ -312,19 +298,19 @@ void uart_keyboard_proc(void) {
             continue;
         }
 
-        if (message->srcPid == myPid) { // Register character with pid
-            char c = toLowerAndIsLetter(message->messageBody[0]);
+        if (message->srcPid == KEYBOARD_PID) { // Register character with pid
+            char c = toLowerAndIsLetter(message->messageData[0]);
             if (c == '\0') goto reject;
             registry[c - 'a'] = message->srcPid;
             release_memory_block(message);
         } else {
-            char c = message->messageBody[0];
+            char c = message->messageData[0];
             if (c != '%') goto reject;
-            c = toLowerAndIsLetter(message->messageBody[1]);
+            c = toLowerAndIsLetter(message->messageData[1]);
             if (c == '\0') goto reject;
             destPid = registry[c - 'a'];
             if (destPid == 0) goto reject;
-            send_message(message, destPid);
+            send_message(destPid, message);
         }
         continue;
 reject:

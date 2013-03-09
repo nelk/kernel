@@ -135,7 +135,7 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
                 continue;
             }
             k_sendMessage(memInfo, procInfo, procInfo->currentEnv, KEYBOARD_PID, KEYBOARD_PID); // No preemption
-            procInfo->currentEnv = (Envelope *)k_acquire_memory_block(memInfo, KEYBOARD_PID);
+            procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
             procInfo->currentEnvIndex = 0;
             continue;
         }
@@ -143,7 +143,7 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
             procInfo->inputBufOverflow = 1;
             continue;
         }
-        procInfo->currentEnv->messageBody[procInfo->currentEnvIndex] = new_char;
+        procInfo->currentEnv->messageData[procInfo->currentEnvIndex] = new_char;
         ++(procInfo->currentEnvIndex);
     }
     procInfo->readIndex = localReader;
