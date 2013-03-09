@@ -252,7 +252,7 @@ void parseClockMessage(ClockCmd *command) {
             command->cmdType = PRINT_TIME;
             break;
         case SET_TIME:
-            status = parseTime(&(envelope->messageData), command->offset);
+            status = parseTime(&(envelope->messageData), &(command->offset);
             if (status == SUCCESS) {
                 command->isRunning = 1;
                 command->cmdType = PRINT_TIME;
@@ -329,19 +329,19 @@ void printTime(uint32_t currentTime, uint32_t offset) {
     // Print hours.
     field = clockTime / SECONDS_IN_HOUR;
     clockTime %= SECONDS_IN_HOUR;
-    index = write_uint32(field, messageData, index);
+    write_uint32(field, messageData, &index);
 
     messageData[index++] = ':';
 
     // Print minutes.
     field = clockTime / SECONDS_IN_MINUTE;
     clockTime %= SECONDS_IN_MINUTE;
-    index = write_uint32(field, messageData, index);
+    write_uint32(field, messageData, &index);
 
     messageData[index++] = ':';
 
     // Print seconds.
-    index = write_uint32(clockTime, messageData, index);
+    write_uint32(clockTime, messageData, &index);
     messageData[index++] = '\r';
     messageData[index++] = '\n';
     messageData[index++] = '\0';
