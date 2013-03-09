@@ -239,3 +239,7 @@ int16_t k_getProcessPriority(ProcInfo *procInfo, ProcId pid) {
     return (int16_t)(priority);
 }
 
+ProcId k_getPid(ProcInfo *procInfo) {
+    return procInfo->currentProcess->pid;
+}
+
