@@ -185,7 +185,7 @@ void write_uint32(uint32_t number, char *buffer[], uint8_t *startIndex) {
     uint32_t base = 1;
 
     if (number == 0) {
-        buffer[(*startIndex)++] = '0';
+        *buffer[(*startIndex)++] = '0';
         return;
     }
 
@@ -196,7 +196,7 @@ void write_uint32(uint32_t number, char *buffer[], uint8_t *startIndex) {
     base /= 10;
 
     while (base > 0) {
-        buffer[(*startIndex)++] = (number/base) + '0';
+        *buffer[(*startIndex)++] = (number/base) + '0';
         number %= base;
         base /= 10;
     }
@@ -252,7 +252,7 @@ void parseClockMessage(ClockCmd *command) {
             command->cmdType = PRINT_TIME;
             break;
         case SET_TIME:
-            status = parseTime(&(envelope->messageData), &(command->offset);
+            status = parseTime(&(envelope->messageData), &(command->offset));
             if (status == SUCCESS) {
                 command->isRunning = 1;
                 command->cmdType = PRINT_TIME;
