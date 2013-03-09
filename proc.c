@@ -113,13 +113,12 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     // pqAdd(&(procInfo->prq), process);
 
     procInfo->currentProcess = NULL;
-
-
+		
     // Init UART keyboard global input data
     procInfo->readIndex = 0;
     procInfo->writeIndex = 0;
     procInfo->inputBufOverflow = 0;
-    procInfo->currentEnv = NULL;
+		procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
     procInfo->currentEnvIndex = 0;
 }
 
@@ -131,7 +130,7 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
         char new_char = procInfo->inputBuf[localReader];
         localReader = (localReader + 1) % UART_IN_BUF_SIZE;
 
-        if (new_char == '\n') {
+        if (new_char == '\r') {
             if (procInfo->inputBufOverflow) {
                 // Reuse current envelope
                 procInfo->currentEnvIndex = 0;

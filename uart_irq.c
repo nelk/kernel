@@ -281,7 +281,7 @@ get_char:
 char toLowerAndIsLetter(char c) {
     if (c >= 'a' && c <= 'z') {
         return c;
-    } else if (c >= 'A' && c <= 'A') {
+    } else if (c >= 'A' && c <= 'Z') {
         return c - 'A' + 'a';
     }
     return '\0';
