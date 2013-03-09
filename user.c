@@ -182,23 +182,26 @@ struct ClockCmd {
 };
 
 void write_uint32(uint32_t number, char *buffer, uint8_t *startIndex) {
-    uint32_t base = 1;
+    uint32_t tempNumber = number;
+    uint8_t numDigits = 0;
+    char *ptr = NULL;
+
+    while (tempNumber > 0) {
+        ++numDigits;
+        tempNumber /= 10;
+    }
 
     if (number == 0) {
-        buffer[(*startIndex)++] = '0';
-        return;
+        numDigits = 1;
     }
 
-    while (number % base != number) {
-        base *= 10;
-    }
+    buffer = buffer + *startIndex;
+    *startIndex += numDigits;
 
-    base /= 10;
-
-    while (base > 0) {
-        buffer[(*startIndex)++] = (char)((number/base) + '0');
-        number %= base;
-        base /= 10;
+    while (numDigits > 0) {
+        buffer[numDigits-1] = (char)((number % 10)+'0');
+        number /= 10;
+        --numDigits;
     }
 }
 
@@ -220,8 +223,6 @@ void initClockCommand(ClockCmd *command) {
     command->currentTime = 0;
     command->offset = 0;
     command->isRunning = 0;
-
-    command->myPid = CLOCK_PID;
 
     command->selfEnvelope = (Envelope *)request_memory_block();
     command->receivedEnvelope = NULL;
