@@ -113,7 +113,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     // pqAdd(&(procInfo->prq), process);
 
     procInfo->currentProcess = NULL;
-		
+
     // Init UART keyboard global input data
     procInfo->readIndex = 0;
     procInfo->writeIndex = 0;
@@ -137,22 +137,28 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
                 procInfo->inputBufOverflow = 0;
                 continue;
             }
+
+            // Append \r\n\0 to message.
+            procInfo->currentEnv->messageData[procInfo->currentEnvIndex++] = '\r';
+            procInfo->currentEnv->messageData[procInfo->currentEnvIndex++] = '\n';
+            procInfo->currentEnv->messageData[procInfo->currentEnvIndex++] = '\0';
+
             k_sendMessage(memInfo, procInfo, procInfo->currentEnv, KEYBOARD_PID, KEYBOARD_PID); // No preemption
             procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
             procInfo->currentEnvIndex = 0;
             continue;
-				} else if (localReader - localWriter == 0) {
-					switch (new_char) {
-						// TODO(shale): constantify/decide on what these do.
-						case '!':
-							// No preemption
-							k_sendMessage(memInfo, procInfo, procInfo->currentEnv, KEYBOARD_PID, KEYBOARD_PID);
-							break;
-						default:
-							break;
-					}
-				}
-        if (procInfo->currentEnvIndex >= 96) { // Constantified
+        } else if (localReader - localWriter == 0) {
+            switch (new_char) {
+                // TODO(shale): constantify/decide on what these do.
+                case '!':
+                    // No preemption
+                    k_sendMessage(memInfo, procInfo, procInfo->currentEnv, KEYBOARD_PID, KEYBOARD_PID);
+                    break;
+                default:
+                    break;
+            }
+        }
+        if (procInfo->currentEnvIndex >= MESSAGEDATA_SIZE_BYTES - 3) { // -3 for \r\n\0
             procInfo->inputBufOverflow = 1;
             continue;
         }
@@ -211,7 +217,7 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
             break;
         case MESSAGE_RECEIVE:
             srcQueue = &(procInfo->prq);
-			dstQueue = NULL;
+            dstQueue = NULL;
             targetState = BLOCKED_MESSAGE;
             break;
         default:
