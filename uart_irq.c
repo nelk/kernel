@@ -7,6 +7,7 @@
 
 #include <LPC17xx.h>
 #include "rtx.h"
+#include "helpers.h"
 #include "kernel_types.h"
 #include "uart.h"
 
@@ -319,5 +320,23 @@ reject:
         release_memory_block(message);
     }
 }
+
+void write_processInfo(PCB *pcb, char *buffer, uint8_t *writeIndex) {
+	uint8_t i = *writeIndex;
+	write_uint32(pcb->pid, buffer, &i);
+	buffer[i] = ' ';
+	i++;
+	buffer[i] = '-';
+	i++;
+	buffer[i] = ' ';
+	i++;
+	write_uint32(pcb->priority, buffer, &i);
+	buffer[i] = '\r';
+	i++;
+	buffer[i] = '\n';
+	i++;
+	*writeIndex = i;
+}
+
 
 
