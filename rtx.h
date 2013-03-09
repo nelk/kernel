@@ -78,4 +78,9 @@ extern uint32_t bridge_getTime(void);
 #define getTime() _getTime((uint32_t)bridge_getTime)
 uint32_t __SVC_0 _getTime(uint32_t k_func);
 
+// pid()
+extern ProcId bridge_getPid(void);
+#define pid() _getPid((uint32_t)bridge_getPid)
+ProcId __SVC_0 _getPid(uint32_t k_func);
+
 #endif

@@ -88,3 +88,7 @@ int8_t bridge_delayedSend(uint8_t pid, Envelope *envelope, uint32_t delay) {
 uint32_t bridge_getTime(void) {
     return k_getTime(&gClockInfo);
 }
+
+ProcId bridge_getPid(void) {
+    return k_getPid(&gProcInfo);
+}
