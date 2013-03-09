@@ -356,7 +356,7 @@ void clockProcess(void) {
 
     while (1) {
         command->receivedEnvelope = receive_message(NULL);
-        command->currentTime = getTime();
+        command->currentTime = get_time();
 
         parseClockMessage(command->receivedEnvelope, &command);
 
