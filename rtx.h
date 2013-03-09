@@ -68,8 +68,8 @@ extern Envelope *bridge_receiveMessage(uint8_t *senderPid);
 __SVC_0 _receiveMessage(uint32_t k_func, uint8_t *senderPid);
 
 // delayedSend
-extern int8_t bridge_delayedSend(uint8_t pid, Envelope *envelope, uint32_t delay);
-#define delayed_send(pid, envelope, delay) _delayedSend((uint32_t)bridge_delayedSend, pid, envelope, delay)
+extern int8_t bridge_sendDelayedMessage(uint8_t pid, Envelope *envelope, uint32_t delay);
+#define delayed_send(pid, envelope, delay) _delayedSend((uint32_t)bridge_sendDelayedMessage, pid, envelope, delay)
 int8_t __SVC_0 _delayedSend(uint32_t k_func, uint8_t pid, Envelope *envelope, uint32_t delay);
 
 
