@@ -302,18 +302,19 @@ void parseClockMessage(ClockCmd *command) {
         return;
     }
 
-		switch (envelope->messageData[2]) {
-			case 'R':
-				command->cmdType = RESET_TIME;
-			 break;
-														case 'T':
-				command->cmdType = TERMINATE;
-				  break;
-				case 'S':
-		command->cmdType = SET_TIME;
-				break;
-				        default:/*we are returning*/return;// NOTE(nelk): I am suuper drunk
-		}
+    switch (envelope->messageData[2]) {
+        case 'R':
+            command->cmdType = RESET_TIME;
+            break;
+        case 'T':
+            command->cmdType = TERMINATE;
+            break;
+        case 'S':
+            command->cmdType = SET_TIME;
+            break;
+        default:
+            return;
+    }
 
     switch(command->cmdType) {
         case RESET_TIME:
@@ -388,7 +389,7 @@ void clockProcess(void) {
     send_message(KEYBOARD_PID, envelope);
     envelope = NULL;
 
-		send_message(CLOCK_PID, command.selfEnvelope);
+	send_message(CLOCK_PID, command.selfEnvelope);
 
     while (1) {
         command.receivedEnvelope = receive_message(NULL);
