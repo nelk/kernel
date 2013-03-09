@@ -65,12 +65,12 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     }
 
     // Null Process
-    process = &(procInfo->processes[0]); // Push process function address onto stack
+    process = &(procInfo->processes[NULL_PID]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) nullProcess);
     process->priority = (2 << KERN_PRIORITY_SHIFT) | MAX_PRIORITY;
     procInfo->nullProcess = process;
 
-    // TODO (Jon) - put clock process here
+    // TODO (Jon) - put clock process here (CLOCK_PID)
 
     // CRT Process
     process = &(procInfo->processes[CRT_PID]); // Push process function address onto stack

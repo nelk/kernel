@@ -2,6 +2,7 @@
 #define COMMON_TYPES
 
 // Useful system pids
+#define NULL_PID (0)
 #define CLOCK_PID (1)
 #define CRT_PID (2)
 #define KEYBOARD_PID (3)
