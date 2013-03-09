@@ -289,6 +289,8 @@ char toLowerAndIsLetter(char c) {
 
 void uart_keyboard_proc(void) {
     Envelope *message = NULL;
+    Envelope *messageCopy = NULL;
+    uint32_t copyIndex = 0;
     ProcId registry['z' - 'a' + 1] = {0};
     ProcId destPid = 0;
 
@@ -302,7 +304,10 @@ void uart_keyboard_proc(void) {
             char c = toLowerAndIsLetter(message->messageData[0]);
             if (c == '\0') goto reject;
             registry[c - 'a'] = message->srcPid;
-            release_memory_block(message);
+
+            // Set copy for crt proc this message (since original is not being sent anywhere)
+            messageCopy = message;
+            message = NULL;
         } else {
             char c = message->messageData[0];
             if (c != '%') goto reject;
@@ -310,7 +315,28 @@ void uart_keyboard_proc(void) {
             if (c == '\0') goto reject;
             destPid = registry[c - 'a'];
             if (destPid == 0) goto reject;
+
+            // Create copy to send to crt proc
+            messageCopy = request_memory_block();
+            if (messageCopy != NULL) {
+                messageCopy->srcPid = message->srcPid;
+                messageCopy->dstPid = message->dstPid;
+                messageCopy->messageType = message->messageType;
+                messageCopy->sendTime = message->sendTime;
+                for (copyIndex = 0; copyIndex < MESSAGEDATA_SIZE_BYTES; ++copyIndex) {
+                    messageCopy->messageData[copyIndex] = message->messageData[copyIndex];
+                }
+            }
+
+            // Send the message to the proc that registered with this character
             send_message(destPid, message);
+            message = NULL;
+        }
+
+        // Echo message to crt proc
+        if (messageCopy != NULL) {
+            send_message(CRT_PROC, messageCopy);
+            messageCopy = NULL;
         }
         continue;
 reject:
