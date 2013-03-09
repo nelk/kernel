@@ -319,7 +319,7 @@ void parseClockMessage(ClockCmd *command) {
 
     switch(command->cmdType) {
         case RESET_TIME:
-            command->offset = command->currentTime;
+            command->offset = -1 * command->currentTime;
             command->isRunning = 1;
             command->cmdType = PRINT_TIME;
             break;
