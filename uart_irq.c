@@ -312,11 +312,11 @@ void uart_keyboard_proc(void) {
         } else {
             char c = message->messageData[0];
             uint8_t reject = 1;
-            if (c != '%') {
+            if (c == '%') {
                 c = toLowerAndIsLetter(message->messageData[1]);
-                if (c == '\0') {
+                if (c != '\0') {
                     destPid = registry[c - 'a'];
-                    if (destPid == 0) {
+                    if (destPid != 0) {
                         reject = 0;
                     }
                 }
