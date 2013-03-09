@@ -38,11 +38,13 @@ struct MemInfo {
 
 // Process-control related types
 
-#define NUM_PROCS (6)
+#define NUM_PROCS (8)
 
 #define PROC_ID_KERNEL    (0x80)
 #define PROC_ID_ALLOCATOR (0x81)
 #define PROC_ID_NONE      (0xff)
+
+#define UART_IN_BUF_SIZE (64)
 
 enum ProcState {
     BLOCKED,
@@ -105,6 +107,17 @@ struct ProcInfo {
 
     PQ memq; // Memory blocked queue
     PQEntry memQueue[NUM_PROCS];
+
+    volatile uint8_t uartOutputComplete;
+    Envelope *uartOutputEnv;
+
+    // UART keyboard input data
+    char inputBuf[UART_IN_BUF_SIZE];
+    volatile uint32_t readIndex; // Next read index
+    volatile uint32_t writeIndex; // Next write index
+    volatile uint32_t inputBufOverflow;
+    Envelope *currentEnv; // This is initialized to new block
+    uint32_t currentEnvIndex;
 };
 
 enum ReleaseReason {
