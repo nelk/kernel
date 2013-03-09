@@ -16,21 +16,20 @@ void k_zeroEnvelope(Envelope *envelope) {
 }
 
 int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, ProcId srcPid, ProcId dstPid) {
-    PCB *currentProc = NULL;
     PCB *receivingProc = NULL;
 
     k_zeroEnvelope(envelope);
 
     // Check pid
-    if (dstPid >= NUM_PROCS) {
+    if (dstPid >= NUM_PROCS || srcPid >= NUM_PROCS) {
         return 1;
     }
     // Set to new owner (and check if valid)
-    if (k_changeOwner(memInfo, (uint32_t)envelope, PROC_ID_KERNEL) != 0) { // TODO (alex) - should we be using SUCCESS here? Maybe have global return codes like SUCCESS that's not just for memory?
+    if (k_changeOwner(memInfo, (uint32_t)envelope, srcPid, PROC_ID_KERNEL) != 0) { // TODO (alex) - should we be using SUCCESS here? Maybe have global return codes like SUCCESS that's not just for memory?
         return 2;
     }
 
-    receivingProc = &(procInfo->processes[pid]);
+    receivingProc = &(procInfo->processes[dstPid]);
 
     // Add to message queue
     envelope->next = NULL;
@@ -42,8 +41,8 @@ int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, P
         receivingProc->mqTail = envelope;
     }
 
-    envelope->srcPid = currentProc->pid;
-    envelope->dstPid = pid;
+    envelope->srcPid = srcPid;
+    envelope->dstPid = dstPid;
 
     // Unblock receiver
     if (receivingProc->state == BLOCKED_MESSAGE) {
@@ -80,21 +79,25 @@ Envelope *k_receiveMessage(MessageInfo *messageInfo, MemInfo *memInfo, ProcInfo 
     message->next = NULL;
 
     // Change ownership
-    k_changeOwner(memInfo, (uint32_t)message, currentProc->pid);
+    k_changeOwner(memInfo, (uint32_t)message, PROC_ID_KERNEL, currentProc->pid);
 
     return message;
 }
 
-int8_t k_delayedSend(MessageInfo *messageInfo, MemInfo *memInfo, uint8_t pid, Envelope *envelope, uint32_t delay) {
+int8_t k_sendDelayedMessage(MessageInfo *messageInfo, ClockInfo *clockInfo, MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, ProcId srcPid, ProcId dstPid, uint32_t delay) {
     k_zeroEnvelope(envelope);
-    k_changeOwner(memInfo, (uint32_t)envelope, PROC_ID_KERNEL);
+    // Check pid - the src is from the bridge, but why not...
+    if (dstPid >= NUM_PROCS || srcPid >= NUM_PROCS) {
+        return 1;
+    }
+	// TODO: (shale) validate memory, if necessary.
 
     envelope->sendTime = k_getTime(clockInfo) + delay;
 
     // TODO(sanjay): this seems to do no sanity checking of anything...
 
-    envelope->srcPid = procInfo->currentProcess->pid;
-    envelope->dstPid = pid;
+    envelope->srcPid = srcPid;
+    envelope->dstPid = dstPid;
 
     mpqAdd(&(messageInfo->mpq), envelope);
     return 0;
