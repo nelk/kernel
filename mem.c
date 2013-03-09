@@ -116,6 +116,9 @@ void k_memInfoInit(
     memInfo->arenaSizeBytes = blockSizeBytes * blockSizeBytes;
     memInfo->firstFree = NULL;
     memInfo->trackOwners = trackOwners;
+    memInfo->numSuccessfulAllocs = 0;
+    memInfo->numFailedAllocs = 0;
+    memInfo->numFreeCalls = 0;
 }
 
 // Acquire a memory block. Will set the block's owner to the
@@ -134,6 +137,7 @@ uint32_t k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
         ret = (uint32_t)curFirstFree;
         // It's on free list, we can assume it's a legitimate address
         k_setOwnerUnsafe(memInfo, ret, oid);
+        ++(memInfo->numSuccessfulAllocs);
         return ret;
     }
 
@@ -149,6 +153,7 @@ uint32_t k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
     if (memInfo->nextAvailableAddress >= memInfo->endMemoryAddress) {
         // TODO(sanjay): this is incredibly unsemantic,
         // use a bool "out_of_memory" out param instead
+        ++(memInfo->numFailedAllocs);
         return 0;
     }
 
@@ -160,6 +165,8 @@ uint32_t k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
             ++header;
         }
     }
+
+    ++(memInfo->numSuccessfulAllocs);
 
     ret = memInfo->nextAvailableAddress;
     k_setOwnerUnsafe(memInfo, ret, oid);
@@ -177,6 +184,8 @@ int8_t k_releaseMemoryBlock(MemInfo *memInfo, uint32_t addr, ProcId oid) {
     if (isValid != SUCCESS) {
         return isValid;
     }
+
+    ++(memInfo->numFreeCalls);
 
     // Add to free list
     fb = (FreeBlock *)addr;
