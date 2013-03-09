@@ -4,6 +4,7 @@
 #include "rtx.h"
 #include "uart_polling.h"
 #include "user.h"
+#include "helpers.h"
 
 // User Land
 
@@ -189,29 +190,6 @@ struct ClockCmd {
     Envelope *selfEnvelope;
     Envelope *receivedEnvelope;
 };
-
-void write_uint32(uint32_t number, char *buffer, uint8_t *startIndex) {
-    uint32_t tempNumber = number;
-    uint8_t numDigits = 0;
-
-    while (tempNumber > 0) {
-        ++numDigits;
-        tempNumber /= 10;
-    }
-
-    if (number < 10) {
-        numDigits = 2;
-    }
-
-    buffer = buffer + *startIndex;
-    *startIndex += numDigits;
-
-    while (numDigits > 0) {
-        buffer[numDigits-1] = (char)((number % 10)+'0');
-        number /= 10;
-        --numDigits;
-    }
-}
 
 uint32_t get_uint32(char *buffer, uint8_t startIndex, uint8_t length) {
     uint32_t number = 0;

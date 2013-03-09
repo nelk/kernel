@@ -1,6 +1,8 @@
 #ifndef COMMON_TYPES_H
 #define COMMON_TYPES_H
 
+#include <stdint.h>
+
 // Error-codes
 
 #define SUCCESS (0)
