@@ -283,10 +283,13 @@ uint8_t parseTime(char *message, int32_t *offset) {
 
 
 void parseClockMessage(ClockCmd *command) {
+		// Note:  when setting the command type to PRINT_TIME,
+		// it will set isRunning to true and send a delayed message
+		// to itself.
     uint8_t status = 0;
     Envelope *envelope = command->receivedEnvelope;
 
-    if (envelope == command->selfEnvelope) {
+    if (envelope->srcPid == CLOCK_PID) {
         if (command->isRunning) {
 					command->cmdType = PRINT_TIME;
 				}
@@ -313,17 +316,14 @@ void parseClockMessage(ClockCmd *command) {
     switch(command->cmdType) {
         case RESET_TIME:
             command->offset = -1 * (int32_t)command->currentTime;
-            command->cmdType = PRINT_TIME;
+            if (command->isRunning == 0) {
+							command->cmdType = PRINT_TIME;
+						}
             break;
         case SET_TIME:
             status = parseTime(envelope->messageData, &(command->offset));
-            if (status == SUCCESS) {
+            if (status == SUCCESS && command->isRunning == 0) {
                 command->cmdType = PRINT_TIME;
-            } else {
-                // uart_put_string(UART_NUM, "Please give input in the form \"%WS hh:mm:ss\" with valid values.");
-                if (command->isRunning) {
-                    command->cmdType = PRINT_TIME;
-                }
             }
             break;
         case TERMINATE:
