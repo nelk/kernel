@@ -137,12 +137,18 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
                 procInfo->inputBufOverflow = 0;
                 continue;
             }
+
+            // Append \r\n\0 to message.
+            procInfo->currentEnv->messageData[procInfo->currentEnvIndex++] = '\r';
+            procInfo->currentEnv->messageData[procInfo->currentEnvIndex++] = '\n';
+            procInfo->currentEnv->messageData[procInfo->currentEnvIndex++] = '\0';
+
             k_sendMessage(memInfo, procInfo, procInfo->currentEnv, KEYBOARD_PID, KEYBOARD_PID); // No preemption
             procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
             procInfo->currentEnvIndex = 0;
             continue;
         }
-        if (procInfo->currentEnvIndex >= 96) { // Constantified
+        if (procInfo->currentEnvIndex >= MESSAGEDATA_SIZE_BYTES - 3) { // -3 for \r\n\0
             procInfo->inputBufOverflow = 1;
             continue;
         }

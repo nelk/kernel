@@ -289,8 +289,12 @@ char toLowerAndIsLetter(char c) {
 
 void uart_keyboard_proc(void) {
     Envelope *message = NULL;
+    Envelope *messageCopy = NULL;
+    uint32_t idx = 0;
     ProcId registry['z' - 'a' + 1] = {0};
     ProcId destPid = 0;
+    char c = '\0';
+    uint8_t reject = 1;
 
     while (1) {
         message = receive_message(NULL);
@@ -298,23 +302,61 @@ void uart_keyboard_proc(void) {
             continue;
         }
 
-        if (message->srcPid != KEYBOARD_PID) { // Register character with pid
-            char c = toLowerAndIsLetter(message->messageData[0]);
-            if (c == '\0') goto reject;
+        // If the message is not "from ourself", that means we should
+        // register this character with the associated pid
+        if (message->srcPid != KEYBOARD_PID) {
+            c = toLowerAndIsLetter(message->messageData[0]);
+            if (c == '\0') {
+                release_memory_block(message);
+                continue;
+            }
             registry[c - 'a'] = message->srcPid;
+
             release_memory_block(message);
-        } else {
-            char c = message->messageData[0];
-            if (c != '%') goto reject;
-            c = toLowerAndIsLetter(message->messageData[1]);
-            if (c == '\0') goto reject;
-            destPid = registry[c - 'a'];
-            if (destPid == 0) goto reject;
-            send_message(destPid, message);
+            continue;
         }
-        continue;
-reject:
-        release_memory_block(message);
+
+        // If it is "from ourself", then we send a message to the
+        // registered processes.
+        c = message->messageData[0];
+        reject = 1;
+        if (c == '%') {
+            c = toLowerAndIsLetter(message->messageData[1]);
+            if (c != '\0') {
+                destPid = registry[c - 'a'];
+                if (destPid != 0) {
+                    reject = 0;
+                }
+            }
+        }
+
+        if (reject) {
+            // Set copy for crt proc this message (since original is not being sent anywhere)
+            messageCopy = message;
+            message = NULL;
+        } else {
+            // Create copy to send to crt proc
+            messageCopy = request_memory_block();
+            if (messageCopy != NULL) {
+                messageCopy->srcPid = message->srcPid;
+                messageCopy->dstPid = message->dstPid;
+                messageCopy->messageType = message->messageType;
+                messageCopy->sendTime = message->sendTime;
+                for (idx = 0; idx < MESSAGEDATA_SIZE_BYTES; ++idx) {
+                    messageCopy->messageData[idx] = message->messageData[idx];
+                }
+
+            }
+            // Send the message to the proc that registered with this character
+            send_message(destPid, message);
+            message = NULL;
+        }
+
+        // Send copy of message to CRT proc
+        if (messageCopy != NULL) {
+            send_message(CRT_PID, messageCopy);
+            messageCopy = NULL;
+        }
     }
 }
 
