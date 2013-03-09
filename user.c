@@ -390,7 +390,7 @@ void clockProcess(void) {
     send_message(KEYBOARD_PID, envelope);
     envelope = NULL;
 
-	send_message(CLOCK_PID, command.selfEnvelope);
+		send_message(CLOCK_PID, command.selfEnvelope);
 
     while (1) {
         command.receivedEnvelope = receive_message(NULL);
