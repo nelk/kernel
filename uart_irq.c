@@ -204,15 +204,13 @@ void uart_receive_char_isr(ProcInfo *procInfo, char new_char) {
         procInfo->inputBufOverflow = 1;
         return;
     }
-    buffer[localWriter] = new_char:
+    buffer[localWriter] = new_char;
     procInfo->writerIndex = (localWriter + 1) % UART_IN_BUF_SIZE;
 }
 
 
 void uart_send_string( uint32_t n_uart, uint8_t *p_buffer, uint32_t len )
 {
-	LPC_UART_TypeDef *pUart;
-
 	if(n_uart == 0 ) { /* UART0 is implemented */
 		pUart = (LPC_UART_TypeDef *)LPC_UART0;
 	} else { /* other UARTs are not implemented */
