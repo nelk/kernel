@@ -9,6 +9,7 @@
 #include "proc.h"
 #include "pq.h"
 #include "timer.h"
+#include "uart.h"
 #include "user.h"
 
 extern void __rte(void);
@@ -28,6 +29,9 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     int j;
     PCB *process = NULL;
     uint32_t *stack = NULL;
+
+    procInfo->uartOutputComplete = 0;
+    procInfo->uartOutputEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
 
     pqInit(&(procInfo->prq), procInfo->procQueue, NUM_PROCS, &rqStoreIndexFunc);
     pqInit(&(procInfo->memq), procInfo->memQueue, NUM_PROCS, &memqStoreIndexFunc);
@@ -61,42 +65,97 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     }
 
     // Null Process
-    process = &(procInfo->processes[0]); // Push process function address onto stack
+    process = &(procInfo->processes[NULL_PID]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) nullProcess);
     process->priority = (2 << KERN_PRIORITY_SHIFT) | MAX_PRIORITY;
     procInfo->nullProcess = process;
 
-    // Fun Process
-    process = &(procInfo->processes[1]); // Push process function address onto stack
-    *(process->startLoc) = ((uint32_t) funProcess);
-    process->priority = (1 << KERN_PRIORITY_SHIFT) | 3;
+    // TODO (Jon) - put clock process here (CLOCK_PID)
+
+    // CRT Process
+    process = &(procInfo->processes[CRT_PID]); // Push process function address onto stack
+    *(process->startLoc) = ((uint32_t) crt_proc);
+    process->priority = (0 << KERN_PRIORITY_SHIFT) | 0;
+    procInfo->nullProcess = process;
+
+    // Keboard Process
+    process = &(procInfo->processes[KEYBOARD_PID]); // Push process function address onto stack
+    *(process->startLoc) = ((uint32_t) uart_keyboard_proc);
+    process->priority = (0 << KERN_PRIORITY_SHIFT) | 1;
     pqAdd(&(procInfo->prq), process);
 
     // Schizo Process
-    process = &(procInfo->processes[2]); // Push process function address onto stack
+    process = &(procInfo->processes[FIRST_USER_PID + 0]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) schizophrenicProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 3;
     pqAdd(&(procInfo->prq), process);
 
-    // fib Process
-    process = &(procInfo->processes[3]); // Push process function address onto stack
+    // Fib Process
+    process = &(procInfo->processes[FIRST_USER_PID + 1]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) fibProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 2;
     pqAdd(&(procInfo->prq), process);
 
-    // memory muncher Process
-    process = &(procInfo->processes[4]); // Push process function address onto stack
+    // Memory muncher Process
+    process = &(procInfo->processes[FIRST_USER_PID + 2]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) memoryMuncherProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 1;
     pqAdd(&(procInfo->prq), process);
 
-    // release Process
-    process = &(procInfo->processes[5]); // Push process function address onto stack
+    // Release Process
+    process = &(procInfo->processes[FIRST_USER_PID + 3]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) releaseProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
 
     procInfo->currentProcess = NULL;
+
+
+    // Init UART keyboard global input data
+    procInfo->readIndex = 0;
+    procInfo->writeIndex = 0;
+    procInfo->inputBufOverflow = 0;
+    procInfo->currentEnv = NULL;
+    procInfo->currentEnvIndex = 0;
+}
+
+void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
+    uint32_t localReader = procInfo->readIndex;
+    uint32_t localWriter = procInfo->writeIndex;
+
+    while (procInfo->currentEnv != NULL && localReader != localWriter) {
+        char new_char = procInfo->inputBuf[localReader];
+        localReader = (localReader + 1) % UART_IN_BUF_SIZE;
+
+        if (new_char == '\n') {
+            if (procInfo->inputBufOverflow) {
+                // Reuse current envelope
+                procInfo->currentEnvIndex = 0;
+                procInfo->inputBufOverflow = 0;
+                continue;
+            }
+            k_sendMessage(memInfo, procInfo, procInfo->currentEnv, KEYBOARD_PID, KEYBOARD_PID); // No preemption
+            procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
+            procInfo->currentEnvIndex = 0;
+            continue;
+        }
+        if (procInfo->currentEnvIndex >= 96) { // Constantified
+            procInfo->inputBufOverflow = 1;
+            continue;
+        }
+        procInfo->currentEnv->messageData[procInfo->currentEnvIndex] = new_char;
+        ++(procInfo->currentEnvIndex);
+    }
+    procInfo->readIndex = localReader;
+}
+
+void k_processUartOutput(ProcInfo *procInfo, MemInfo *memInfo) {
+    if (!procInfo->uartOutputComplete) {
+        return;
+    }
+
+    k_sendMessage(memInfo, procInfo, procInfo->uartOutputEnv, CRT_PID, CRT_PID);
+    procInfo->uartOutputComplete = 0;
 }
 
 uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *messageInfo, ClockInfo *clockInfo, ReleaseReason reason) {
@@ -110,6 +169,8 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
     // We push the currently executing process onto this queue
     PQ *dstQueue = NULL;
 
+    k_processUartOutput(procInfo, memInfo);
+    k_processUartInput(procInfo, memInfo);
     k_processDelayedMessages(messageInfo, procInfo, memInfo, clockInfo);
 
     switch (reason) {
@@ -242,4 +303,5 @@ int16_t k_getProcessPriority(ProcInfo *procInfo, ProcId pid) {
 ProcId k_getPid(ProcInfo *procInfo) {
     return procInfo->currentProcess->pid;
 }
+
 
