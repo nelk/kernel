@@ -335,7 +335,7 @@ void uart_keyboard_proc(void) {
 
         // Echo message to crt proc
         if (messageCopy != NULL) {
-            send_message(CRT_PROC, messageCopy);
+            send_message(CRT_PID, messageCopy);
             messageCopy = NULL;
         }
         continue;
