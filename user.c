@@ -183,7 +183,7 @@ struct ClockCmd {
     ClockCmdType cmdType;
 
     uint32_t currentTime;
-    uint32_t offset;
+    int32_t offset;
     uint32_t isRunning;
 
     Envelope *selfEnvelope;
@@ -236,9 +236,9 @@ void initClockCommand(ClockCmd *command) {
     command->receivedEnvelope = NULL;
 }
 
-uint8_t parseTime(char *message, uint32_t *offset) {
+uint8_t parseTime(char *message, int32_t *offset) {
     uint32_t field = 0;
-    uint32_t tempOffset = 0;
+    uint32_t requestedTime = 0;
 
     // Check for any invalid characters.
     if (message[0] != '%' || message[1] != 'W' || message[2] != 'S' ||
@@ -257,7 +257,7 @@ uint8_t parseTime(char *message, uint32_t *offset) {
         return EINVAL;
     }
 
-    tempOffset += (field * SECONDS_IN_HOUR * MILLISECONDS_IN_SECOND);
+    requestedTime += (field * SECONDS_IN_HOUR * MILLISECONDS_IN_SECOND);
 
     // Read minutes field.
     if (message[7] < '0' || message[7] > '9' || message[8] < '0' || message[8] > '9') {
@@ -270,7 +270,7 @@ uint8_t parseTime(char *message, uint32_t *offset) {
         return EINVAL;
     }
 
-    tempOffset += (field * SECONDS_IN_MINUTE * MILLISECONDS_IN_SECOND);
+    requestedTime += (field * SECONDS_IN_MINUTE * MILLISECONDS_IN_SECOND);
 
     // Read seconds field.
     if (message[10] < '0' || message[10] > '9' || message[11] < '0' || message[11] > '9') {
@@ -283,8 +283,9 @@ uint8_t parseTime(char *message, uint32_t *offset) {
         return EINVAL;
     }
 
-    tempOffset += (field * MILLISECONDS_IN_SECOND);
-    *offset = tempOffset;
+    requestedTime += (field * MILLISECONDS_IN_SECOND);
+		
+    *offset = requestedTime - get_time();
 
     return SUCCESS;
 }
@@ -351,7 +352,7 @@ void printTime(uint32_t currentTime, uint32_t offset) {
     Envelope *printMessage = (Envelope *)request_memory_block();
     char *messageData = printMessage->messageData;
 
-    clockTime = (currentTime - offset) % (SECONDS_IN_DAY * MILLISECONDS_IN_SECOND);
+    clockTime = (currentTime + offset) % (SECONDS_IN_DAY * MILLISECONDS_IN_SECOND);
     clockTime /= MILLISECONDS_IN_SECOND;
 
     // Print hours.
