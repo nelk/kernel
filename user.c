@@ -71,7 +71,7 @@ void fibProcess(void) {
     uint32_t cur;
     uint32_t prev;
     uint32_t idx;
-	
+
 		Envelope *envelope = (Envelope *)request_memory_block();
 		envelope->messageData[0] = 'f';
 		envelope->messageData[1] = 'o';
@@ -81,7 +81,7 @@ void fibProcess(void) {
 		envelope->messageData[5] = '\0';
 		send_message(CRT_PID, envelope);
 		envelope = NULL;
-	
+
 
     while (1) {
         prev = 1;
@@ -92,7 +92,7 @@ void fibProcess(void) {
             prev = cur;
             cur = cur + temp;
             idx++;
-					
+
 						envelope = (Envelope *)request_memory_block();
 						sprintf(envelope->messageData, "fib(%d) = %d\r\n", idx, cur);
 						send_message(CRT_PID, envelope);
@@ -199,8 +199,8 @@ void write_uint32(uint32_t number, char *buffer, uint8_t *startIndex) {
         tempNumber /= 10;
     }
 
-    if (number == 0) {
-        numDigits = 1;
+    if (number < 10) {
+        numDigits = 2;
     }
 
     buffer = buffer + *startIndex;
@@ -284,6 +284,7 @@ uint8_t parseTime(char *message, uint32_t *offset) {
     }
 
     tempOffset += (field * MILLISECONDS_IN_SECOND);
+    tempOffset = SECONDS_IN_DAY * MILLISECONDS_IN_SECOND - tempOffset;
     *offset = tempOffset;
 
     return SUCCESS;
@@ -387,7 +388,7 @@ void clockProcess(void) {
     // TODO (alex) - make message type matter
     send_message(KEYBOARD_PID, envelope);
     envelope = NULL;
-	
+
 		send_message(CLOCK_PID, command.selfEnvelope);
 
     while (1) {
