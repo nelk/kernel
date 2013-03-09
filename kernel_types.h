@@ -9,6 +9,9 @@
 // Keil Related Types
 typedef int32_t ssize_t;
 
+// Keyboard Hotkey related consts. These all map to characters, and will break everything if they are '%'.
+#define SHOW_DEBUG_PROCESSES ('!')
+
 // Memory-related types
 
 struct FreeBlock;
@@ -40,7 +43,7 @@ struct MemInfo {
 #define UART_IN_BUF_SIZE (64)
 
 enum ProcState {
-    BLOCKED,
+    BLOCKED, // Assumption exists (for debugging purposes) that this means blocked on memory.
     BLOCKED_MESSAGE,
     NEW,
     READY,

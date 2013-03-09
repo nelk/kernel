@@ -288,6 +288,23 @@ char toLowerAndIsLetter(char c) {
     return '\0';
 }
 
+void writeProcessInfo(PCB *pcb, char *buffer, uint32_t *writeIndex) {
+	uint32_t i = *writeIndex;
+	write_uint32(pcb->pid, buffer, &i);
+	buffer[i] = ' ';
+	i++;
+	buffer[i] = '-';
+	i++;
+	buffer[i] = ' ';
+	i++;
+	write_uint32(pcb->priority, buffer, &i);
+	buffer[i] = '\r';
+	i++;
+	buffer[i] = '\n';
+	i++;
+	*writeIndex = i;
+}
+
 void uart_keyboard_proc(void) {
     Envelope *message = NULL;
     ProcId registry['z' - 'a' + 1] = {0};
@@ -304,8 +321,16 @@ void uart_keyboard_proc(void) {
             if (c == '\0') goto reject;
             registry[c - 'a'] = message->srcPid;
             release_memory_block(message);
-        } else if (message->messageData[0] == '!') {
-						int a = 1;
+        } else if (message->messageData[0] == SHOW_DEBUG_PROCESSES) {
+						char *buffer = message->messageData;
+						uint8_t i = 0;
+						uint32_t location = 0;
+						for (; i<NUM_PROCS; i++) {
+							writeProcessInfo(&(gProcInfo.processes[i]), buffer, &location);
+						}
+						buffer[location] = '\0';
+						send_message(CRT_PID, message);
+						message = NULL;
 				} else {
             char c = message->messageData[0];
             if (c != '%') goto reject;
@@ -314,29 +339,10 @@ void uart_keyboard_proc(void) {
             destPid = registry[c - 'a'];
             if (destPid == 0) goto reject;
             send_message(destPid, message);
+						message = NULL;
         }
         continue;
 reject:
         release_memory_block(message);
     }
 }
-
-void write_processInfo(PCB *pcb, char *buffer, uint8_t *writeIndex) {
-	uint8_t i = *writeIndex;
-	write_uint32(pcb->pid, buffer, &i);
-	buffer[i] = ' ';
-	i++;
-	buffer[i] = '-';
-	i++;
-	buffer[i] = ' ';
-	i++;
-	write_uint32(pcb->priority, buffer, &i);
-	buffer[i] = '\r';
-	i++;
-	buffer[i] = '\n';
-	i++;
-	*writeIndex = i;
-}
-
-
-

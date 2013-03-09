@@ -326,7 +326,7 @@ void parseClockMessage(ClockCmd *command) {
 void printTime(uint32_t currentTime, uint32_t offset) {
     uint32_t clockTime = 0;
     uint32_t field = 0;
-    uint8_t index = 0;
+    uint32_t index = 0;
     Envelope *printMessage = (Envelope *)request_memory_block();
     char *messageData = printMessage->messageData;
 

@@ -1,6 +1,6 @@
 #include "helpers.h"
 
-void write_uint32(uint32_t number, char *buffer, uint8_t *startIndex) {
+void write_uint32(uint32_t number, char *buffer, uint32_t *startIndex) {
     uint32_t tempNumber = number;
     uint8_t numDigits = 0;
 
@@ -22,3 +22,4 @@ void write_uint32(uint32_t number, char *buffer, uint8_t *startIndex) {
         --numDigits;
     }
 }
+
