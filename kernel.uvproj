@@ -412,9 +412,29 @@
           <GroupName>source_code</GroupName>
           <Files>
             <File>
-              <FileName>uart_polling.c</FileName>
+              <FileName>bridge.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\uart_polling.c</FilePath>
+              <FilePath>.\bridge.c</FilePath>
+            </File>
+            <File>
+              <FileName>bridge.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\bridge.h</FilePath>
+            </File>
+            <File>
+              <FileName>common_types.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\common_types.h</FilePath>
+            </File>
+            <File>
+              <FileName>HAL.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\HAL.c</FilePath>
+            </File>
+            <File>
+              <FileName>kernel_types.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\kernel_types.h</FilePath>
             </File>
             <File>
               <FileName>main.c</FileName>
@@ -432,26 +452,6 @@
               <FilePath>.\mem.h</FilePath>
             </File>
             <File>
-              <FileName>proc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\proc.c</FilePath>
-            </File>
-            <File>
-              <FileName>proc.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\proc.h</FilePath>
-            </File>
-            <File>
-              <FileName>user.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\user.c</FilePath>
-            </File>
-            <File>
-              <FileName>user.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\user.h</FilePath>
-            </File>
-            <File>
               <FileName>pq.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\pq.c</FilePath>
@@ -462,24 +462,19 @@
               <FilePath>.\pq.h</FilePath>
             </File>
             <File>
+              <FileName>proc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\proc.c</FilePath>
+            </File>
+            <File>
+              <FileName>proc.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\proc.h</FilePath>
+            </File>
+            <File>
               <FileName>rtx.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\rtx.h</FilePath>
-            </File>
-            <File>
-              <FileName>HAL.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\HAL.c</FilePath>
-            </File>
-            <File>
-              <FileName>bridge.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\bridge.c</FilePath>
-            </File>
-            <File>
-              <FileName>bridge.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\bridge.h</FilePath>
             </File>
             <File>
               <FileName>timer.c</FileName>
@@ -502,14 +497,44 @@
               <FilePath>.\uart_irq.c</FilePath>
             </File>
             <File>
-              <FileName>kernel_types.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\kernel_types.h</FilePath>
+              <FileName>user.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\user.c</FilePath>
             </File>
             <File>
-              <FileName>common_types.h</FileName>
+              <FileName>user.h</FileName>
               <FileType>5</FileType>
-              <FilePath>.\common_types.h</FilePath>
+              <FilePath>.\user.h</FilePath>
+            </File>
+            <File>
+              <FileName>heap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\heap.c</FilePath>
+            </File>
+            <File>
+              <FileName>heap.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\heap.h</FilePath>
+            </File>
+            <File>
+              <FileName>message_pq.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\message_pq.c</FilePath>
+            </File>
+            <File>
+              <FileName>message_pq.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\message_pq.h</FilePath>
+            </File>
+            <File>
+              <FileName>message.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\message.c</FilePath>
+            </File>
+            <File>
+              <FileName>message.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\message.h</FilePath>
             </File>
           </Files>
         </Group>

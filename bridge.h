@@ -15,8 +15,10 @@ int8_t bridge_releaseMemoryBlock(void *blk);
 
 int8_t bridge_sendMessage(uint8_t pid, Envelope *envelope);
 Envelope *bridge_receiveMessage(uint8_t *senderPid);
-int8_t bridge_delayedSend(uint8_t pid, Envelope *envelope, uint32_t delay);
+int8_t bridge_sendDelayedMessage(uint8_t pid, Envelope *envelope, uint32_t delay);
 
 uint32_t bridge_getTime(void);
+
+ProcId bridge_getPid(void);
 
 #endif

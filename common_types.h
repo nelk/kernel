@@ -8,6 +8,11 @@
 #define EPERM   (2)
 #define EINVAL  (3)
 
+// Useful system pids
+#define CLOCK_PID (1)
+#define CRT_PID (2)
+#define KEYBOARD_PID (3)
+
 // exposed so we can expose the size of messages in the envelopes
 #define BLOCKSIZE_BYTES (1 << 7)
 #define MESSAGEDATA_SIZE_BYTES (96)

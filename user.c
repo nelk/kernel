@@ -15,7 +15,7 @@ void nullProcess(void) {
 
 void printProcess(char *c) {
     while (1) {
-        uart_put_string(UART_NUM, c);
+        // uart_put_string(UART_NUM, c);
         release_processor();
     }
 }
@@ -24,9 +24,9 @@ void funProcess(void) {
     int i;
     while (1) {
         for (i = 0; i < 5; ++i) {
-            uart_put_string(UART_NUM, "Fun ");
-            uart_put_char(UART_NUM, i + '0');
-            uart_put_string(UART_NUM, "\n\r");
+            // uart_put_string(UART_NUM, "Fun ");
+            // uart_put_char(UART_NUM, i + '0');
+            // uart_put_string(UART_NUM, "\n\r");
         }
         release_processor();
     }
@@ -36,9 +36,9 @@ void schizophrenicProcess(void) {
     int i;
     while (1) {
         for (i = 9; i >= 5; --i) {
-            uart_put_string(UART_NUM, "Schizophrenic ");
-            uart_put_char(UART_NUM, i + '0');
-            uart_put_string(UART_NUM, "\n\r");
+            // uart_put_string(UART_NUM, "Schizophrenic ");
+            // uart_put_char(UART_NUM, i + '0');
+            // uart_put_string(UART_NUM, "\n\r");
         }
         release_processor();
     }
@@ -48,7 +48,7 @@ void print_uint32(uint32_t i) {
     int base = 1;
 
     if (i == 0) {
-        uart_put_char(UART_NUM, '0');
+        // uart_put_char(UART_NUM, '0');
         return;
     }
 
@@ -58,7 +58,7 @@ void print_uint32(uint32_t i) {
     base /= 10;
 
     while (base > 0) {
-        uart_put_char(UART_NUM, (i/base) + '0');
+        // uart_put_char(UART_NUM, (i/base) + '0');
         i %= base;
         base /= 10;
     }
@@ -81,11 +81,11 @@ void fibProcess(void) {
             cur = cur + temp;
             idx++;
 
-            uart_put_string(UART_NUM, "fib(");
+            // uart_put_string(UART_NUM, "fib(");
             print_uint32(idx);
-            uart_put_string(UART_NUM, ") = ");
+            // uart_put_string(UART_NUM, ") = ");
             print_uint32(cur);
-            uart_put_string(UART_NUM, "\r\n");
+            // uart_put_string(UART_NUM, "\r\n");
 
             if (idx % 5 == 0) {
                 release_processor();
@@ -120,16 +120,16 @@ void memoryMuncherProcess(void) {
         memList = tempNode;
         tempNode = NULL;
 
-        uart_put_string(UART_NUM, "I have eaten ");
+        // uart_put_string(UART_NUM, "I have eaten ");
         print_uint32((uint32_t)memList);
-        uart_put_string(UART_NUM, ".\r\n");
+        // uart_put_string(UART_NUM, ".\r\n");
     }
 
-    uart_put_string(UART_NUM, "I am out of things to eat.\r\n");
+    // uart_put_string(UART_NUM, "I am out of things to eat.\r\n");
 
     release_memory_block(request_memory_block()); // Should block
 
-    uart_put_string(UART_NUM, "I'm too full, I will release all the memory that I ate.\r\n");
+    // uart_put_string(UART_NUM, "I'm too full, I will release all the memory that I ate.\r\n");
     while (memList != NULL) {
         tempNode = memList->next;
         release_memory_block((void *)memList);
@@ -143,14 +143,14 @@ void memoryMuncherProcess(void) {
 
 void releaseProcess(void) {
     void *mem = request_memory_block();
-    uart_put_string(UART_NUM, "releaseProcess: taken mem ");
+    // uart_put_string(UART_NUM, "releaseProcess: taken mem ");
     print_uint32((uint32_t)mem);
-    uart_put_string(UART_NUM, "\r\n");
+    // uart_put_string(UART_NUM, "\r\n");
 
     set_process_priority(5, get_process_priority(1)); // funProcess pid = 1
     release_processor();
 
-    uart_put_string(UART_NUM, "releaseProcess: I am in control\r\n");
+    // uart_put_string(UART_NUM, "releaseProcess: I am in control\r\n");
     release_memory_block(mem);
 
     //set_process_priority(4, get_process_priority(1)); // funProcess pid = 1
