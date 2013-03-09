@@ -182,7 +182,6 @@ struct ClockCmd {
 void write_uint32(uint32_t number, char *buffer, uint8_t *startIndex) {
     uint32_t tempNumber = number;
     uint8_t numDigits = 0;
-    char *ptr = NULL;
 
     while (tempNumber > 0) {
         ++numDigits;
