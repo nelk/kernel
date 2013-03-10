@@ -161,55 +161,6 @@ struct ClockCmd {
     Envelope *receivedEnvelope;
 };
 
-uint8_t write_uint32(char *buffer, uint32_t number, uint8_t minDigits) {
-    uint32_t tempNumber = number;
-    uint8_t numDigits = 0;
-
-    while (tempNumber > 0) {
-        ++numDigits;
-        tempNumber /= 10;
-    }
-
-    if (minDigits < 1) {
-        minDigits = 1;
-    }
-
-    if (numDigits < minDigits) {
-        numDigits = minDigits;
-    }
-
-    tempNumber = numDigits;
-
-    while (numDigits > 0) {
-        buffer[numDigits-1] = (char)((number % 10)+'0');
-        number /= 10;
-        --numDigits;
-    }
-
-    return (uint8_t)tempNumber;
-}
-
-uint32_t get_uint32(char *buffer, uint8_t length) {
-    uint32_t number = 0;
-    uint32_t i = 0;
-
-    for(; i < length; ++i) {
-        number *= 10;
-        number += (uint32_t)(buffer[i] - '0');
-    }
-
-    return number;
-}
-
-uint8_t print_ansi_escape(char *buffer, uint8_t num) {
-    uint8_t idx = 0;
-    buffer[idx++] = '\x1b';
-    buffer[idx++] = '[';
-    idx += write_uint32(buffer+idx, num, 0);
-    buffer[idx++] = 'm';
-    return idx;
-}
-
 void initClockCommand(ClockCmd *command) {
     command->cmdType = TERMINATE;
 
@@ -242,7 +193,7 @@ uint8_t parseTime(char *message, int32_t *offset) {
     }
 
     // Read hours field.
-    field = get_uint32(message+4, 2);
+    field = read_uint32(message+4, 2);
 
     if (field > 23) {
         return EINVAL;
@@ -251,7 +202,7 @@ uint8_t parseTime(char *message, int32_t *offset) {
     requestedTime += (field * SECONDS_IN_HOUR * MILLISECONDS_IN_SECOND);
 
     // Read minutes field.
-    field = get_uint32(message+7, 2);
+    field = read_uint32(message+7, 2);
 
     if (field > 59) {
         return EINVAL;
@@ -260,7 +211,7 @@ uint8_t parseTime(char *message, int32_t *offset) {
     requestedTime += (field * SECONDS_IN_MINUTE * MILLISECONDS_IN_SECOND);
 
     // Read seconds field.
-    field = get_uint32(message+10, 2);
+    field = read_uint32(message+10, 2);
 
     if (field > 59) {
         return EINVAL;
@@ -339,7 +290,7 @@ void printTime(uint32_t currentTime, uint32_t offset) {
     clockTime /= MILLISECONDS_IN_SECOND;
 
     // Add ANSI colour code.
-    index += print_ansi_escape(messageData+index, 31 + (clockTime % 6));
+    index += write_ansi_escape(messageData+index, 31 + (clockTime % 6));
 
     // Print hours.
     field = clockTime / SECONDS_IN_HOUR;
@@ -360,7 +311,7 @@ void printTime(uint32_t currentTime, uint32_t offset) {
     index += write_uint32(messageData + index, field, 2);
 
     // Add ANSI reset.
-    index += print_ansi_escape(messageData+index, 0);
+    index += write_ansi_escape(messageData+index, 0);
 
     messageData[index++] = '\r';
     messageData[index++] = '\n';

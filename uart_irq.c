@@ -288,21 +288,16 @@ char toLowerAndIsLetter(char c) {
     return '\0';
 }
 
-void writeProcessInfo(PCB *pcb, char *buffer, uint32_t *writeIndex) {
-	uint32_t i = *writeIndex;
-	write_uint32(pcb->pid, buffer, &i);
-	buffer[i] = ' ';
-	i++;
-	buffer[i] = '-';
-	i++;
-	buffer[i] = ' ';
-	i++;
-	write_uint32(pcb->priority, buffer, &i);
-	buffer[i] = '\r';
-	i++;
-	buffer[i] = '\n';
-	i++;
-	*writeIndex = i;
+uint32_t writeProcessInfo(char *buffer, PCB *pcb) {
+	uint32_t i = 0;
+	i += write_uint32(buffer+i, pcb->pid, 3);
+	buffer[i++] = ' ';
+	buffer[i++] = '-';
+	buffer[i++] = ' ';
+	i += write_uint32(buffer+i, pcb->priority, 3);
+	buffer[i++] = '\r';
+	buffer[i++] = '\n';
+	return i;
 }
 
 void uart_keyboard_proc(void) {
@@ -338,7 +333,7 @@ void uart_keyboard_proc(void) {
             uint8_t i = 0;
             uint32_t location = 0;
             for (; i<NUM_PROCS; i++) {
-                writeProcessInfo(&(gProcInfo.processes[i]), buffer, &location);
+                location += writeProcessInfo(buffer+location, &(gProcInfo.processes[i]));
             }
             buffer[location] = '\0';
             send_message(CRT_PID, message);

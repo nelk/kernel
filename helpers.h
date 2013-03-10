@@ -1,8 +1,19 @@
-#ifndef HELPERS
-#define HELPERS
+#ifndef HELPERS_H
+#define HELPERS_H
 
 #include "common_types.h"
 
-void write_uint32(uint32_t number, char *buffer, uint32_t *startIndex);
+uint32_t read_uint32(char *buffer, uint8_t length);
+uint8_t write_ansi_escape(char *buffer, uint8_t num);
+uint8_t write_uint32(char *buffer, uint32_t number, uint8_t minDigits);
+
+
+
+
+
+
+
+
+
 
 #endif
