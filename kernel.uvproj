@@ -536,6 +536,16 @@
               <FileType>5</FileType>
               <FilePath>.\message.h</FilePath>
             </File>
+            <File>
+              <FileName>helpers.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\helpers.c</FilePath>
+            </File>
+            <File>
+              <FileName>helpers.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\helpers.h</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>
