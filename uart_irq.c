@@ -234,7 +234,9 @@ void crt_proc(void) {
                 tail->next = nextMsg;
                 tail = nextMsg;
             }
-        }
+        } else {
+						gProcInfo.uartOutputEnv = nextMsg;
+				}
 
 get_char:
         if (head == NULL) {
