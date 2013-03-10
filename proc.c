@@ -119,7 +119,6 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
 
     // Init UART keyboard global output data
     procInfo->uartOutputPending = 0;
-    procInfo->uartSendPending = 0;
     procInfo->uartOutputEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
 
     // Init UART keyboard global input data
