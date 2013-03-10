@@ -126,6 +126,9 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
     uint32_t localReader = procInfo->readIndex;
     uint32_t localWriter = procInfo->writeIndex;
 
+		if (procInfo->currentEnv == NULL) {
+			procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
+		}
     while (procInfo->currentEnv != NULL && localReader != localWriter) {
         char new_char = procInfo->inputBuf[localReader];
         localReader = (localReader + 1) % UART_IN_BUF_SIZE;
@@ -207,7 +210,7 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
         case OOM:
             srcQueue = &(procInfo->prq);
             dstQueue = &(procInfo->memq);
-            targetState = BLOCKED;
+            targetState = BLOCKED_MEMORY;
             break;
         case YIELD:
         case CHANGED_PRIORITY:

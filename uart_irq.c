@@ -342,10 +342,9 @@ void uart_keyboard_proc(void) {
                 tempEnvelope = NULL;
             }
 						
-						i = write_string(message->messageData, "used mem =", 10);
-						i += write_uint32(message->messageData+i, (gMemInfo.numSuccessfulAllocs-gMemInfo.numFreeCalls), 2);
-						message->messageData[i++] = '\r';
-						message->messageData[i++] = '\n';
+						i = write_string(message->messageData, "used mem = ", 11);
+						i += write_uint32(message->messageData+i, (gMemInfo.numSuccessfulAllocs-gMemInfo.numFreeCalls)*128, 2);
+						i += write_string(message->messageData+i, " bytes\r\n", 8); 
 						message->messageData[i++] = '\0';
 						send_message(CRT_PID, message);
 						message = NULL;

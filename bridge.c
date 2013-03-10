@@ -56,6 +56,9 @@ int8_t bridge_releaseMemoryBlock(void *blk) {
 
     firstBlocked = pqTop(&(gProcInfo.memq));
     if (firstBlocked->priority >= gProcInfo.currentProcess->priority) {
+				firstBlocked->state = READY;
+				pqRemove(&(gProcInfo.memq), 0);
+				pqAdd(&(gProcInfo.prq), firstBlocked);
         return SUCCESS;
     }
 

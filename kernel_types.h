@@ -48,7 +48,7 @@ struct MemInfo {
 #define UART_IN_BUF_SIZE (64)
 
 enum ProcState {
-    BLOCKED, // Assumption exists (for debugging purposes) that this means blocked on memory.
+    BLOCKED_MEMORY, 
     BLOCKED_MESSAGE,
     NEW,
     READY,

@@ -46,6 +46,15 @@ void schizophrenicProcess(void) {
     }
 }
 
+void sleep(uint32_t ms) {
+		// TODO(alex): make this more robust by forwarding non-sleep messages to ourselves on a delay
+	
+		Envelope* env = (Envelope *)request_memory_block();
+		delayed_send(pid(), env, ms);
+		env = receive_message(NULL);
+		release_memory_block((void*)env);
+}
+
 void fibProcess(void) {
     uint32_t temp;
     uint32_t cur;
@@ -70,7 +79,7 @@ void fibProcess(void) {
             envelope = NULL;
 
             if (idx % 5 == 0) {
-                release_processor();
+                sleep(1000);
             }
             //if (idx % 100 == 0) {
             //    set_process_priority(3, get_process_priority(1)); // funProcess pid = 1
