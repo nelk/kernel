@@ -299,11 +299,13 @@ uint32_t writePCBState(char *buffer, ProcState state) {
 
 uint32_t writeProcessInfo(char *buffer, PCB *pcb) {
     uint32_t i = 0;
+		i += write_ansi_escape(buffer+i, 41);
     i += write_uint32(buffer+i, pcb->pid, 0);
     i += write_string(buffer+i, "$ Priority=", 11);
     i += write_uint32(buffer+i, pcb->priority, 0);
     i += write_string(buffer+i, ", Status=", 9);
     i += writePCBState(buffer+i, pcb->state);
+		i += write_ansi_escape(buffer+i, 0);
     i += write_string(buffer+i, "\r\n", 2);
     return i;
 }
@@ -355,9 +357,12 @@ void uart_keyboard_proc(void) {
             }
 
             i = 0;
+						i += write_ansi_escape(message->messageData+i, 41);
 						i += write_string(message->messageData+i, "used mem = ", 11);
             i += write_uint32(message->messageData+i, (gMemInfo.numSuccessfulAllocs-gMemInfo.numFreeCalls)*128, 2);
-            i += write_string(message->messageData+i, " bytes\r\n", 8);
+						i += write_string(message->messageData+i, " bytes", 6);
+						i += write_ansi_escape(message->messageData+i, 0);
+            i += write_string(message->messageData+i, "\r\n", 2);
             message->messageData[i++] = '\0';
             send_message(CRT_PID, message);
             message = NULL;

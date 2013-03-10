@@ -58,4 +58,3 @@ uint8_t write_ansi_escape(char *buffer, uint8_t num) {
     buffer[idx++] = 'm';
     return idx;
 }
-
