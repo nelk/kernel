@@ -147,10 +147,15 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
             procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
             procInfo->currentEnvIndex = 0;
             continue;
-        } else if (procInfo->currentEnvIndex == 0) { // If first character in message.
+        }
+
+        // Write new character into message
+        procInfo->currentEnv->messageData[procInfo->currentEnvIndex] = new_char;
+
+        // If first character in message.
+        if (procInfo->currentEnvIndex == 0) {
             switch (new_char) {
                 case SHOW_DEBUG_PROCESSES:
-                    procInfo->currentEnv->messageData[procInfo->currentEnvIndex] = new_char;
                     k_sendMessage(memInfo, procInfo, procInfo->currentEnv, KEYBOARD_PID, KEYBOARD_PID);
                     procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
                     procInfo->currentEnvIndex = 0;
@@ -163,7 +168,7 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
             procInfo->inputBufOverflow = 1;
             continue;
         }
-        procInfo->currentEnv->messageData[procInfo->currentEnvIndex] = new_char;
+        // Increment index in message
         ++(procInfo->currentEnvIndex);
     }
     procInfo->readIndex = localReader;
