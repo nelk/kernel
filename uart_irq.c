@@ -367,16 +367,14 @@ void uart_keyboard_proc(void) {
         } else {
             // Create copy to send to crt proc
             messageCopy = request_memory_block();
-            if (messageCopy != NULL) {
-                messageCopy->srcPid = message->srcPid;
-                messageCopy->dstPid = message->dstPid;
-                messageCopy->messageType = message->messageType;
-                messageCopy->sendTime = message->sendTime;
-                for (idx = 0; idx < MESSAGEDATA_SIZE_BYTES; ++idx) {
-                    messageCopy->messageData[idx] = message->messageData[idx];
-                }
-
-            }
+						messageCopy->srcPid = message->srcPid;
+						messageCopy->dstPid = message->dstPid;
+						messageCopy->messageType = message->messageType;
+						messageCopy->sendTime = message->sendTime;
+						for (idx = 0; idx < MESSAGEDATA_SIZE_BYTES; ++idx) {
+								messageCopy->messageData[idx] = message->messageData[idx];
+						}
+						
             // Send the message to the proc that registered with this character
             send_message(destPid, message);
             message = NULL;
