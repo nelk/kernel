@@ -329,14 +329,18 @@ void uart_keyboard_proc(void) {
             message = NULL;
             continue;
         } else if (message->messageData[0] == SHOW_DEBUG_PROCESSES) {
-            char *buffer = message->messageData;
+            Envelope *tempEnvelope = NULL;
             uint8_t i = 0;
             uint32_t location = 0;
-            for (; i<NUM_PROCS; i++) {
-                location += writeProcessInfo(buffer+location, &(gProcInfo.processes[i]));
+
+            for (; i < NUM_PROCS; i++) {
+                tempEnvelope = (Envelope *)request_memory_block();
+                location += writeProcessInfo(tempEnvelope->buffer, &(gProcInfo.processes[i]));
+                buffer[location++] = '\0';
+                send_message(CRT_PID, tempEnvelope);
+                tempEnvelope = NULL;
             }
-            buffer[location] = '\0';
-            send_message(CRT_PID, message);
+
             message = NULL;
             continue;
         }
