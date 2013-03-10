@@ -7,9 +7,11 @@
 
 #include <LPC17xx.h>
 #include "rtx.h"
+#include "helpers.h"
 #include "kernel_types.h"
 #include "uart.h"
 
+extern MemInfo gMemInfo;
 extern ProcInfo gProcInfo;
 
 volatile uint8_t g_UART0_TX_empty=1;
@@ -147,8 +149,7 @@ int uart_init(int n_uart) {
  *       push and pop instructions in the assembly routine.
  *       The actual c_UART0_IRQHandler does the rest of irq handling
  */
-__asm void UART0_IRQHandler(void)
-{
+__asm void UART0_IRQHandler(void) {
     PRESERVE8
     IMPORT c_UART0_IRQHandler
     PUSH{r4-r11, lr}
@@ -287,6 +288,36 @@ char toLowerAndIsLetter(char c) {
     return '\0';
 }
 
+uint32_t writePCBState(char *buffer, ProcState state) {
+    switch (state) {
+        case BLOCKED_MEMORY:
+            return write_string(buffer, "Blocked on memory", 17);
+        case BLOCKED_MESSAGE:
+            return write_string(buffer, "Blocked on message", 18);
+        case NEW:
+            return write_string(buffer, "New", 3);
+        case READY:
+            return write_string(buffer, "Ready", 5);
+        case RUNNING:
+            return write_string(buffer, "Running", 7);
+        default:
+            break;
+    }
+
+    return write_string(buffer, "???", 3);
+}
+
+uint32_t writeProcessInfo(char *buffer, PCB *pcb) {
+    uint32_t i = 0;
+    i += write_uint32(buffer+i, pcb->pid, 0);
+    i += write_string(buffer+i, "$ Priority=", 11);
+    i += write_uint32(buffer+i, pcb->priority, 0);
+    i += write_string(buffer+i, ", Status=", 9);
+    i += writePCBState(buffer+i, pcb->state);
+    i += write_string(buffer+i, "\r\n", 2);
+    return i;
+}
+
 void uart_keyboard_proc(void) {
     Envelope *message = NULL;
     Envelope *messageCopy = NULL;
@@ -306,13 +337,40 @@ void uart_keyboard_proc(void) {
         // register this character with the associated pid
         if (message->srcPid != KEYBOARD_PID) {
             c = toLowerAndIsLetter(message->messageData[0]);
-            if (c == '\0') {
-                release_memory_block(message);
-                continue;
+            if ('a' <= c && c <= 'z') {
+							registry[c - 'a'] = message->srcPid;
             }
-            registry[c - 'a'] = message->srcPid;
 
             release_memory_block(message);
+            message = NULL;
+            continue;
+        } else if (message->messageData[0] == SHOW_DEBUG_PROCESSES) {
+            Envelope *tempEnvelope = NULL;
+            uint8_t i = 0;
+
+            for (; i < NUM_PROCS; i++) {
+                uint32_t location = 0;
+                PCB *pcb = &(gProcInfo.processes[i]);
+
+                // Check if this is an unused process slot
+                if (*(pcb->startLoc) == 0) {
+                    continue;
+                }
+
+                tempEnvelope = (Envelope *)request_memory_block();
+                location += writeProcessInfo(tempEnvelope->messageData, pcb);
+                tempEnvelope->messageData[location++] = '\0';
+                send_message(CRT_PID, tempEnvelope);
+                tempEnvelope = NULL;
+            }
+
+            i = 0;
+						i += write_string(message->messageData+i, "used mem = ", 11);
+            i += write_uint32(message->messageData+i, (gMemInfo.numSuccessfulAllocs-gMemInfo.numFreeCalls)*128, 2);
+            i += write_string(message->messageData+i, " bytes\r\n", 8);
+            message->messageData[i++] = '\0';
+            send_message(CRT_PID, message);
+            message = NULL;
             continue;
         }
 
@@ -336,17 +394,15 @@ void uart_keyboard_proc(void) {
             message = NULL;
         } else {
             // Create copy to send to crt proc
-            messageCopy = request_memory_block();
-            if (messageCopy != NULL) {
-                messageCopy->srcPid = message->srcPid;
-                messageCopy->dstPid = message->dstPid;
-                messageCopy->messageType = message->messageType;
-                messageCopy->sendTime = message->sendTime;
-                for (idx = 0; idx < MESSAGEDATA_SIZE_BYTES; ++idx) {
-                    messageCopy->messageData[idx] = message->messageData[idx];
-                }
-
+            messageCopy = (Envelope *)request_memory_block();
+            messageCopy->srcPid = message->srcPid;
+            messageCopy->dstPid = message->dstPid;
+            messageCopy->messageType = message->messageType;
+            messageCopy->sendTime = message->sendTime;
+            for (idx = 0; idx < MESSAGEDATA_SIZE_BYTES; ++idx) {
+                messageCopy->messageData[idx] = message->messageData[idx];
             }
+
             // Send the message to the proc that registered with this character
             send_message(destPid, message);
             message = NULL;
@@ -359,5 +415,4 @@ void uart_keyboard_proc(void) {
         }
     }
 }
-
 

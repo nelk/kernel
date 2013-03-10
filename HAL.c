@@ -53,3 +53,10 @@ SVC_EXIT
   BX   LR
 }
 
+__asm void HardFault_Handler (void) 
+{
+	PRESERVE8
+	MRS		R0, MSP
+	LDR		R1, [R0, #24]
+	B	.
+}
