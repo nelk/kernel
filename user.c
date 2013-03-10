@@ -4,6 +4,7 @@
 #include "rtx.h"
 #include "uart_polling.h"
 #include "user.h"
+#include "helpers.h"
 
 // User Land
 
@@ -45,6 +46,15 @@ void schizophrenicProcess(void) {
     }
 }
 
+void sleep(uint32_t ms) {
+		// TODO(alex): make this more robust by forwarding non-sleep messages to ourselves on a delay
+	
+		Envelope* env = (Envelope *)request_memory_block();
+		delayed_send(pid(), env, ms);
+		env = receive_message(NULL);
+		release_memory_block((void*)env);
+}
+
 void fibProcess(void) {
     uint32_t temp;
     uint32_t cur;
@@ -69,7 +79,7 @@ void fibProcess(void) {
             envelope = NULL;
 
             if (idx % 5 == 0) {
-                release_processor();
+                sleep(1000);
             }
             //if (idx % 100 == 0) {
             //    set_process_priority(3, get_process_priority(1)); // funProcess pid = 1
@@ -160,55 +170,6 @@ struct ClockCmd {
     Envelope *receivedEnvelope;
 };
 
-uint8_t write_uint32(char *buffer, uint32_t number, uint8_t minDigits) {
-    uint32_t tempNumber = number;
-    uint8_t numDigits = 0;
-
-    while (tempNumber > 0) {
-        ++numDigits;
-        tempNumber /= 10;
-    }
-
-    if (minDigits < 1) {
-        minDigits = 1;
-    }
-
-    if (numDigits < minDigits) {
-        numDigits = minDigits;
-    }
-
-    tempNumber = numDigits;
-
-    while (numDigits > 0) {
-        buffer[numDigits-1] = (char)((number % 10)+'0');
-        number /= 10;
-        --numDigits;
-    }
-
-    return (uint8_t)tempNumber;
-}
-
-uint32_t get_uint32(char *buffer, uint8_t length) {
-    uint32_t number = 0;
-    uint32_t i = 0;
-
-    for(; i < length; ++i) {
-        number *= 10;
-        number += (uint32_t)(buffer[i] - '0');
-    }
-
-    return number;
-}
-
-uint8_t print_ansi_escape(char *buffer, uint8_t num) {
-    uint8_t idx = 0;
-    buffer[idx++] = '\x1b';
-    buffer[idx++] = '[';
-    idx += write_uint32(buffer+idx, num, 0);
-    buffer[idx++] = 'm';
-    return idx;
-}
-
 void initClockCommand(ClockCmd *command) {
     command->cmdType = TERMINATE;
 
@@ -241,7 +202,7 @@ uint8_t parseTime(char *message, int32_t *offset) {
     }
 
     // Read hours field.
-    field = get_uint32(message+4, 2);
+    field = read_uint32(message+4, 2);
 
     if (field > 23) {
         return EINVAL;
@@ -250,7 +211,7 @@ uint8_t parseTime(char *message, int32_t *offset) {
     requestedTime += (field * SECONDS_IN_HOUR * MILLISECONDS_IN_SECOND);
 
     // Read minutes field.
-    field = get_uint32(message+7, 2);
+    field = read_uint32(message+7, 2);
 
     if (field > 59) {
         return EINVAL;
@@ -259,7 +220,7 @@ uint8_t parseTime(char *message, int32_t *offset) {
     requestedTime += (field * SECONDS_IN_MINUTE * MILLISECONDS_IN_SECOND);
 
     // Read seconds field.
-    field = get_uint32(message+10, 2);
+    field = read_uint32(message+10, 2);
 
     if (field > 59) {
         return EINVAL;
@@ -330,7 +291,7 @@ void parseClockMessage(ClockCmd *command) {
 void printTime(uint32_t currentTime, uint32_t offset) {
     uint32_t clockTime = 0;
     uint32_t field = 0;
-    uint8_t index = 0;
+    uint32_t index = 0;
     Envelope *printMessage = (Envelope *)request_memory_block();
     char *messageData = printMessage->messageData;
 
@@ -338,7 +299,7 @@ void printTime(uint32_t currentTime, uint32_t offset) {
     clockTime /= MILLISECONDS_IN_SECOND;
 
     // Add ANSI colour code.
-    index += print_ansi_escape(messageData+index, 31 + (clockTime % 6));
+    index += write_ansi_escape(messageData+index, 31 + (clockTime % 6));
 
     // Print hours.
     field = clockTime / SECONDS_IN_HOUR;
@@ -359,7 +320,7 @@ void printTime(uint32_t currentTime, uint32_t offset) {
     index += write_uint32(messageData + index, field, 2);
 
     // Add ANSI reset.
-    index += print_ansi_escape(messageData+index, 0);
+    index += write_ansi_escape(messageData+index, 0);
 
     messageData[index++] = '\r';
     messageData[index++] = '\n';

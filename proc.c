@@ -37,6 +37,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     pqInit(&(procInfo->memq), procInfo->memQueue, NUM_PROCS, &memqStoreIndexFunc);
 
     for (i = 0; i < NUM_PROCS; ++i) {
+				uint32_t tempStack = 0;
         process = &(procInfo->processes[i]);
         process->pid = i;
         process->state = NEW;
@@ -44,11 +45,11 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
         process->mqTail = NULL;
         // TODO(nelk): Assert that these memory blocks are contiguous
         // Stack grows backwards, not forwards. We allocate two memory blocks.
-        k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL);
-        stack =
-            (uint32_t *)(
-                    (uint32_t)k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL) + memInfo->blockSizeBytes
-                    );
+        tempStack = k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL);
+				tempStack = k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL);
+			  tempStack = k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL);
+			
+        stack = (uint32_t *)(tempStack + memInfo->blockSizeBytes);
 
         if (!(((uint32_t)stack) & 0x04)) {
             --stack;
@@ -56,6 +57,11 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
 
         *(--stack) = 0x01000000; // <- does this work? (this is called XPsr)
         process->startLoc = --stack;
+
+        // NOTE(sanjay): We use the "zero function" as a marker for an unused
+        // process. This address can never be a valid start location for a
+        // process, as it is somewhere inside the vector table...
+        *(process->startLoc) = 0;
 
         for (j = 0; j < 6; j++) {
             *(--stack) = 0x0;
@@ -126,6 +132,9 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
     uint32_t localReader = procInfo->readIndex;
     uint32_t localWriter = procInfo->writeIndex;
 
+		if (procInfo->currentEnv == NULL) {
+			procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
+		}
     while (procInfo->currentEnv != NULL && localReader != localWriter) {
         char new_char = procInfo->inputBuf[localReader];
         localReader = (localReader + 1) % UART_IN_BUF_SIZE;
@@ -148,11 +157,27 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
             procInfo->currentEnvIndex = 0;
             continue;
         }
+
+        // Write new character into message
+        procInfo->currentEnv->messageData[procInfo->currentEnvIndex] = new_char;
+
+        // If first character in message.
+        if (procInfo->currentEnvIndex == 0) {
+            switch (new_char) {
+                case SHOW_DEBUG_PROCESSES:
+                    k_sendMessage(memInfo, procInfo, procInfo->currentEnv, KEYBOARD_PID, KEYBOARD_PID);
+                    procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
+                    procInfo->currentEnvIndex = 0;
+                    continue;
+                default:
+                    break;
+            }
+        }
         if (procInfo->currentEnvIndex >= MESSAGEDATA_SIZE_BYTES - 3) { // -3 for \r\n\0
             procInfo->inputBufOverflow = 1;
             continue;
         }
-        procInfo->currentEnv->messageData[procInfo->currentEnvIndex] = new_char;
+        // Increment index in message
         ++(procInfo->currentEnvIndex);
     }
     procInfo->readIndex = localReader;
@@ -191,7 +216,7 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
         case OOM:
             srcQueue = &(procInfo->prq);
             dstQueue = &(procInfo->memq);
-            targetState = BLOCKED;
+            targetState = BLOCKED_MEMORY;
             break;
         case YIELD:
         case CHANGED_PRIORITY:
