@@ -11,6 +11,7 @@
 #include "kernel_types.h"
 #include "uart.h"
 
+extern MemInfo gMemInfo;
 extern ProcInfo gProcInfo;
 
 volatile uint8_t g_UART0_TX_empty=1;
@@ -331,18 +332,23 @@ void uart_keyboard_proc(void) {
         } else if (message->messageData[0] == SHOW_DEBUG_PROCESSES) {
             Envelope *tempEnvelope = NULL;
             uint8_t i = 0;
-            uint32_t location = 0;
-
+												
             for (; i < NUM_PROCS; i++) {
+                uint32_t location = 0;
                 tempEnvelope = (Envelope *)request_memory_block();
-                location += writeProcessInfo(tempEnvelope->buffer, &(gProcInfo.processes[i]));
-                buffer[location++] = '\0';
+                location += writeProcessInfo(tempEnvelope->messageData, &(gProcInfo.processes[i]));
+                tempEnvelope->messageData[location++] = '\0';
                 send_message(CRT_PID, tempEnvelope);
                 tempEnvelope = NULL;
             }
-
-            release_memory_block(message);
-            message = NULL;
+						
+						i = write_string(message->messageData, "used mem =", 10);
+						i += write_uint32(message->messageData+i, (gMemInfo.numSuccessfulAllocs-gMemInfo.numFreeCalls), 2);
+						message->messageData[i++] = '\r';
+						message->messageData[i++] = '\n';
+						message->messageData[i++] = '\0';
+						send_message(CRT_PID, message);
+						message = NULL;
             continue;
         }
 

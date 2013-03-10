@@ -40,6 +40,16 @@ uint8_t write_uint32(char *buffer, uint32_t number, uint8_t minDigits) {
     return (uint8_t)tempNumber;
 }
 
+uint32_t write_string(char *buffer, char *msg, uint8_t maxLength) {
+	uint8_t written = 0;
+	while (*msg != '\0' && maxLength > 0) {
+		*(buffer++) = *(msg++);
+		--maxLength;
+		++written;
+	}
+	return written;
+}
+
 uint8_t write_ansi_escape(char *buffer, uint8_t num) {
     uint8_t idx = 0;
     buffer[idx++] = '\x1b';
