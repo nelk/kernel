@@ -39,7 +39,7 @@ struct MemInfo {
 
 // Process-control related types
 
-#define NUM_PROCS (8)
+#define NUM_PROCS (13)
 
 #define PROC_ID_KERNEL    (0x80)
 #define PROC_ID_ALLOCATOR (0x81)
@@ -48,7 +48,7 @@ struct MemInfo {
 #define UART_IN_BUF_SIZE (64)
 
 enum ProcState {
-    BLOCKED_MEMORY, 
+    BLOCKED_MEMORY,
     BLOCKED_MESSAGE,
     NEW,
     READY,

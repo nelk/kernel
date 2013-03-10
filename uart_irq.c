@@ -352,8 +352,15 @@ void uart_keyboard_proc(void) {
 
             for (; i < NUM_PROCS; i++) {
                 uint32_t location = 0;
+                PCB *pcb = &(gProcInfo.processes[i]);
+
+                // Check if this is an unused process slot
+                if (*(pcb->startLoc) == 0) {
+                    continue;
+                }
+
                 tempEnvelope = (Envelope *)request_memory_block();
-                location += writeProcessInfo(tempEnvelope->messageData, &(gProcInfo.processes[i]));
+                location += writeProcessInfo(tempEnvelope->messageData, pcb);
                 tempEnvelope->messageData[location++] = '\0';
                 send_message(CRT_PID, tempEnvelope);
                 tempEnvelope = NULL;

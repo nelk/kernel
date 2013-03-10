@@ -12,10 +12,10 @@
 
 // Useful system pids
 #define NULL_PID (0)
-#define CLOCK_PID (1)
-#define CRT_PID (2)
-#define KEYBOARD_PID (3)
-#define FIRST_USER_PID (4)
+#define CLOCK_PID (10)
+#define CRT_PID (11)
+#define KEYBOARD_PID (12)
+#define FIRST_USER_PID (1)
 
 // exposed so we can expose the size of messages in the envelopes
 #define BLOCKSIZE_BYTES (1 << 7)

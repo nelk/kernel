@@ -57,6 +57,11 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
         *(--stack) = 0x01000000; // <- does this work? (this is called XPsr)
         process->startLoc = --stack;
 
+        // NOTE(sanjay): We use the "zero function" as a marker for an unused
+        // process. This address can never be a valid start location for a
+        // process, as it is somewhere inside the vector table...
+        *(process->startLoc) = 0;
+
         for (j = 0; j < 6; j++) {
             *(--stack) = 0x0;
         }
