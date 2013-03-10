@@ -149,8 +149,7 @@ int uart_init(int n_uart) {
  *       push and pop instructions in the assembly routine.
  *       The actual c_UART0_IRQHandler does the rest of irq handling
  */
-__asm void UART0_IRQHandler(void)
-{
+__asm void UART0_IRQHandler(void) {
     PRESERVE8
     IMPORT c_UART0_IRQHandler
     PUSH{r4-r11, lr}
@@ -289,16 +288,35 @@ char toLowerAndIsLetter(char c) {
     return '\0';
 }
 
+uint32_t writePCBState(char *buffer, ProcState state) {
+    switch (state) {
+        case BLOCKED_MEMORY:
+            return write_string(buffer, "Blocked on memory", 17);
+        case BLOCKED_MESSAGE:
+            return write_string(buffer, "Blocked on message", 18);
+        case NEW:
+            return write_string(buffer, "New", 3);
+        case READY:
+            return write_string(buffer, "Ready", 5);
+        case RUNNING:
+            return write_string(buffer, "Running", 7);
+        default:
+            return write_string(buffer, "???", 3);
+    }
+
+    // unreachable
+    return 0;
+}
+
 uint32_t writeProcessInfo(char *buffer, PCB *pcb) {
-	uint32_t i = 0;
-	i += write_uint32(buffer+i, pcb->pid, 3);
-	buffer[i++] = ' ';
-	buffer[i++] = '-';
-	buffer[i++] = ' ';
-	i += write_uint32(buffer+i, pcb->priority, 3);
-	buffer[i++] = '\r';
-	buffer[i++] = '\n';
-	return i;
+    uint32_t i = 0;
+    i += write_uint32(buffer+i, pcb->pid, 0);
+    i += write_string(buffer+i, ") Priority=", 11);
+    i += write_uint32(buffer+i, pcb->priority,0 );
+    i += write_string(buffer+i, ", Status=", 9);
+    i += writePCBState(buffer+i, pcb->state);
+    i += write_string(buffer+i, "\r\n", 2);
+    return i;
 }
 
 void uart_keyboard_proc(void) {
@@ -332,7 +350,7 @@ void uart_keyboard_proc(void) {
         } else if (message->messageData[0] == SHOW_DEBUG_PROCESSES) {
             Envelope *tempEnvelope = NULL;
             uint8_t i = 0;
-												
+
             for (; i < NUM_PROCS; i++) {
                 uint32_t location = 0;
                 tempEnvelope = (Envelope *)request_memory_block();
@@ -341,13 +359,13 @@ void uart_keyboard_proc(void) {
                 send_message(CRT_PID, tempEnvelope);
                 tempEnvelope = NULL;
             }
-						
-						i = write_string(message->messageData, "used mem = ", 11);
-						i += write_uint32(message->messageData+i, (gMemInfo.numSuccessfulAllocs-gMemInfo.numFreeCalls)*128, 2);
-						i += write_string(message->messageData+i, " bytes\r\n", 8); 
-						message->messageData[i++] = '\0';
-						send_message(CRT_PID, message);
-						message = NULL;
+
+            i = write_string(message->messageData, "used mem = ", 11);
+            i += write_uint32(message->messageData+i, (gMemInfo.numSuccessfulAllocs-gMemInfo.numFreeCalls)*128, 2);
+            i += write_string(message->messageData+i, " bytes\r\n", 8);
+            message->messageData[i++] = '\0';
+            send_message(CRT_PID, message);
+            message = NULL;
             continue;
         }
 
