@@ -168,7 +168,7 @@ void uart_receive_char_isr(ProcInfo *procInfo, char new_char) {
 }
 
 void uart_send_char_isr(ProcInfo *procInfo) {
-    procInfo->uartOutputComplete = 1;
+    // no-op
 }
 
 void c_UART0_IRQHandler(void) {
