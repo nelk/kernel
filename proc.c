@@ -30,9 +30,6 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     PCB *process = NULL;
     uint32_t *stack = NULL;
 
-    procInfo->uartOutputComplete = 0;
-    procInfo->uartOutputEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
-
     pqInit(&(procInfo->prq), procInfo->procQueue, NUM_PROCS, &rqStoreIndexFunc);
     pqInit(&(procInfo->memq), procInfo->memQueue, NUM_PROCS, &memqStoreIndexFunc);
 
@@ -48,7 +45,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
         tempStack = k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL);
 				tempStack = k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL);
 			  tempStack = k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL);
-			
+
         stack = (uint32_t *)(tempStack + memInfo->blockSizeBytes);
 
         if (!(((uint32_t)stack) & 0x04)) {
@@ -120,6 +117,10 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
 
     procInfo->currentProcess = NULL;
 
+    // Init UART keyboard global output data
+    procInfo->uartOutputPending = 0;
+    procInfo->uartOutputEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
+
     // Init UART keyboard global input data
     procInfo->readIndex = 0;
     procInfo->writeIndex = 0;
@@ -184,12 +185,37 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
 }
 
 void k_processUartOutput(ProcInfo *procInfo, MemInfo *memInfo) {
-    if (!procInfo->uartOutputComplete) {
+    LPC_UART_TypeDef *uart = (LPC_UART_TypeDef *)LPC_UART0;
+		Envelope *temp = NULL;
+		
+    // If CRT proc is awake, then give up.
+    if (procInfo->processes[CLOCK_PID].state == READY) {
         return;
     }
 
-    k_sendMessage(memInfo, procInfo, procInfo->uartOutputEnv, CRT_PID, CRT_PID);
-    procInfo->uartOutputComplete = 0;
+    // If CRT proc is asleep, but wouldn't be able to do anything anyways,
+    // give up.
+    if (!(uart->LSR & LSR_THRE)) {
+        return;
+    }
+
+    // If CRT proc would be able to do something, but has nothing to send,
+    // give up.
+    if (!(procInfo->uartOutputPending)) {
+        return;
+    }
+		
+		// If we don't have our global envelope, we've already
+		// pinged CRT proc, so give up.
+		if (procInfo->uartOutputEnv == NULL) {
+				return;
+		}
+
+    // Otherwise, CRT proc is asleep, can print something,
+    // and has something to print, so we should wake it up.
+    temp = procInfo->uartOutputEnv;
+		procInfo->uartOutputEnv = NULL;
+		k_sendMessage(memInfo, procInfo, temp, CRT_PID, CRT_PID);
 }
 
 uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *messageInfo, ClockInfo *clockInfo, ReleaseReason reason) {

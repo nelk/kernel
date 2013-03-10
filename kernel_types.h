@@ -109,7 +109,7 @@ struct ProcInfo {
     PQ memq; // Memory blocked queue
     PQEntry memQueue[NUM_PROCS];
 
-    volatile uint8_t uartOutputComplete;
+    uint8_t uartOutputPending;
     Envelope *uartOutputEnv;
 
     // UART keyboard input data
