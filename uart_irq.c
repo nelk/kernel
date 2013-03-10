@@ -211,7 +211,6 @@ void c_UART0_IRQHandler(void) {
 }
 
 void crt_proc(void) {
-    uint8_t sendPending = 0;
     uint8_t readIndex = 0;
     Envelope *head = NULL;
     Envelope *tail = NULL;
@@ -225,10 +224,7 @@ void crt_proc(void) {
             continue;
         }
 
-        if (nextMsg->srcPid == CRT_PID) {
-            // "message from me" is actually code for "message from ISR"
-            sendPending = 0;
-        } else {
+        if (nextMsg->srcPid != CRT_PID) {
             // This is from a user process, enqueue it for output
             nextMsg->next = NULL;
             if (tail == NULL) {
@@ -240,18 +236,9 @@ void crt_proc(void) {
             }
         }
 
-        // if there's already a send pending, then there's nothing we can do
-        // so just loop again.
-        if (sendPending) {
-            continue;
-        }
-
-        // Otherwise, we can write a character, so we try and get the next
-        // character to output.
-
-        // If we don't have anything queued, give up.
 get_char:
         if (head == NULL) {
+            gProcInfo.uartOutputPending = 0;
             continue;
         }
 
@@ -269,13 +256,14 @@ get_char:
             goto get_char;
         }
 
-        // we are now guaranteed that head is not NULL and
-        // head->messageData[readIndex] != '\0', so we output it.
+        gProcInfo.uartOutputPending = 1;
+
+        if (!(uart->LSR & LSR_THRE)) {
+            continue;
+        }
 
         uart->THR = head->messageData[readIndex];
-
         readIndex++;
-        sendPending = 1;
     }
 }
 
