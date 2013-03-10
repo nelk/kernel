@@ -304,14 +304,14 @@ uint32_t writePCBState(char *buffer, ProcState state) {
             break;
     }
 
-    return write_string(buffer, "???", 3);;
+    return write_string(buffer, "???", 3);
 }
 
 uint32_t writeProcessInfo(char *buffer, PCB *pcb) {
     uint32_t i = 0;
     i += write_uint32(buffer+i, pcb->pid, 0);
-    i += write_string(buffer+i, ") Priority=", 11);
-    i += write_uint32(buffer+i, pcb->priority,0 );
+    i += write_string(buffer+i, "$ Priority=", 11);
+    i += write_uint32(buffer+i, pcb->priority, 0);
     i += write_string(buffer+i, ", Status=", 9);
     i += writePCBState(buffer+i, pcb->state);
     i += write_string(buffer+i, "\r\n", 2);
@@ -337,11 +337,9 @@ void uart_keyboard_proc(void) {
         // register this character with the associated pid
         if (message->srcPid != KEYBOARD_PID) {
             c = toLowerAndIsLetter(message->messageData[0]);
-            if (c == '\0') {
-                release_memory_block(message);
-                continue;
+            if ('a' <= c && c <= 'z') {
+							registry[c - 'a'] = message->srcPid;
             }
-            registry[c - 'a'] = message->srcPid;
 
             release_memory_block(message);
             message = NULL;
@@ -366,7 +364,8 @@ void uart_keyboard_proc(void) {
                 tempEnvelope = NULL;
             }
 
-            i = write_string(message->messageData, "used mem = ", 11);
+            i = 0;
+						i += write_string(message->messageData+i, "used mem = ", 11);
             i += write_uint32(message->messageData+i, (gMemInfo.numSuccessfulAllocs-gMemInfo.numFreeCalls)*128, 2);
             i += write_string(message->messageData+i, " bytes\r\n", 8);
             message->messageData[i++] = '\0';
