@@ -546,6 +546,16 @@
               <FileType>5</FileType>
               <FilePath>.\helpers.h</FilePath>
             </File>
+            <File>
+              <FileName>led.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\led.c</FilePath>
+            </File>
+            <File>
+              <FileName>led.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\led.h</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

@@ -5,6 +5,7 @@
 #include "uart_polling.h"
 #include "user.h"
 #include "helpers.h"
+#include "led.h"
 
 // User Land
 
@@ -292,6 +293,7 @@ void printTime(uint32_t currentTime, uint32_t offset) {
     uint32_t clockTime = 0;
     uint32_t field = 0;
     uint32_t index = 0;
+	
     Envelope *printMessage = (Envelope *)request_memory_block();
     char *messageData = printMessage->messageData;
 
@@ -319,6 +321,7 @@ void printTime(uint32_t currentTime, uint32_t offset) {
     field = clockTime;
     index += write_uint32(messageData + index, field, 2);
 
+		LED_Out(clockTime);
     // Add ANSI reset.
     index += write_ansi_escape(messageData+index, 0);
 
