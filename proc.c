@@ -37,6 +37,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     pqInit(&(procInfo->memq), procInfo->memQueue, NUM_PROCS, &memqStoreIndexFunc);
 
     for (i = 0; i < NUM_PROCS; ++i) {
+				uint32_t tempStack = 0;
         process = &(procInfo->processes[i]);
         process->pid = i;
         process->state = NEW;
@@ -44,11 +45,11 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
         process->mqTail = NULL;
         // TODO(nelk): Assert that these memory blocks are contiguous
         // Stack grows backwards, not forwards. We allocate two memory blocks.
-        k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL);
-        stack =
-            (uint32_t *)(
-                    (uint32_t)k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL) + memInfo->blockSizeBytes
-                    );
+        tempStack = k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL);
+				tempStack = k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL);
+			  tempStack = k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL);
+			
+        stack = (uint32_t *)(tempStack + memInfo->blockSizeBytes);
 
         if (!(((uint32_t)stack) & 0x04)) {
             --stack;
