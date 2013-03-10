@@ -147,10 +147,10 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
             procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
             procInfo->currentEnvIndex = 0;
             continue;
-        } else if (localReader - localWriter == 0) {
+        } else if (procInfo->currentEnvIndex == 0) { // If first character in message.
             switch (new_char) {
                 // TODO(shale): constantify/decide on what these do.
-                case '!':
+                case SHOW_DEBUG_PROCESSES:
                     // No preemption
                     k_sendMessage(memInfo, procInfo, procInfo->currentEnv, KEYBOARD_PID, KEYBOARD_PID);
                     break;
