@@ -301,11 +301,10 @@ uint32_t writePCBState(char *buffer, ProcState state) {
         case RUNNING:
             return write_string(buffer, "Running", 7);
         default:
-            return write_string(buffer, "???", 3);
+            break;
     }
 
-    // unreachable
-    return 0;
+    return write_string(buffer, "???", 3);;
 }
 
 uint32_t writeProcessInfo(char *buffer, PCB *pcb) {
