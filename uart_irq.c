@@ -341,6 +341,7 @@ void uart_keyboard_proc(void) {
                 tempEnvelope = NULL;
             }
 
+            release_memory_block(message);
             message = NULL;
             continue;
         }
