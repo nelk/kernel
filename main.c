@@ -6,6 +6,7 @@
 #include "rtx.h"
 #include "timer.h"
 #include "uart_polling.h"
+#include "led.h"
 
 extern uint32_t Image$$RW_IRAM1$$ZI$$Limit;
 ClockInfo gClockInfo;
@@ -25,6 +26,8 @@ int main () {
     k_initProcesses(&gProcInfo, &gMemInfo);
     k_initMessages(&gMessageInfo, &gMemInfo);
     k_initClock(&gClockInfo);
+		LED_Init();
+
     __enable_irq();
 
     // Transition to unprivileged level and release processor; default MSP is used
