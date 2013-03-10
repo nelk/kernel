@@ -321,11 +321,7 @@ void printTime(uint32_t currentTime, uint32_t offset) {
     field = clockTime;
     index += write_uint32(messageData + index, field, 2);
 
-		if (clockTime %2 == 0) {
-			LED_On(1);
-		} else {
-			LED_Off(1);
-		}
+		LED_Out(clockTime);
     // Add ANSI reset.
     index += write_ansi_escape(messageData+index, 0);
 

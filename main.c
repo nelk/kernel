@@ -27,7 +27,6 @@ int main () {
     k_initMessages(&gMessageInfo, &gMemInfo);
     k_initClock(&gClockInfo);
 		LED_Init();
-
     __enable_irq();
 
     // Transition to unprivileged level and release processor; default MSP is used
