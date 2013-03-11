@@ -92,12 +92,11 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (0 << KERN_PRIORITY_SHIFT) | 1;
     pqAdd(&(procInfo->prq), process);
 
-		// TODO: Make this work.
-		//     // Fun Process
-		//     process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
-		//     *(process->startLoc) = ((uint32_t) funProcess);
-		//     process->priority = (1 << KERN_PRIORITY_SHIFT) | 3;
-		//     pqAdd(&(procInfo->prq), process);
+    // Fun Process
+    process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
+    *(process->startLoc) = ((uint32_t) funProcess);
+    process->priority = (1 << KERN_PRIORITY_SHIFT) | 3;
+    pqAdd(&(procInfo->prq), process);
 
     // Schizo Process
     process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
@@ -265,9 +264,15 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
             }
             break;
         case MESSAGE_RECEIVE:
-            srcQueue = &(procInfo->prq);
-            dstQueue = NULL;
-            targetState = BLOCKED_MESSAGE;
+						if (procInfo->currentProcess->mqHead == NULL) {
+							srcQueue = &(procInfo->prq);
+							dstQueue = NULL;
+							targetState = BLOCKED_MESSAGE;
+						} else {
+							srcQueue = &(procInfo->prq);
+							dstQueue = &(procInfo->prq);
+							targetState = READY;
+						}
             break;
         default:
             break;
