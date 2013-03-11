@@ -186,7 +186,6 @@ void releaseProcess(void) {
 		index = 0;
 		envelope = (Envelope *)request_memory_block();
 		index += write_string(envelope->messageData+index, "releaseProcess: I am in control\r\n", 32);
-		index += write_uint32(envelope->messageData+index, (uint32_t)mem, 0);
 		envelope->messageData[index++] = '\0';
 		send_message(CRT_PID, envelope);
 		envelope = NULL;
