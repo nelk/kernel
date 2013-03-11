@@ -105,8 +105,6 @@ void fibProcess(void) {
                 sleep(1000);
             }
         }
-
-        release_processor();
     }
 }
 
@@ -119,8 +117,11 @@ void memoryMuncherProcess(void) {
     mmNode *memList = NULL;
     void *tempBlock = NULL;
     mmNode *tempNode = NULL;
+		Envelope *envelope = NULL;
+		uint8_t index = 0;
 
     while (1) {
+				index = 0;
         tempBlock = try_request_memory_block();
         if (tempBlock == NULL) {
             break;
@@ -131,16 +132,30 @@ void memoryMuncherProcess(void) {
         memList = tempNode;
         tempNode = NULL;
 
-        // uart_put_string(UART_NUM, "I have eaten ");
-        // print_uint32((uint32_t)memList);
-        // uart_put_string(UART_NUM, ".\r\n");
+				envelope = (Envelope *)request_memory_block();
+				index += write_string(envelope->messageData+index, "I have eaten ", 13);
+				index += write_uint32(envelope->messageData+index, (uint32_t)memList, 0);
+				index += write_string(envelope->messageData+index, ".\r\n", 3);
+				envelope->messageData[index++] = '\0';
+				send_message(CRT_PID, envelope);
+				envelope = NULL;
     }
 
-    // uart_put_string(UART_NUM, "I am out of things to eat.\r\n");
+		index = 0;
+		envelope = (Envelope *)request_memory_block();
+		index += write_string(envelope->messageData+index, "I am out of things to eat.\r\n", 28);
+		envelope->messageData[index++] = '\0';
+		send_message(CRT_PID, envelope);
+		envelope = NULL;
 
     release_memory_block(request_memory_block()); // Should block
 
-    // uart_put_string(UART_NUM, "I'm too full, I will release all the memory that I ate.\r\n");
+		index = 0;
+    envelope = (Envelope *)request_memory_block();
+		index += write_string(envelope->messageData+index, "I am too full.  I will release all the memory that I ate.\r\n", 59);
+		envelope->messageData[index++] = '\0';
+		send_message(CRT_PID, envelope);
+		envelope = NULL;
     while (memList != NULL) {
         tempNode = memList->next;
         release_memory_block((void *)memList);
@@ -149,23 +164,37 @@ void memoryMuncherProcess(void) {
 
     set_process_priority(4, get_process_priority(1)); // funProcess pid = 1
 
-    printProcess("memoryMuncher\r\n");
+		envelope = receive_message(NULL);
+    //printProcess("memoryMuncher\r\n");
 }
 
 void releaseProcess(void) {
     void *mem = request_memory_block();
-    // uart_put_string(UART_NUM, "releaseProcess: taken mem ");
-    // print_uint32((uint32_t)mem);
-    // uart_put_string(UART_NUM, "\r\n");
+		Envelope *envelope = (Envelope *)request_memory_block();
+		uint8_t index = 0;
+	
+		index += write_string(envelope->messageData+index, "releaseProcess: taken mem ", 26);
+		index += write_uint32(envelope->messageData+index, (uint32_t)mem, 0);
+		index += write_string(envelope->messageData+index, "\r\n", 2);
+		envelope->messageData[index++] = '\0';
+		send_message(CRT_PID, envelope);
+		envelope = NULL;
 
-    set_process_priority(5, get_process_priority(1)); // funProcess pid = 1
+    set_process_priority(pid(), get_process_priority(1));
     release_processor();
 
-    // uart_put_string(UART_NUM, "releaseProcess: I am in control\r\n");
+		index = 0;
+		envelope = (Envelope *)request_memory_block();
+		index += write_string(envelope->messageData+index, "releaseProcess: I am in control\r\n", 32);
+		index += write_uint32(envelope->messageData+index, (uint32_t)mem, 0);
+		envelope->messageData[index++] = '\0';
+		send_message(CRT_PID, envelope);
+		envelope = NULL;
     release_memory_block(mem);
 
-    //set_process_priority(4, get_process_priority(1)); // funProcess pid = 1
-    printProcess("releaseProcess\r\n");
+    set_process_priority(4, 3);
+		envelope = receive_message(NULL);
+    //printProcess("releaseProcess\r\n");
 }
 
 // Clock-related

@@ -113,13 +113,13 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process = &(procInfo->processes[FIRST_USER_PID + 3]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) memoryMuncherProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 1;
-    // pqAdd(&(procInfo->prq), process);
+    pqAdd(&(procInfo->prq), process);
 
     // Release Process
     process = &(procInfo->processes[FIRST_USER_PID + 4]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) releaseProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
-    // pqAdd(&(procInfo->prq), process);
+    pqAdd(&(procInfo->prq), process);
 
     procInfo->currentProcess = NULL;
 
