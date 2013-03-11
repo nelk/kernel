@@ -517,14 +517,14 @@
               <FilePath>.\heap.h</FilePath>
             </File>
             <File>
-              <FileName>message_pq.c</FileName>
+              <FileName>helpers.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\message_pq.c</FilePath>
+              <FilePath>.\helpers.c</FilePath>
             </File>
             <File>
-              <FileName>message_pq.h</FileName>
+              <FileName>helpers.h</FileName>
               <FileType>5</FileType>
-              <FilePath>.\message_pq.h</FilePath>
+              <FilePath>.\helpers.h</FilePath>
             </File>
             <File>
               <FileName>message.c</FileName>
@@ -537,14 +537,14 @@
               <FilePath>.\message.h</FilePath>
             </File>
             <File>
-              <FileName>helpers.c</FileName>
+              <FileName>message_pq.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\helpers.c</FilePath>
+              <FilePath>.\message_pq.c</FilePath>
             </File>
             <File>
-              <FileName>helpers.h</FileName>
+              <FileName>message_pq.h</FileName>
               <FileType>5</FileType>
-              <FilePath>.\helpers.h</FilePath>
+              <FilePath>.\message_pq.h</FilePath>
             </File>
           </Files>
         </Group>
