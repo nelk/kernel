@@ -19,7 +19,6 @@ int main () {
     SystemInit();
     __disable_irq();
     uart_init(UART_NUM);
-    // uart_put_string(UART_NUM, "Starting up!\r\n");
 
     k_memInitGlobal();
     k_initProcesses(&gProcInfo, &gMemInfo);

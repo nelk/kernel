@@ -94,24 +94,24 @@ PCB *pqRemove(PQ *q, size_t i) {
 void pqChangedPriority(PQ *q, PCB *pcb) {
     ssize_t index = -1;
     PQEntry updatingEntry;
-		
-		#ifdef TESTING
-			assert(q->getIndexInStore != NULL);
-		#endif
+
+#ifdef TESTING
+    assert(q->getIndexInStore != NULL);
+#endif
     index = *(q->getIndexInStore(pcb));
 
     if (index == -1) {
         return;
     }
 
-		#ifdef TESTING
-			assert(index < q->size);
-		#endif
+#ifdef TESTING
+    assert(index < q->size);
+#endif
     updatingEntry = q->store[index];
 
-		#ifdef TESTING
-			assert(updatingEntry.pcb == pcb);
-		#endif
+#ifdef TESTING
+    assert(updatingEntry.pcb == pcb);
+#endif
     updatingEntry.seqNumber = pqNextSeq(q);
     q->store[index] = updatingEntry;
     heapInvalidate(&(q->storeMgr), index);

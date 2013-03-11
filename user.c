@@ -1,5 +1,4 @@
 #include <stddef.h>
-#include <stdio.h>
 
 #include "rtx.h"
 #include "uart_polling.h"
@@ -8,16 +7,32 @@
 
 // User Land
 
+void sleep(uint32_t ms) {
+    // TODO(alex): make this more robust by forwarding non-sleep messages to ourselves on a delay
+
+    Envelope* env = (Envelope *)request_memory_block();
+    delayed_send(pid(), env, ms);
+    env = receive_message(NULL);
+    release_memory_block((void*)env);
+}
+
+
 void nullProcess(void) {
     while (1) {
         release_processor();
     }
 }
 
-
 void printProcess(char *c) {
     while (1) {
-        // uart_put_string(UART_NUM, c);
+        Envelope *envelope = (Envelope *)request_memory_block();
+        uint8_t i = 0;
+
+        i += write_string(envelope->messageData+i, c, 100);
+        i += write_string(envelope->messageData+i, "\r\n", 2);
+        envelope->messageData[i++] = '\0';
+        send_message(CRT_PID, envelope);
+        envelope = NULL;
         release_processor();
     }
 }
@@ -26,11 +41,17 @@ void funProcess(void) {
     int i;
     while (1) {
         for (i = 0; i < 5; ++i) {
-            // uart_put_string(UART_NUM, "Fun ");
-            // uart_put_char(UART_NUM, i + '0');
-            // uart_put_string(UART_NUM, "\n\r");
+            Envelope *envelope = (Envelope *)request_memory_block();
+            uint8_t index = 0;
+
+            index += write_string(envelope->messageData+index, "Fun ", 4);
+            index += write_uint32(envelope->messageData+index, i, 1);
+            index += write_string(envelope->messageData+index, "\r\n", 2);
+            envelope->messageData[index++] = '\0';
+            send_message(CRT_PID, envelope);
+            envelope = NULL;
         }
-        release_processor();
+        sleep(3000);
     }
 }
 
@@ -38,21 +59,18 @@ void schizophrenicProcess(void) {
     int i;
     while (1) {
         for (i = 9; i >= 5; --i) {
-            // uart_put_string(UART_NUM, "Schizophrenic ");
-            // uart_put_char(UART_NUM, i + '0');
-            // uart_put_string(UART_NUM, "\n\r");
-        }
-        release_processor();
-    }
-}
+            Envelope *envelope = (Envelope *)request_memory_block();
+            uint8_t index = 0;
 
-void sleep(uint32_t ms) {
-		// TODO(alex): make this more robust by forwarding non-sleep messages to ourselves on a delay
-	
-		Envelope* env = (Envelope *)request_memory_block();
-		delayed_send(pid(), env, ms);
-		env = receive_message(NULL);
-		release_memory_block((void*)env);
+            index += write_string(envelope->messageData+index, "Schizophrenic ", 14);
+            index += write_uint32(envelope->messageData+index, i, 1);
+            index += write_string(envelope->messageData+index, "\r\n", 2);
+            envelope->messageData[index++] = '\0';
+            send_message(CRT_PID, envelope);
+            envelope = NULL;
+        }
+        sleep(4000);
+    }
 }
 
 void fibProcess(void) {
@@ -67,26 +85,26 @@ void fibProcess(void) {
         cur = 1;
         idx = 0;
         while (cur < 1000000000) {
+            uint8_t index = 0;
             temp = prev;
             prev = cur;
             cur = cur + temp;
             idx++;
 
             envelope = (Envelope *)request_memory_block();
-            // TODO: Replace with self-rolled method.
-            sprintf(envelope->messageData, "fib(%d) = %d\r\n", idx, cur);
+            index += write_string(envelope->messageData+index, "fib(", 4);
+            index += write_uint32(envelope->messageData+index, idx, 1);
+            index += write_string(envelope->messageData+index, ") = ", 4);
+            index += write_uint32(envelope->messageData+index, cur, 1);
+            index += write_string(envelope->messageData+index, "\r\n", 2);
+            envelope->messageData[index++] = '\0';
             send_message(CRT_PID, envelope);
             envelope = NULL;
 
             if (idx % 5 == 0) {
                 sleep(1000);
             }
-            //if (idx % 100 == 0) {
-            //    set_process_priority(3, get_process_priority(1)); // funProcess pid = 1
-            //}
         }
-
-        release_processor();
     }
 }
 
@@ -99,8 +117,11 @@ void memoryMuncherProcess(void) {
     mmNode *memList = NULL;
     void *tempBlock = NULL;
     mmNode *tempNode = NULL;
+    Envelope *envelope = NULL;
+    uint8_t index = 0;
 
     while (1) {
+        index = 0;
         tempBlock = try_request_memory_block();
         if (tempBlock == NULL) {
             break;
@@ -111,16 +132,30 @@ void memoryMuncherProcess(void) {
         memList = tempNode;
         tempNode = NULL;
 
-        // uart_put_string(UART_NUM, "I have eaten ");
-        // print_uint32((uint32_t)memList);
-        // uart_put_string(UART_NUM, ".\r\n");
+        envelope = (Envelope *)request_memory_block();
+        index += write_string(envelope->messageData+index, "I have eaten ", 13);
+        index += write_uint32(envelope->messageData+index, (uint32_t)memList, 0);
+        index += write_string(envelope->messageData+index, ".\r\n", 3);
+        envelope->messageData[index++] = '\0';
+        send_message(CRT_PID, envelope);
+        envelope = NULL;
     }
 
-    // uart_put_string(UART_NUM, "I am out of things to eat.\r\n");
+    index = 0;
+    envelope = (Envelope *)request_memory_block();
+    index += write_string(envelope->messageData+index, "I am out of things to eat.\r\n", 28);
+    envelope->messageData[index++] = '\0';
+    send_message(CRT_PID, envelope);
+    envelope = NULL;
 
     release_memory_block(request_memory_block()); // Should block
 
-    // uart_put_string(UART_NUM, "I'm too full, I will release all the memory that I ate.\r\n");
+    index = 0;
+    envelope = (Envelope *)request_memory_block();
+    index += write_string(envelope->messageData+index, "I am too full.  I will release all the memory that I ate.\r\n", 59);
+    envelope->messageData[index++] = '\0';
+    send_message(CRT_PID, envelope);
+    envelope = NULL;
     while (memList != NULL) {
         tempNode = memList->next;
         release_memory_block((void *)memList);
@@ -129,23 +164,34 @@ void memoryMuncherProcess(void) {
 
     set_process_priority(4, get_process_priority(1)); // funProcess pid = 1
 
-    printProcess("memoryMuncher\r\n");
+    envelope = receive_message(NULL);
 }
 
 void releaseProcess(void) {
     void *mem = request_memory_block();
-    // uart_put_string(UART_NUM, "releaseProcess: taken mem ");
-    // print_uint32((uint32_t)mem);
-    // uart_put_string(UART_NUM, "\r\n");
+    Envelope *envelope = (Envelope *)request_memory_block();
+    uint8_t index = 0;
 
-    set_process_priority(5, get_process_priority(1)); // funProcess pid = 1
+    index += write_string(envelope->messageData+index, "releaseProcess: taken mem ", 26);
+    index += write_uint32(envelope->messageData+index, (uint32_t)mem, 0);
+    index += write_string(envelope->messageData+index, "\r\n", 2);
+    envelope->messageData[index++] = '\0';
+    send_message(CRT_PID, envelope);
+    envelope = NULL;
+
+    set_process_priority(pid(), get_process_priority(1));
     release_processor();
 
-    // uart_put_string(UART_NUM, "releaseProcess: I am in control\r\n");
+    index = 0;
+    envelope = (Envelope *)request_memory_block();
+    index += write_string(envelope->messageData+index, "releaseProcess: I am in control\r\n", 32);
+    envelope->messageData[index++] = '\0';
+    send_message(CRT_PID, envelope);
+    envelope = NULL;
     release_memory_block(mem);
 
-    //set_process_priority(4, get_process_priority(1)); // funProcess pid = 1
-    printProcess("releaseProcess\r\n");
+    set_process_priority(4, 3);
+    envelope = receive_message(NULL);
 }
 
 // Clock-related
@@ -187,17 +233,17 @@ uint8_t parseTime(char *message, int32_t *offset) {
 
     // Check for any invalid characters.
     if (message[0] != '%' ||
-        message[1] != 'W' ||
-        message[2] != 'S' ||
-        message[3] != ' ' ||
-        message[4] < '0' || message[4] > '9' ||
-        message[5] < '0' || message[5] > '9' ||
-        message[6] != ':' ||
-        message[7] < '0' || message[7] > '9' ||
-        message[8] < '0' || message[8] > '9' ||
-        message[9] != ':' ||
-        message[10] < '0' || message[10] > '9' ||
-        message[11] < '0' || message[11] > '9') {
+            message[1] != 'W' ||
+            message[2] != 'S' ||
+            message[3] != ' ' ||
+            message[4] < '0' || message[4] > '9' ||
+            message[5] < '0' || message[5] > '9' ||
+            message[6] != ':' ||
+            message[7] < '0' || message[7] > '9' ||
+            message[8] < '0' || message[8] > '9' ||
+            message[9] != ':' ||
+            message[10] < '0' || message[10] > '9' ||
+            message[11] < '0' || message[11] > '9') {
         return EINVAL;
     }
 
@@ -322,8 +368,7 @@ void printTime(uint32_t currentTime, uint32_t offset) {
     // Add ANSI reset.
     index += write_ansi_escape(messageData+index, 0);
 
-    messageData[index++] = '\r';
-    messageData[index++] = '\n';
+    index += write_string(messageData+index, "\r\n", 2);
     messageData[index++] = '\0';
     send_message(CRT_PID, printMessage);
 }

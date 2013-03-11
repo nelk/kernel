@@ -35,19 +35,19 @@ int testAlignedStartAddress() {
 
     for (int i = 0; i < len; i++) {
         uint32_t gotStart = k_getAlignedStartAddress(
-            cases[i].start,
-            cases[i].blockSize
-        );
+                cases[i].start,
+                cases[i].blockSize
+                );
 
         uint32_t gotEnd = k_getAlignedEndAddress(
-            cases[i].end,
-            cases[i].blockSize
-        );
+                cases[i].end,
+                cases[i].blockSize
+                );
 
         if (
-            gotStart == cases[i].expectedStart &&
-            gotEnd == cases[i].expectedEnd
-        ) {
+                gotStart == cases[i].expectedStart &&
+                gotEnd == cases[i].expectedEnd
+           ) {
             continue;
         }
 
@@ -55,21 +55,21 @@ int testAlignedStartAddress() {
 
         if (gotStart != cases[i].expectedStart) {
             printf(
-                "for k_getAlignedStartAddress(%d, %d), got %d, expected %d\n",
-                cases[i].start,
-                cases[i].blockSize,
-                gotStart,
-                cases[i].expectedStart
-            );
+                    "for k_getAlignedStartAddress(%d, %d), got %d, expected %d\n",
+                    cases[i].start,
+                    cases[i].blockSize,
+                    gotStart,
+                    cases[i].expectedStart
+                  );
         }
         if (gotEnd != cases[i].expectedEnd) {
             printf(
-                "for k_getAlignedEndAddress(%d, %d), got %d, expected %d\n",
-                cases[i].end,
-                cases[i].blockSize,
-                gotEnd,
-                cases[i].expectedEnd
-            );
+                    "for k_getAlignedEndAddress(%d, %d), got %d, expected %d\n",
+                    cases[i].end,
+                    cases[i].blockSize,
+                    gotEnd,
+                    cases[i].expectedEnd
+                  );
         }
     }
 
@@ -128,10 +128,10 @@ int testFindOwnerSlot() {
 
         result = FAILED;
         printf(
-            "got %d, expected %d\n",
-            got,
-            cases[i].expectedResult
-        );
+                "got %d, expected %d\n",
+                got,
+                cases[i].expectedResult
+              );
     }
 
     return result;
@@ -143,12 +143,12 @@ int testMultipleArenas() {
     MemInfo memInfo;
 
     k_memInfoInit(
-        &memInfo,
-        (uint32_t)backingStorage,           // startAddr
-        ((uint32_t)backingStorage) + 65536, // endAddr
-        4,                                  // blockSizeBytes
-        1                                   // trackOwners
-    );
+            &memInfo,
+            (uint32_t)backingStorage,           // startAddr
+            ((uint32_t)backingStorage) + 65536, // endAddr
+            4,                                  // blockSizeBytes
+            1                                   // trackOwners
+            );
 
     assert(memInfo.numSuccessfulAllocs == 0);
     assert(memInfo.numFailedAllocs == 0);
@@ -200,12 +200,12 @@ int testMemOperations() {
     MemInfo memInfo;
 
     k_memInfoInit(
-        (&memInfo),
-        (uint32_t)backingStorage,           // startAddr
-        ((uint32_t)backingStorage) + 65536, // endAddr
-        16,                                 // blockSizeBytes
-        1                                   // trackOwners
-    );
+            (&memInfo),
+            (uint32_t)backingStorage,           // startAddr
+            ((uint32_t)backingStorage) + 65536, // endAddr
+            16,                                 // blockSizeBytes
+            1                                   // trackOwners
+            );
 
     assert(memInfo.numSuccessfulAllocs == 0);
     assert(memInfo.numFailedAllocs == 0);
@@ -291,10 +291,10 @@ int testMemOperations() {
 
     // Test before beginning of memory
     ret = k_releaseMemoryBlock(
-        (&memInfo),
-        (&memInfo)->startMemoryAddress - 1,
-        PROC_ID_ALLOCATOR
-    );
+            (&memInfo),
+            (&memInfo)->startMemoryAddress - 1,
+            PROC_ID_ALLOCATOR
+            );
     assert(ret == EINVAL);
 
     assert(memInfo.numSuccessfulAllocs == 3);
