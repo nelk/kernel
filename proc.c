@@ -197,9 +197,13 @@ void k_processUartOutput(ProcInfo *procInfo, MemInfo *memInfo) {
     Envelope *temp = NULL;
 
     // If CRT proc is awake, then give up.
-    if (procInfo->processes[CLOCK_PID].state == READY) {
+    if (procInfo->processes[CRT_PID].state == READY) {
         return;
     }
+		
+		if (procInfo->processes[CRT_PID].state == BLOCKED_MESSAGE && procInfo->processes[CRT_PID].mqHead != NULL) {
+				int dummy = dummy;
+		}
 
     // If CRT proc is asleep, but wouldn't be able to do anything anyways,
     // give up.
@@ -265,9 +269,15 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
             }
             break;
         case MESSAGE_RECEIVE:
-            srcQueue = &(procInfo->prq);
-            dstQueue = NULL;
-            targetState = BLOCKED_MESSAGE;
+						if (procInfo->currentProcess->mqHead == NULL) {
+							srcQueue = &(procInfo->prq);
+							dstQueue = NULL;
+							targetState = BLOCKED_MESSAGE;
+						} else {
+							srcQueue = &(procInfo->prq);
+							dstQueue = &(procInfo->prq);
+							targetState = READY;
+						}
             break;
         default:
             break;
