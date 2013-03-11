@@ -12,10 +12,10 @@ int8_t k_validMemoryBlock(MemInfo *memInfo, uint32_t addr) {
     //       equal to endMemoryAddress, but we check both
     //       anyways.
     if (
-        addr < memInfo->startMemoryAddress ||
-        addr >= memInfo->nextAvailableAddress ||
-        addr >= memInfo->endMemoryAddress
-    ) {
+            addr < memInfo->startMemoryAddress ||
+            addr >= memInfo->nextAvailableAddress ||
+            addr >= memInfo->endMemoryAddress
+       ) {
         return EINVAL;
     }
 
@@ -59,11 +59,11 @@ void k_setOwnerUnsafe(MemInfo *memInfo, uint32_t addr, ProcId newOid) {
 }
 
 int8_t k_changeOwner(
-    MemInfo *memInfo,
-    uint32_t addr,
-    ProcId fromOid,
-    ProcId toOid
-) {
+        MemInfo *memInfo,
+        uint32_t addr,
+        ProcId fromOid,
+        ProcId toOid
+        ) {
     int8_t isValid = k_validMemoryBlock(memInfo, addr);
     if (isValid != SUCCESS) {
         return isValid;
@@ -96,20 +96,20 @@ uint32_t k_getAlignedEndAddress(uint32_t end, uint32_t blockSizeBytes) {
 // Note that blockSizeBytes must be greater than or equal to
 // sizeof(FreeBlock), or else madness will ensue.
 void k_memInfoInit(
-    MemInfo *memInfo,
-    uint32_t startAddr,
-    uint32_t endAddr,
-    uint32_t blockSizeBytes,
-    uint8_t trackOwners
-    ) {
+        MemInfo *memInfo,
+        uint32_t startAddr,
+        uint32_t endAddr,
+        uint32_t blockSizeBytes,
+        uint8_t trackOwners
+        ) {
     memInfo->startMemoryAddress = k_getAlignedStartAddress(
-        startAddr,
-        blockSizeBytes
-    );
+            startAddr,
+            blockSizeBytes
+            );
     memInfo->endMemoryAddress = k_getAlignedEndAddress(
-        endAddr,
-        blockSizeBytes
-    );
+            endAddr,
+            blockSizeBytes
+            );
 
     memInfo->nextAvailableAddress = memInfo->startMemoryAddress;
     memInfo->blockSizeBytes = blockSizeBytes;

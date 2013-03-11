@@ -90,7 +90,7 @@ int8_t k_sendDelayedMessage(MessageInfo *messageInfo, ClockInfo *clockInfo, MemI
     if (dstPid >= NUM_PROCS || srcPid >= NUM_PROCS) {
         return 1;
     }
-	// TODO: (shale) validate memory, if necessary.
+    // TODO: (shale) validate memory, if necessary.
 
     envelope->sendTime = k_getTime(clockInfo) + delay;
 

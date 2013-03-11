@@ -34,7 +34,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     pqInit(&(procInfo->memq), procInfo->memQueue, NUM_PROCS, &memqStoreIndexFunc);
 
     for (i = 0; i < NUM_PROCS; ++i) {
-				uint32_t tempStack = 0;
+        uint32_t tempStack = 0;
         process = &(procInfo->processes[i]);
         process->pid = i;
         process->state = NEW;
@@ -43,8 +43,8 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
         // TODO(nelk): Assert that these memory blocks are contiguous
         // Stack grows backwards, not forwards. We allocate three memory blocks.
         tempStack = k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL);
-				tempStack = k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL);
-			  tempStack = k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL);
+        tempStack = k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL);
+        tempStack = k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL);
 
         stack = (uint32_t *)(tempStack + memInfo->blockSizeBytes);
 
@@ -96,8 +96,8 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     *(process->startLoc) = ((uint32_t) funProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 3;
     pqAdd(&(procInfo->prq), process);
-		
-		// Schizo Process
+
+    // Schizo Process
     process = &(procInfo->processes[FIRST_USER_PID + 1]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) schizophrenicProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 3;
@@ -131,7 +131,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     procInfo->readIndex = 0;
     procInfo->writeIndex = 0;
     procInfo->inputBufOverflow = 0;
-		procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
+    procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
     procInfo->currentEnvIndex = 0;
 }
 
@@ -139,9 +139,9 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
     uint32_t localReader = procInfo->readIndex;
     uint32_t localWriter = procInfo->writeIndex;
 
-		if (procInfo->currentEnv == NULL) {
-			procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
-		}
+    if (procInfo->currentEnv == NULL) {
+        procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
+    }
     while (procInfo->currentEnv != NULL && localReader != localWriter) {
         char new_char = procInfo->inputBuf[localReader];
         localReader = (localReader + 1) % UART_IN_BUF_SIZE;
@@ -192,8 +192,8 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
 
 void k_processUartOutput(ProcInfo *procInfo, MemInfo *memInfo) {
     LPC_UART_TypeDef *uart = (LPC_UART_TypeDef *)LPC_UART0;
-		Envelope *temp = NULL;
-		
+    Envelope *temp = NULL;
+
     // If CRT proc is awake, then give up.
     if (procInfo->processes[CLOCK_PID].state == READY) {
         return;
@@ -210,18 +210,18 @@ void k_processUartOutput(ProcInfo *procInfo, MemInfo *memInfo) {
     if (!(procInfo->uartOutputPending)) {
         return;
     }
-		
-		// If we don't have our global envelope, we've already
-		// pinged CRT proc, so give up.
-		if (procInfo->uartOutputEnv == NULL) {
-				return;
-		}
+
+    // If we don't have our global envelope, we've already
+    // pinged CRT proc, so give up.
+    if (procInfo->uartOutputEnv == NULL) {
+        return;
+    }
 
     // Otherwise, CRT proc is asleep, can print something,
     // and has something to print, so we should wake it up.
     temp = procInfo->uartOutputEnv;
-		procInfo->uartOutputEnv = NULL;
-		k_sendMessage(memInfo, procInfo, temp, CRT_PID, CRT_PID);
+    procInfo->uartOutputEnv = NULL;
+    k_sendMessage(memInfo, procInfo, temp, CRT_PID, CRT_PID);
 }
 
 uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *messageInfo, ClockInfo *clockInfo, ReleaseReason reason) {
