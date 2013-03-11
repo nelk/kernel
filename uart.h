@@ -29,7 +29,6 @@
 #define LSR_TEMT	0x40
 #define LSR_RXFE	0x80
 
-#define BUFSIZE		0x40
 /* end of NXP uart.h file reference */
 
 
