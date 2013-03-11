@@ -92,11 +92,12 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (0 << KERN_PRIORITY_SHIFT) | 1;
     pqAdd(&(procInfo->prq), process);
 
-    // Fun Process
-    process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
-    *(process->startLoc) = ((uint32_t) funProcess);
-    process->priority = (1 << KERN_PRIORITY_SHIFT) | 3;
-    pqAdd(&(procInfo->prq), process);
+		// TODO: Make this work.
+		//     // Fun Process
+		//     process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
+		//     *(process->startLoc) = ((uint32_t) funProcess);
+		//     process->priority = (1 << KERN_PRIORITY_SHIFT) | 3;
+		//     pqAdd(&(procInfo->prq), process);
 
     // Schizo Process
     process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
