@@ -217,6 +217,7 @@ void crt_proc(void) {
     Envelope *temp = NULL;
     Envelope *nextMsg = NULL;
     LPC_UART_TypeDef *uart = (LPC_UART_TypeDef *)LPC_UART0;
+    uint8_t sendCount = 0;
 
     while (1) {
         nextMsg = (Envelope *)receive_message(NULL);
@@ -238,7 +239,18 @@ void crt_proc(void) {
             gProcInfo.uartOutputEnv = nextMsg;
         }
 
-get_char:
+        if (!(uart->LSR & LSR_THRE)) {
+            continue;
+        }
+
+        sendCount = 0;
+
+send_char:
+        // TODO(sanjay): constantify
+        if (sendCount >= 4) {
+            continue;
+        }
+
         if (head == NULL) {
             gProcInfo.uartOutputPending = 0;
             continue;
@@ -255,17 +267,15 @@ get_char:
                 tail = NULL;
             }
             release_memory_block((void*)temp);
-            goto get_char;
+            goto send_char;
         }
 
         gProcInfo.uartOutputPending = 1;
 
-        if (!(uart->LSR & LSR_THRE)) {
-            continue;
-        }
-
         uart->THR = head->messageData[readIndex];
         readIndex++;
+        sendCount++;
+        goto send_char;
     }
 }
 
