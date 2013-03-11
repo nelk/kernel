@@ -14,10 +14,6 @@
 extern MemInfo gMemInfo;
 extern ProcInfo gProcInfo;
 
-volatile uint8_t g_UART0_TX_empty=1;
-volatile uint8_t g_UART0_buffer[BUFSIZE];
-volatile uint32_t g_UART0_count = 0;
-
 /**
  * @brief: initialize the n_uart
  * NOTES: only fully supports uart0 so far, but can be easily extended
