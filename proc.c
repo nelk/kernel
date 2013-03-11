@@ -92,12 +92,11 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (0 << KERN_PRIORITY_SHIFT) | 1;
     pqAdd(&(procInfo->prq), process);
 
-		// TODO: Make this work.
-		//     // Fun Process
-		//     process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
-		//     *(process->startLoc) = ((uint32_t) funProcess);
-		//     process->priority = (1 << KERN_PRIORITY_SHIFT) | 3;
-		//     pqAdd(&(procInfo->prq), process);
+    // Fun Process
+    process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
+    *(process->startLoc) = ((uint32_t) funProcess);
+    process->priority = (1 << KERN_PRIORITY_SHIFT) | 3;
+    pqAdd(&(procInfo->prq), process);
 
     // Schizo Process
     process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
@@ -200,10 +199,6 @@ void k_processUartOutput(ProcInfo *procInfo, MemInfo *memInfo) {
     if (procInfo->processes[CRT_PID].state == READY) {
         return;
     }
-		
-		if (procInfo->processes[CRT_PID].state == BLOCKED_MESSAGE && procInfo->processes[CRT_PID].mqHead != NULL) {
-				int dummy = dummy;
-		}
 
     // If CRT proc is asleep, but wouldn't be able to do anything anyways,
     // give up.
