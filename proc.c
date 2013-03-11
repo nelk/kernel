@@ -29,6 +29,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     int j;
     PCB *process = NULL;
     uint32_t *stack = NULL;
+    uint8_t pidOffset = 0;
 
     pqInit(&(procInfo->prq), procInfo->procQueue, NUM_PROCS, &rqStoreIndexFunc);
     pqInit(&(procInfo->memq), procInfo->memQueue, NUM_PROCS, &memqStoreIndexFunc);
@@ -92,31 +93,31 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     pqAdd(&(procInfo->prq), process);
 
     // Fun Process
-    process = &(procInfo->processes[FIRST_USER_PID + 0]); // Push process function address onto stack
+    process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) funProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 3;
     pqAdd(&(procInfo->prq), process);
 
     // Schizo Process
-    process = &(procInfo->processes[FIRST_USER_PID + 1]); // Push process function address onto stack
+    process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) schizophrenicProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 3;
     pqAdd(&(procInfo->prq), process);
 
     // Fib Process
-    process = &(procInfo->processes[FIRST_USER_PID + 2]); // Push process function address onto stack
+    process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) fibProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 2;
     pqAdd(&(procInfo->prq), process);
 
     // Memory muncher Process
-    process = &(procInfo->processes[FIRST_USER_PID + 3]); // Push process function address onto stack
+    process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) memoryMuncherProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 1;
     pqAdd(&(procInfo->prq), process);
 
     // Release Process
-    process = &(procInfo->processes[FIRST_USER_PID + 4]); // Push process function address onto stack
+    process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) releaseProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);

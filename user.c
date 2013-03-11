@@ -165,7 +165,6 @@ void memoryMuncherProcess(void) {
     set_process_priority(4, get_process_priority(1)); // funProcess pid = 1
 
     envelope = receive_message(NULL);
-    //printProcess("memoryMuncher\r\n");
 }
 
 void releaseProcess(void) {
@@ -193,7 +192,6 @@ void releaseProcess(void) {
 
     set_process_priority(4, 3);
     envelope = receive_message(NULL);
-    //printProcess("releaseProcess\r\n");
 }
 
 // Clock-related
