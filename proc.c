@@ -197,7 +197,7 @@ void k_processUartOutput(ProcInfo *procInfo, MemInfo *memInfo) {
     Envelope *temp = NULL;
 
     // If CRT proc is awake, then give up.
-    if (procInfo->processes[CLOCK_PID].state == READY) {
+    if (procInfo->processes[CRT_PID].state == READY) {
         return;
     }
 
