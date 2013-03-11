@@ -246,8 +246,7 @@ void crt_proc(void) {
         sendCount = 0;
 
 send_char:
-        // TODO(sanjay): constantify
-        if (sendCount >= 4) {
+        if (sendCount >= UART_OUTPUT_BUFSIZE) {
             continue;
         }
 

@@ -12,6 +12,8 @@ typedef int32_t ssize_t;
 // Keyboard Hotkey related consts. This will break everything if it is '%'.
 #define SHOW_DEBUG_PROCESSES ('!')
 
+#define UART_OUTPUT_BUFSIZE (16)
+
 // Memory-related types
 
 struct FreeBlock;
