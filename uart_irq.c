@@ -31,22 +31,22 @@ int uart_init(int n_uart) {
 
     if (n_uart ==0 ) {
         /*
-        Steps 1 & 2: system control configuration.
-        Under CMSIS, system_LPC17xx.c does these two steps
+           Steps 1 & 2: system control configuration.
+           Under CMSIS, system_LPC17xx.c does these two steps
 
-        -----------------------------------------------------
-        Step 1: Power control configuration.
-                See table 46 pg63 in LPC17xx_UM
-        -----------------------------------------------------
-        Enable UART0 power, this is the default setting
-        done in system_LPC17xx.c under CMSIS.
-        Enclose the code for your refrence
+           -----------------------------------------------------
+           Step 1: Power control configuration.
+           See table 46 pg63 in LPC17xx_UM
+           -----------------------------------------------------
+           Enable UART0 power, this is the default setting
+           done in system_LPC17xx.c under CMSIS.
+           Enclose the code for your refrence
         //LPC_SC->PCONP |= BIT(3);
 
         -----------------------------------------------------
         Step2: Select the clock source.
-               Default PCLK=CCLK/4 , where CCLK = 100MHZ.
-               See tables 40 & 42 on pg56-57 in LPC17xx_UM.
+        Default PCLK=CCLK/4 , where CCLK = 100MHZ.
+        See tables 40 & 42 on pg56-57 in LPC17xx_UM.
         -----------------------------------------------------
         Check the PLL0 configuration to see how XTAL=12.0MHZ
         gets to CCLK=100MHZin system_LPC17xx.c file.
@@ -56,7 +56,7 @@ int uart_init(int n_uart) {
 
         -----------------------------------------------------
         Step 5: Pin Ctrl Block configuration for TXD and RXD
-                See Table 79 on pg108 in LPC17xx_UM.
+        See Table 79 on pg108 in LPC17xx_UM.
         -----------------------------------------------------
         Note this is done before Steps3-4 for coding purpose.
         */
@@ -85,12 +85,12 @@ int uart_init(int n_uart) {
     }
 
     /*
-    -----------------------------------------------------
-    Step 3: Transmission Configuration.
-            See section 14.4.12.1 pg313-315 in LPC17xx_UM
-            for baud rate calculation.
-    -----------------------------------------------------
-        */
+       -----------------------------------------------------
+       Step 3: Transmission Configuration.
+       See section 14.4.12.1 pg313-315 in LPC17xx_UM
+       for baud rate calculation.
+       -----------------------------------------------------
+       */
 
     /* Step 3a: DLAB=1, 8N1 */
     pUart->LCR = UART_8N1; /* see uart.h file */
@@ -102,35 +102,35 @@ int uart_init(int n_uart) {
     /* FR = 1.507 ~ 1/2, DivAddVal = 1, MulVal = 2
        FR = 1.507 = 25MHZ/(16*9*115200)
        see table 285 on pg312 in LPC_17xxUM
-    */
+       */
     pUart->FDR = 0x21;
 
 
 
     /*
-    -----------------------------------------------------
-    Step 4: FIFO setup.
-           see table 278 on pg305 in LPC17xx_UM
-    -----------------------------------------------------
-        enable Rx and Tx FIFOs, clear Rx and Tx FIFOs
-    Trigger level 0 (1 char per interrupt)
-    */
+       -----------------------------------------------------
+       Step 4: FIFO setup.
+       see table 278 on pg305 in LPC17xx_UM
+       -----------------------------------------------------
+       enable Rx and Tx FIFOs, clear Rx and Tx FIFOs
+       Trigger level 0 (1 char per interrupt)
+       */
 
     pUart->FCR = 0x07;
 
     /* Step 5 was done between step 2 and step 4 a few lines above */
 
     /*
-    -----------------------------------------------------
-    Step 6 Interrupt setting and enabling
-    -----------------------------------------------------
-    */
+       -----------------------------------------------------
+       Step 6 Interrupt setting and enabling
+       -----------------------------------------------------
+       */
     /* Step 6a:
        Enable interrupt bit(s) wihtin the specific peripheral register.
-           Interrupt Sources Setting: RBR, THRE or RX Line Stats
+       Interrupt Sources Setting: RBR, THRE or RX Line Stats
        See Table 50 on pg73 in LPC17xx_UM for all possible UART0 interrupt sources
        See Table 275 on pg 302 in LPC17xx_UM for IER setting
-    */
+       */
     /* disable the Divisior Latch Access Bit DLAB=0 */
     pUart->LCR &= ~(BIT(7));
 
@@ -182,7 +182,7 @@ void c_UART0_IRQHandler(void) {
 
     if (IIR_IntId & IIR_RDA) { /* Receive Data Available */
         /* read UART. Read RBR will clear the interrupt */
-            uart_receive_char_isr(&gProcInfo, pUart->RBR);
+        uart_receive_char_isr(&gProcInfo, pUart->RBR);
     } else if (IIR_IntId & IIR_THRE) {
         /* THRE Interrupt, transmit holding register empty*/
         // NOTE(sanjay): Make sure that this is contant time, we are in an ISR.
@@ -192,15 +192,15 @@ void c_UART0_IRQHandler(void) {
         LSR_Val = pUart->LSR;
         if (LSR_Val  & (LSR_OE|LSR_PE|LSR_FE|LSR_RXFE|LSR_BI) ) {
             /* There are errors or break interrupt
-                   Read LSR will clear the interrupt
+               Read LSR will clear the interrupt
                Dummy read on RX to clear interrupt, then bail out
-            */
+               */
             dummy = pUart->RBR;
             return; /* error occurs, return */
         }
         /* If no error on RLS, normal ready, save into the data buffer.
-               Note: read RBR will clear the interrupt
-        */
+Note: read RBR will clear the interrupt
+*/
         if (LSR_Val & LSR_RDR) { /* Receive Data Ready */
             /* read from the uart */
             uart_receive_char_isr(&gProcInfo, pUart->RBR);
@@ -235,8 +235,8 @@ void crt_proc(void) {
                 tail = nextMsg;
             }
         } else {
-						gProcInfo.uartOutputEnv = nextMsg;
-				}
+            gProcInfo.uartOutputEnv = nextMsg;
+        }
 
 get_char:
         if (head == NULL) {
@@ -247,7 +247,7 @@ get_char:
         // If we reached a NULL byte or end of buffer, then we pop this
         // envelope from our queue, release its memory, and then retry.
         if (readIndex >= MESSAGEDATA_SIZE_BYTES ||
-            head->messageData[readIndex] == '\0') {
+                head->messageData[readIndex] == '\0') {
             readIndex = 0;
             temp = head;
             head = head->next;
@@ -299,11 +299,13 @@ uint32_t writePCBState(char *buffer, ProcState state) {
 
 uint32_t writeProcessInfo(char *buffer, PCB *pcb) {
     uint32_t i = 0;
+    i += write_ansi_escape(buffer+i, 41);
     i += write_uint32(buffer+i, pcb->pid, 0);
     i += write_string(buffer+i, "$ Priority=", 11);
     i += write_uint32(buffer+i, pcb->priority, 0);
     i += write_string(buffer+i, ", Status=", 9);
     i += writePCBState(buffer+i, pcb->state);
+    i += write_ansi_escape(buffer+i, 0);
     i += write_string(buffer+i, "\r\n", 2);
     return i;
 }
@@ -328,7 +330,7 @@ void uart_keyboard_proc(void) {
         if (message->srcPid != KEYBOARD_PID) {
             c = toLowerAndIsLetter(message->messageData[0]);
             if ('a' <= c && c <= 'z') {
-							registry[c - 'a'] = message->srcPid;
+                registry[c - 'a'] = message->srcPid;
             }
 
             release_memory_block(message);
@@ -355,9 +357,12 @@ void uart_keyboard_proc(void) {
             }
 
             i = 0;
-						i += write_string(message->messageData+i, "used mem = ", 11);
+            i += write_ansi_escape(message->messageData+i, 41);
+            i += write_string(message->messageData+i, "used mem = ", 11);
             i += write_uint32(message->messageData+i, (gMemInfo.numSuccessfulAllocs-gMemInfo.numFreeCalls)*128, 2);
-            i += write_string(message->messageData+i, " bytes\r\n", 8);
+            i += write_string(message->messageData+i, " bytes", 6);
+            i += write_ansi_escape(message->messageData+i, 0);
+            i += write_string(message->messageData+i, "\r\n", 2);
             message->messageData[i++] = '\0';
             send_message(CRT_PID, message);
             message = NULL;

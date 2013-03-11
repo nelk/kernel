@@ -38,7 +38,7 @@
 
 /* 
    8 bits, no Parity, 1 Stop bit
-   
+
    0x83 = 1000 0011 = 1 0 00 0 0 11
    LCR[7]  =1  enable Divisor Latch Access Bit DLAB
    LCR[6]  =0  disable break transmission
@@ -47,12 +47,12 @@
    LCR[2]  =0  1 stop bit
    LCR[1:0]=11 8-bit char len
    See table 279, pg306 LPC17xx_UM
-*/
+   */
 #define UART_8N1  0x83 /* 8 bits, no Parity, 1 Stop bit */
-			
+
 
 #define uart0_init() uart_init(0)	
-     
+
 int uart_init(int n_uart); /* initialize the n_uart, interrupt driven */
 
 /* write a string to the n_uart */
