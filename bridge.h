@@ -12,7 +12,6 @@ int16_t bridge_getProcessPriority(uint8_t pid);
 void *bridge_acquireMemoryBlock(void);
 void *bridge_tryAcquireMemoryBlock(void);
 int8_t bridge_releaseMemoryBlock(void *blk);
-int8_t rlsMemBlock(MemInfo *memInfo, uint32_t mem, ProcId pid, uint8_t *shouldPreempt);
 
 int8_t bridge_sendMessage(uint8_t pid, Envelope *envelope);
 Envelope *bridge_receiveMessage(uint8_t *senderPid);

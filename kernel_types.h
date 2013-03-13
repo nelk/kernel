@@ -105,6 +105,7 @@ struct CrtOutputQueue {
     Envelope *head;
     Envelope *tail;
     uint8_t advanced;
+    Envelope *toFree;
 };
 
 typedef struct ProcInfo ProcInfo;

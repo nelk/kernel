@@ -268,15 +268,15 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
             }
             break;
         case MESSAGE_RECEIVE:
-						if (procInfo->currentProcess->mqHead == NULL) {
-							srcQueue = &(procInfo->prq);
-							dstQueue = NULL;
-							targetState = BLOCKED_MESSAGE;
-						} else {
-							srcQueue = &(procInfo->prq);
-							dstQueue = &(procInfo->prq);
-							targetState = READY;
-						}
+			if (procInfo->currentProcess->mqHead == NULL) {
+				srcQueue = &(procInfo->prq);
+				dstQueue = NULL;
+				targetState = BLOCKED_MESSAGE;
+			} else {
+				srcQueue = &(procInfo->prq);
+				dstQueue = &(procInfo->prq);
+				targetState = READY;
+			}
             break;
         default:
             break;

@@ -210,9 +210,18 @@ Note: read RBR will clear the interrupt
 
 void crt_proc(void) {
     LPC_UART_TypeDef *uart = (LPC_UART_TypeDef *)LPC_UART0;
+    Envelope *temp = NULL;
     while (1) {
-        Envelope *nextMsg = (Envelope *)receive_message(NULL);
-				uint8_t i = 0;
+        Envelope *nextMsg = NULL;
+        uint8_t i = 0;
+
+        while (gProcInfo.coq.toFree != NULL) {
+            temp = gProcInfo.coq.toFree;
+            gProcInfo.coq.toFree = gProcInfo.coq.toFree->next;
+            release_memory_block((void*)temp);
+        }
+
+        nextMsg = (Envelope *)receive_message(NULL);
         if (nextMsg == NULL) {
             continue;
         }

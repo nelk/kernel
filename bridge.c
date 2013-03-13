@@ -41,22 +41,16 @@ void *bridge_acquireMemoryBlock(void) {
     return (void*)mem;
 }
 
-int8_t rlsMemBlock(MemInfo *memInfo, uint32_t mem, ProcId pid, uint8_t *shouldPreempt) {
-		int8_t status = SUCCESS;
-		uint8_t temp = 0;
-		PCB *firstBlocked = NULL;
-	
-		if (shouldPreempt == NULL) {
-				shouldPreempt = &temp;
-		}
-		*shouldPreempt = 0;
-	
-		status = k_releaseMemoryBlock(&gMemInfo, mem, gProcInfo.currentProcess->pid);
+int8_t bridge_releaseMemoryBlock(void *block) {
+    int8_t status = SUCCESS;
+    PCB *firstBlocked = NULL;
+
+    status = k_releaseMemoryBlock(&gMemInfo, (uint32_t)blk, gProcInfo.currentProcess->pid);
     if (status != SUCCESS) {
         return status;
     }
-		
-		if (gProcInfo.memq.size == 0) {
+
+    if (gProcInfo.memq.size == 0) {
         return SUCCESS;
     }
 
@@ -65,28 +59,12 @@ int8_t rlsMemBlock(MemInfo *memInfo, uint32_t mem, ProcId pid, uint8_t *shouldPr
         firstBlocked->state = READY;
         pqRemove(&(gProcInfo.memq), 0);
         pqAdd(&(gProcInfo.prq), firstBlocked);
-				return SUCCESS;
+        return SUCCESS;
     }
-		
-		*shouldPreempt = 1;
-		return SUCCESS;
-}
 
-int8_t bridge_releaseMemoryBlock(void *blk) {
-		int8_t status = 0;
-		uint8_t shouldPreempt = 0;
-		
-		status = rlsMemBlock(&gMemInfo, (uint32_t)blk, gProcInfo.currentProcess->pid, &shouldPreempt);
-		if (status != SUCCESS) {
-				return status;
-		}
-		
-		if (shouldPreempt) {
-				k_releaseProcessor(&gProcInfo, &gMemInfo, &gMessageInfo, &gClockInfo, MEMORY_FREED);
-		}
-    return status;
+    k_releaseProcessor(&gProcInfo, &gMemInfo, &gMessageInfo, &gClockInfo, MEMORY_FREED);
+    return SUCCESS;
 }
-
 
 int8_t bridge_sendMessage(uint8_t pid, Envelope *envelope) {
     int8_t releaseProcessor = k_sendMessage(&gMemInfo, &gProcInfo, envelope, gProcInfo.currentProcess->pid, pid);

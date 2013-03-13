@@ -20,7 +20,10 @@ void advance(CrtOutputQueue *coq, MemInfo *memInfo) {
             coq->tail = NULL;
         }
         coq->readIndex = 0;
-				rlsMemBlock(memInfo, (uint32_t)temp, CRT_PID , NULL);
+
+        // Link temp into coq's toFree list.
+        temp->next = coq->toFree;
+        coq->toFree = temp;
     }
 
     coq->advanced = 1;
