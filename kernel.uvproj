@@ -546,6 +546,16 @@
               <FileType>5</FileType>
               <FilePath>.\message_pq.h</FilePath>
             </File>
+            <File>
+              <FileName>dac.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\dac.c</FilePath>
+            </File>
+            <File>
+              <FileName>dac.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\dac.h</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>
