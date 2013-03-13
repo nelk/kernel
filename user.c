@@ -121,7 +121,6 @@ void memoryMuncherProcess(void) {
     uint8_t index = 0;
 
     while (1) {
-        index = 0;
         tempBlock = try_request_memory_block();
         if (tempBlock == NULL) {
             break;
@@ -132,7 +131,12 @@ void memoryMuncherProcess(void) {
         memList = tempNode;
         tempNode = NULL;
 
-        envelope = (Envelope *)request_memory_block();
+        envelope = (Envelope *)try_request_memory_block();
+				if (envelope == NULL) {
+						break;
+				}
+				
+				index = 0;
         index += write_string(envelope->messageData+index, "I have eaten ", 13);
         index += write_uint32(envelope->messageData+index, (uint32_t)memList, 0);
         index += write_string(envelope->messageData+index, ".\r\n", 3);

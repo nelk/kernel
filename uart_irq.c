@@ -212,6 +212,7 @@ void crt_proc(void) {
     LPC_UART_TypeDef *uart = (LPC_UART_TypeDef *)LPC_UART0;
     while (1) {
         Envelope *nextMsg = (Envelope *)receive_message(NULL);
+				uint8_t i = 0;
         if (nextMsg == NULL) {
             continue;
         }
@@ -227,11 +228,11 @@ void crt_proc(void) {
         }
 
         for (
-            uint8_t i = 0;
-            i < UART_OUTPUT_BUFSIZE && hasData(&(gProcInfo.coq));
+            i = 0;
+            i < UART_OUTPUT_BUFSIZE && hasData(&(gProcInfo.coq), &gMemInfo);
             i++
         ) {
-            uart->THR = getData(&(gProcInfo.coq));
+            uart->THR = getData(&(gProcInfo.coq), &gMemInfo);
         }
     }
 }

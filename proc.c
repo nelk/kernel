@@ -212,7 +212,7 @@ void k_processUartOutput(ProcInfo *procInfo, MemInfo *memInfo) {
 
     // If CRT proc would be able to do something, but has nothing to send,
     // give up.
-    if (!hasData(&(gProcInfo.coq))) {
+    if (!hasData(&(procInfo->coq), memInfo)) {
         return;
     }
 
