@@ -6,9 +6,11 @@
  */
 
 #include <LPC17xx.h>
-#include "rtx.h"
+
+#include "coq.h"
 #include "helpers.h"
 #include "kernel_types.h"
+#include "rtx.h"
 #include "uart.h"
 
 extern MemInfo gMemInfo;
@@ -207,30 +209,15 @@ Note: read RBR will clear the interrupt
 }
 
 void crt_proc(void) {
-    uint8_t readIndex = 0;
-    Envelope *head = NULL;
-    Envelope *tail = NULL;
-    Envelope *temp = NULL;
-    Envelope *nextMsg = NULL;
     LPC_UART_TypeDef *uart = (LPC_UART_TypeDef *)LPC_UART0;
-    uint8_t sendCount = 0;
-
     while (1) {
-        nextMsg = (Envelope *)receive_message(NULL);
+        Envelope *nextMsg = (Envelope *)receive_message(NULL);
         if (nextMsg == NULL) {
             continue;
         }
 
         if (nextMsg->srcPid != CRT_PID) {
-            // This is from a user process, enqueue it for output
-            nextMsg->next = NULL;
-            if (tail == NULL) {
-                head = nextMsg;
-                tail = nextMsg;
-            } else {
-                tail->next = nextMsg;
-                tail = nextMsg;
-            }
+            pushEnvelope(&(gProcInfo.coq), nextMsg);
         } else {
             gProcInfo.uartOutputEnv = nextMsg;
         }
@@ -239,38 +226,13 @@ void crt_proc(void) {
             continue;
         }
 
-        sendCount = 0;
-
-send_char:
-        if (sendCount >= UART_OUTPUT_BUFSIZE) {
-            continue;
+        for (
+            uint8_t i = 0;
+            i < UART_OUTPUT_BUFSIZE && hasData(&(gProcInfo.coq));
+            i++
+        ) {
+            uart->THR = getData(&(gProcInfo.coq));
         }
-
-        if (head == NULL) {
-            gProcInfo.uartOutputPending = 0;
-            continue;
-        }
-
-        // If we reached a NULL byte or end of buffer, then we pop this
-        // envelope from our queue, release its memory, and then retry.
-        if (readIndex >= MESSAGEDATA_SIZE_BYTES ||
-                head->messageData[readIndex] == '\0') {
-            readIndex = 0;
-            temp = head;
-            head = head->next;
-            if (head == NULL) {
-                tail = NULL;
-            }
-            release_memory_block((void*)temp);
-            goto send_char;
-        }
-
-        gProcInfo.uartOutputPending = 1;
-
-        uart->THR = head->messageData[readIndex];
-        readIndex++;
-        sendCount++;
-        goto send_char;
     }
 }
 

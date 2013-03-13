@@ -3,6 +3,7 @@
 
 #include <LPC17xx.h>
 
+#include "coq.h"
 #include "kernel_types.h"
 #include "mem.h"
 #include "message.h"
@@ -125,8 +126,11 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     procInfo->currentProcess = NULL;
 
     // Init UART keyboard global output data
-    procInfo->uartOutputPending = 0;
     procInfo->uartOutputEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
+    procInfo->coq.readIndex = 0;
+    procInfo->coq.head = NULL;
+    procInfo->coq.tail = NULL;
+    procInfo->coq.advanced = 0;
 
     // Init UART keyboard global input data
     procInfo->readIndex = 0;
@@ -208,7 +212,7 @@ void k_processUartOutput(ProcInfo *procInfo, MemInfo *memInfo) {
 
     // If CRT proc would be able to do something, but has nothing to send,
     // give up.
-    if (!(procInfo->uartOutputPending)) {
+    if (!hasData(&(gProcInfo.coq))) {
         return;
     }
 
