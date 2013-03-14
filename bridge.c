@@ -41,7 +41,7 @@ void *bridge_acquireMemoryBlock(void) {
     return (void*)mem;
 }
 
-int8_t bridge_releaseMemoryBlock(void *block) {
+int8_t bridge_releaseMemoryBlock(void *blk) {
     int8_t status = SUCCESS;
     PCB *firstBlocked = NULL;
 
