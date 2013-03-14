@@ -166,7 +166,21 @@ void uart_receive_char_isr(ProcInfo *procInfo, char new_char) {
 }
 
 void uart_send_char_isr(ProcInfo *procInfo) {
-    // no-op
+    LPC_UART_TypeDef *uart = (LPC_UART_TypeDef *)LPC_UART0;
+    uint32_t localReader = procInfo->outReader;
+    uint32_t localWriter = procInfo->outWriter;
+    uint8_t sent = 0;
+
+    if (!(uart->LSR & LSR_THRE)) {
+        return;
+    }
+
+    while (localReader != localWriter && sent < UART_OUTPUT_BUFSIZE) {
+        uart->THR = procInfo->outputBuf[localReader];
+        localReader = (localReader+1) % OUTPUT_BUFSIZE;
+        sent++;
+    }
+    procInfo->outReader = localReader;
 }
 
 void c_UART0_IRQHandler(void) {
@@ -184,7 +198,10 @@ void c_UART0_IRQHandler(void) {
     } else if (IIR_IntId & IIR_THRE) {
         /* THRE Interrupt, transmit holding register empty*/
         // NOTE(sanjay): Make sure that this is contant time, we are in an ISR.
-        uart_send_char_isr(&gProcInfo);
+        if (procInfo->outLock == 0) {
+            uart_send_char_isr(&gProcInfo);
+        }
+
         LSR_Val = pUart->LSR;
     } else if (IIR_IntId & IIR_RLS) {
         LSR_Val = pUart->LSR;
@@ -232,17 +249,20 @@ void crt_proc(void) {
             gProcInfo.uartOutputEnv = nextMsg;
         }
 
-        if (!(uart->LSR & LSR_THRE)) {
-            continue;
-        }
-
-        for (
-            i = 0;
-            i < UART_OUTPUT_BUFSIZE && hasData(&(gProcInfo.coq), &gMemInfo);
-            i++
+        uint32_t localWriter = procInfo->outWriter;
+        uint32_t localReader = procInfo->outReader;
+        while (
+            ((localWriter + 1) % OUTPUT_BUFSIZE != localReader) &&
+            (hasData(&(gProcInfo.coq), &gMemInfo))
         ) {
-            uart->THR = getData(&(gProcInfo.coq), &gMemInfo);
+            procInfo->outputBuf[localWriter] = getData(&(gProcInfo.coq), &gMemInfo);
+            localWriter = (localWriter + 1) % OUTPUT_BUFSIZE;
         }
+        procInfo->outWriter = localWriter;
+
+        procInfo->outLock = 1;
+        uart_send_char_isr(&gProcInfo);
+        procInfo->outLock = 0;
     }
 }
 
