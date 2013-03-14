@@ -199,29 +199,29 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
 }
 
 void k_processUartOutput(ProcInfo *procInfo, MemInfo *memInfo) {
-    LPC_UART_TypeDef *uart = (LPC_UART_TypeDef *)LPC_UART0;
     Envelope *temp = NULL;
+	
+		// NOTE(sanjay): these checks are sorted roughly in order of cheapness.
 
+		// If we don't have our global envelope, we've already
+    // pinged CRT proc, so give up.
+    if (procInfo->uartOutputEnv == NULL) {
+        return;
+    }
+	
     // If CRT proc is awake, then give up.
     if (procInfo->processes[CRT_PID].state == READY) {
         return;
     }
 
-    // If CRT proc is asleep, but wouldn't be able to do anything anyways,
-    // give up.
-    if (!(uart->LSR & LSR_THRE)) {
-        return;
-    }
-
-    // If CRT proc would be able to do something, but has nothing to send,
+		// If CRT proc would be able to add to buffer, but has nothing to send,
     // give up.
     if (!hasData(&(procInfo->coq), memInfo)) {
         return;
     }
 
-    // If we don't have our global envelope, we've already
-    // pinged CRT proc, so give up.
-    if (procInfo->uartOutputEnv == NULL) {
+    // If the output buffer is full anyways, give up.
+    if ((procInfo->outWriter + 1) % OUTPUT_BUFSIZE == procInfo->outReader) {
         return;
     }
 
