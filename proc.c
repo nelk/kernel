@@ -1,5 +1,5 @@
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #include <LPC17xx.h>
 
@@ -131,6 +131,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     procInfo->coq.head = NULL;
     procInfo->coq.tail = NULL;
     procInfo->coq.advanced = 0;
+    procInfo->coq.toFree = NULL;
     procInfo->outReader = 0;
     procInfo->outWriter = 0;
     procInfo->outLock = 0;
