@@ -44,6 +44,7 @@ ProcId *k_findOwnerSlot(MemInfo *memInfo, uint32_t addr) {
 // Assumes addr is owned by this memInfo, hence unsafe.
 uint8_t k_isOwnerUnsafe(MemInfo *memInfo, uint32_t addr, ProcId oid) {
     if (!(memInfo->trackOwners)) {
+        // TODO: constantify
         return 1;
     }
     return (*k_findOwnerSlot(memInfo, addr) == oid);
