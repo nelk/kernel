@@ -131,6 +131,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     procInfo->coq.head = NULL;
     procInfo->coq.tail = NULL;
     procInfo->coq.advanced = 0;
+    procInfo->coq.toFree = NULL;
 
     // Init UART keyboard global input data
     procInfo->readIndex = 0;
