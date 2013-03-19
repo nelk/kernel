@@ -366,6 +366,7 @@ uint32_t k_setProcessPriority(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo 
 int16_t k_getProcessPriority(ProcInfo *procInfo, ProcId pid) {
     uint8_t priority = 0;
     if (pid >= NUM_PROCS) {
+        // TODO: Constantify
         return -1;
     }
 
