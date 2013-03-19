@@ -201,21 +201,21 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
 
 void k_processUartOutput(ProcInfo *procInfo, MemInfo *memInfo) {
     Envelope *temp = NULL;
-	
-		// NOTE(sanjay): these checks are sorted roughly in order of cheapness.
 
-		// If we don't have our global envelope, we've already
+    // NOTE(sanjay): these checks are sorted roughly in order of cheapness.
+
+    // If we don't have our global envelope, we've already
     // pinged CRT proc, so give up.
     if (procInfo->uartOutputEnv == NULL) {
         return;
     }
-	
+
     // If CRT proc is awake, then give up.
     if (procInfo->processes[CRT_PID].state == READY) {
         return;
     }
 
-		// If CRT proc would be able to add to buffer, but has nothing to send,
+    // If CRT proc would be able to add to buffer, but has nothing to send,
     // give up.
     if (!hasData(&(procInfo->coq), memInfo)) {
         return;
@@ -272,15 +272,15 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
             }
             break;
         case MESSAGE_RECEIVE:
-			if (procInfo->currentProcess->mqHead == NULL) {
-				srcQueue = &(procInfo->prq);
-				dstQueue = NULL;
-				targetState = BLOCKED_MESSAGE;
-			} else {
-				srcQueue = &(procInfo->prq);
-				dstQueue = &(procInfo->prq);
-				targetState = READY;
-			}
+            if (procInfo->currentProcess->mqHead == NULL) {
+                srcQueue = &(procInfo->prq);
+                dstQueue = NULL;
+                targetState = BLOCKED_MESSAGE;
+            } else {
+                srcQueue = &(procInfo->prq);
+                dstQueue = &(procInfo->prq);
+                targetState = READY;
+            }
             break;
         default:
             break;
