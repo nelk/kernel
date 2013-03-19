@@ -40,12 +40,12 @@ void heapSetContext(heap *h, void *ctx);
 // It runs in time linear in n. It is safe to call heapInit on
 // a heap that has already been initialized. It assumes that h's swapper and
 // comparator are already set.
-void heapInit(heap* h, size_t n);
+void heapInit(heap *h, size_t n);
 
 // heapAdd increases h's internal length by one, and rebalances the heap.
 // It runs in time logarithmic in the length of the heap. It assumes that h's
 // swapper and comparator are already set.
-void heapAdd(heap* h);
+void heapAdd(heap *h);
 
 // heapRemove removes the element at index i from heap h, and rebalances
 // the heap. It runs in time logarithmic in the length of the heap. It assumes
