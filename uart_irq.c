@@ -198,7 +198,7 @@ void c_UART0_IRQHandler(void) {
     } else if (IIR_IntId & IIR_THRE) {
         /* THRE Interrupt, transmit holding register empty*/
         // NOTE(sanjay): Make sure that this is contant time, we are in an ISR.
-        if (procInfo->outLock == 0) {
+        if (gProcInfo.outLock == 0) {
             uart_send_char_isr(&gProcInfo);
         }
 
@@ -226,11 +226,11 @@ Note: read RBR will clear the interrupt
 }
 
 void crt_proc(void) {
-    LPC_UART_TypeDef *uart = (LPC_UART_TypeDef *)LPC_UART0;
     Envelope *temp = NULL;
+		uint32_t localWriter = 0;
+    uint32_t localReader = 0;
     while (1) {
         Envelope *nextMsg = NULL;
-        uint8_t i = 0;
 
         while (gProcInfo.coq.toFree != NULL) {
             temp = gProcInfo.coq.toFree;
@@ -249,20 +249,20 @@ void crt_proc(void) {
             gProcInfo.uartOutputEnv = nextMsg;
         }
 
-        uint32_t localWriter = procInfo->outWriter;
-        uint32_t localReader = procInfo->outReader;
+        localWriter = gProcInfo.outWriter;
+        localReader = gProcInfo.outReader;
         while (
             ((localWriter + 1) % OUTPUT_BUFSIZE != localReader) &&
             (hasData(&(gProcInfo.coq), &gMemInfo))
         ) {
-            procInfo->outputBuf[localWriter] = getData(&(gProcInfo.coq), &gMemInfo);
+            gProcInfo.outputBuf[localWriter] = getData(&(gProcInfo.coq), &gMemInfo);
             localWriter = (localWriter + 1) % OUTPUT_BUFSIZE;
         }
-        procInfo->outWriter = localWriter;
+        gProcInfo.outWriter = localWriter;
 
-        procInfo->outLock = 1;
+        gProcInfo.outLock = 1;
         uart_send_char_isr(&gProcInfo);
-        procInfo->outLock = 0;
+        gProcInfo.outLock = 0;
     }
 }
 
