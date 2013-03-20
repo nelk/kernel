@@ -320,11 +320,8 @@ uint32_t k_setProcessPriority(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo 
         // TODO(sanjay): this error code seems a little inappropriate...
         return EINVAL;
     }
-    if (pid >= NUM_PROCS) {
-        return EINVAL;
-    }
 
-    modifiedProcess = &(procInfo->processes[pid]);
+    modifiedProcess = k_getPCB(procInfo, pid);
 
     // We don't allow changing the priority of the null process
     if (modifiedProcess == procInfo->nullProcess) {
@@ -377,4 +374,18 @@ ProcId k_getPid(ProcInfo *procInfo) {
     return procInfo->currentProcess->pid;
 }
 
+PCB *k_getPCB(ProcInfo *procInfo, uint8_t pid) {
+    PCB *pcb = NULL;
 
+    if (pid >= NUM_PROCS) {
+        return NULL;
+    }
+
+    pcb = procInfo->processes[pid];
+
+    if (*(pcb->startLoc) == 0) {
+        return NULL;
+    }
+
+    return (uint32_t)pcb;
+}

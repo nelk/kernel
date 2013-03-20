@@ -399,3 +399,117 @@ void clockProcess(void) {
         }
     }
 }
+
+uint8_t parseSetMessage(char *message) {
+    uint8_t index = 2;
+    uint8_t offsetIndex = 0;
+    uint8_t pid = 0;
+    uint8_t priority = 0;
+
+    if (message[index++] != ' ') {
+        return EINVAL;
+    }
+
+    // Starts at index 3 (after '%C ')
+    offsetIndex = index;
+    while (offsetIndex < MESSAGEDATA_SIZE_BYTES) {
+        if (message[offsetIndex] == ' ') {
+            break;
+        }
+        ++offsetIndex;
+    }
+
+    // Break if larger than two characters or less than one.
+    if (offsetIndex == index + 1 || offsetIndex > index + 2) {
+        return EINVAL;
+    }
+
+    // Break if the input is not an integer (up to two digits).
+    if (message[index] < '0' || message[index] > '9' ||
+        (index != offsetIndex - 1 && (message[index + 1] < '0' || message[index + 1] > '9'))) {
+        return EINVAL;
+    }
+
+    pid = read_uint32(message + index, offsetIndex - index);
+
+    ++offsetIndex;
+    index = offsetIndex;
+
+    // Starts after the second space.
+    // TODO(Jon): Verify what the last character after a finished number would be.
+    while (offsetIndex < MESSAGEDATA_SIZE_BYTES) {
+        if (message[offsetIndex] == '\0') {
+            break;
+        }
+        ++offsetIndex;
+    }
+
+    // Break if larger than three characters or less than one.
+    if (offsetIndex == index + 1 || offsetIndex > index + 3) {
+        return EINVAL;
+    }
+
+    // Break if the input is not an integer (up to three digits).
+    if (message[index] < '0' || message[index] > '9' ||
+        (index != offsetIndex - 2 && (message[index + 2] < '0' || message[index + 2] > '9')) ||
+        (index != offsetIndex - 1 && (message[index + 1] < '0' || message[index + 1] > '9'))) {
+        return EINVAL;
+    }
+
+    priority = read_uint32(message + index, offsetIndex - index);
+
+    return set_process_priority(pid, priority);
+
+}
+
+void printSetErrorMessage(Envelope *envelope) {
+    uint8_t index = 0;
+    char *messageData = envelope->messageData;
+
+    index += write_string(messageData + index, "Please provide a proper process ID and priority.\r\n", 50);
+    messageData[index++] = '\0';
+    send_message(CRT_PID, envelope);
+}
+
+void processSetMessage(void) {
+    Envelope *envelope = NULL;
+    char *message = NULL;
+    uint8_t status = 0;
+
+    envelope = receive_message(NULL);
+
+    if (envelope->srcPid != KEYBOARD_PID) {
+        release_memory_block((void *)envelope);
+        return;
+    }
+
+    message = envelope->messageData;
+
+    // Check for an invalid message type.
+    if (message[0] != '%' || message[1] != 'C') {
+        release_memory_block((void *)envelope);
+        return;
+    }
+
+    status = parseSetMessage(message);
+
+    if (status == EINVAL) {
+        printSetErrorMessage(envelope);
+    } else {
+        release_memory_block((void *)envelope);
+    }
+}
+
+void setPriorityProcess(void) {
+    Envelope *envelope = NULL;
+
+    envelope = (Envelope *)request_memory_block();
+    envelope->dstPid = KEYBOARD_PID;
+    envelope->messageData[0] = 'c';
+    send_message(KEYBOARD_PID, envelope);
+    envelope = NULL;
+
+    while(1) {
+        processSetMessage();
+    }
+}
