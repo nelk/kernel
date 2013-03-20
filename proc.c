@@ -387,5 +387,5 @@ PCB *k_getPCB(ProcInfo *procInfo, uint8_t pid) {
         return NULL;
     }
 
-    return (uint32_t)pcb;
+    return pcb;
 }
