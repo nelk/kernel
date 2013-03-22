@@ -1,18 +1,39 @@
 #include "helpers.h"
 
-uint32_t read_uint32(char *buffer, uint8_t length) {
-    uint32_t number = 0;
-    uint32_t i = 0;
-
-    for(; i < length; ++i) {
-        number *= 10;
-        number += (uint32_t)(buffer[i] - '0');
-    }
-
-    return number;
+uint8_t is_numeric(char c) {
+    return c >= '0' && c <= '9';
 }
 
-uint8_t write_uint32(char *buffer, uint32_t number, uint8_t minDigits) {
+size_t read_uint32(char *buf, size_t bufLen, uint32_t *out) {
+    uint32_t number = 0;
+    size_t i = 0;
+
+    if (buf == NULL) {
+        return 0;
+    }
+
+    for(; i < bufLen; ++i) {
+        number *= 10;
+        number += (uint32_t)(buf[i] - '0');
+    }
+
+    if (out != NULL) {
+        *out = number;
+    }
+
+    return i;
+}
+
+size_t write_uint32(
+    char *buf,
+    size_t bufLen,
+    uint32_t number,
+    uint8_t minDigits
+) {
+    // TODO(sanjay): this function might read better if we make it write
+    // to a stack-allocated byte buffer of length digitsof(uint32_t)+1,
+    // and then call write_string.
+
     uint32_t tempNumber = number;
     uint8_t numDigits = 0;
 
@@ -28,11 +49,15 @@ uint8_t write_uint32(char *buffer, uint32_t number, uint8_t minDigits) {
     if (numDigits < minDigits) {
         numDigits = minDigits;
     }
+    if (numDigits > bufLen) {
+        numDigits = bufLen;
+    }
 
     tempNumber = numDigits;
-
     while (numDigits > 0) {
-        buffer[numDigits-1] = (char)((number % 10)+'0');
+        if (buf != NULL) {
+            buf[numDigits-1] = (char)((number % 10)+'0');
+        }
         number /= 10;
         --numDigits;
     }
@@ -40,22 +65,28 @@ uint8_t write_uint32(char *buffer, uint32_t number, uint8_t minDigits) {
     return (uint8_t)tempNumber;
 }
 
-uint32_t write_string(char *buffer, char *msg, uint8_t maxLength) {
-    uint8_t written = 0;
-    while (*msg != '\0' && maxLength > 0) {
-        *(buffer++) = *(msg++);
-        --maxLength;
+size_t write_string(char *buf, size_t bufLen, char *msg) {
+    size_t written = 0;
+    if (msg == NULL) {
+        return 0;
+    }
+    while (*msg != '\0' && bufLen > 0) {
+        if (buf != NULL) {
+            *(buf++) = *msg;
+        }
+
+        ++msg;
+        --bufLen;
         ++written;
     }
     return written;
 }
 
-uint8_t write_ansi_escape(char *buffer, uint8_t num) {
-    uint8_t idx = 0;
-    buffer[idx++] = '\x1b';
-    buffer[idx++] = '[';
-    idx += write_uint32(buffer+idx, num, 0);
-    buffer[idx++] = 'm';
+size_t write_ansi_escape(char *buf, size_t bufLen, uint8_t num) {
+    size_t idx = 0;
+    idx += write_string(buf+idx, bufLen-idx, "\x1b[");
+    idx += write_uint32(buf+idx, bufLen-idx, num, 0);
+    idx += write_string(buf+idx, bufLen-idx, "m");
     return idx;
 }
 
