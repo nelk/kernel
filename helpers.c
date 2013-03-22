@@ -6,22 +6,27 @@ uint8_t is_numeric(char c) {
 
 size_t read_uint32(char *buf, size_t bufLen, uint32_t *out) {
     uint32_t number = 0;
-    size_t i = 0;
+    size_t read = 0;
 
     if (buf == NULL) {
         return 0;
     }
 
-    for(; i < bufLen; ++i) {
+    while (read < bufLen) {
+        if (!is_numeric(*buf)) {
+            break;
+        }
         number *= 10;
-        number += (uint32_t)(buf[i] - '0');
+        number += (uint32_t)(*buf - '0');
+        read++;
+        buf++;
     }
 
     if (out != NULL) {
         *out = number;
     }
 
-    return i;
+    return read;
 }
 
 size_t write_uint32(
