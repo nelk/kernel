@@ -57,7 +57,7 @@ int8_t bridge_releaseMemoryBlock(void *blk) {
 
     // Otherwise, we unblock the first process blocked on memory
     firstBlocked = pqTop(&(gProcInfo.memq));
-    firstBlocked->state = READY;
+    firstBlocked->state = PS_READY;
     pqRemove(&(gProcInfo.memq), 0);
     pqAdd(&(gProcInfo.prq), firstBlocked);
     

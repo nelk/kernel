@@ -53,8 +53,8 @@ int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, P
     envelope->dstPid = dstPid;
 
     // Unblock receiver
-    if (dstPCB->state == BLOCKED_MESSAGE) {
-        dstPCB->state = READY;
+    if (dstPCB->state == PS_BLOCKED_MESSAGE) {
+        dstPCB->state = PS_READY;
         pqAdd(&(procInfo->prq), dstPCB);
         // Preempt if unblocked process has higher priority - note that receiver is not guaranteed to run
         if (dstPCB->priority < procInfo->currentProcess->priority) {

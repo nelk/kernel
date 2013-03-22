@@ -42,7 +42,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
         uint32_t tempStack = 0;
         process = &(procInfo->processes[i]);
         process->pid = i;
-        process->state = UNUSED;
+        process->state = PS_UNUSED;
         process->mqHead = NULL;
         process->mqTail = NULL;
         process->debugEnv = NULL;
@@ -80,7 +80,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (2 << KERN_PRIORITY_SHIFT) | MAX_PRIORITY;
     procInfo->nullProcess = process;
     process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
-		process->state = NEW;
+		process->state = PS_NEW;
 
     // Clock Process
     process = &(procInfo->processes[CLOCK_PID]); // Push process function address onto stack
@@ -88,7 +88,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (0 << KERN_PRIORITY_SHIFT) | 2;
     pqAdd(&(procInfo->prq), process);
     process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
-		process->state = NEW;
+		process->state = PS_NEW;
 
     // CRT Process
     process = &(procInfo->processes[CRT_PID]); // Push process function address onto stack
@@ -96,7 +96,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (0 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
     process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
-		process->state = NEW;
+		process->state = PS_NEW;
 
     // Keyboard Process
     process = &(procInfo->processes[KEYBOARD_PID]); // Push process function address onto stack
@@ -104,7 +104,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (0 << KERN_PRIORITY_SHIFT) | 1;
     pqAdd(&(procInfo->prq), process);
     process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
-		process->state = NEW;
+		process->state = PS_NEW;
 
     // Fun Process
     process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
@@ -112,7 +112,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 3;
     pqAdd(&(procInfo->prq), process);
     process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
-		process->state = NEW;
+		process->state = PS_NEW;
 
     // Schizo Process
     process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
@@ -120,7 +120,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 3;
     pqAdd(&(procInfo->prq), process);
     process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
-		process->state = NEW;
+		process->state = PS_NEW;
 
     // Fib Process
     process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
@@ -128,7 +128,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 2;
     pqAdd(&(procInfo->prq), process);
     process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
-		process->state = NEW;
+		process->state = PS_NEW;
 
     // Memory muncher Process
     process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
@@ -136,7 +136,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 1;
     pqAdd(&(procInfo->prq), process);
     process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
-		process->state = NEW;
+		process->state = PS_NEW;
 
     // Release Process
     process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
@@ -144,19 +144,15 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
     process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
-		process->state = NEW;
+		process->state = PS_NEW;
 
-    // TODO(shale): remove this assertion.
-    if ((FIRST_USER_PID + pidOffset) >= STRESS_A_PID) {
-            *((int *)-1) = 0;
-    }
     // Stress Process A
     process = &(procInfo->processes[STRESS_A_PID]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) stressAProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
     process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
-    process->state = NEW;
+    process->state = PS_NEW;
 
     // Stress Process B
     process = &(procInfo->processes[STRESS_B_PID]); // Push process function address onto stack
@@ -164,7 +160,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
     process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
-		process->state = NEW;
+		process->state = PS_NEW;
 
     // Stress Process C
     process = &(procInfo->processes[STRESS_C_PID]); // Push process function address onto stack
@@ -172,7 +168,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
     process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
-    process->state = NEW;
+    process->state = PS_NEW;
 
     // Set Priority Process
     process = &(procInfo->processes[SET_PRIORITY_PID]); // Push process function address onto stack
@@ -180,7 +176,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
     process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
-		process->state = NEW;
+		process->state = PS_NEW;
 
     procInfo->currentProcess = NULL;
 
@@ -196,15 +192,15 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
 
 size_t writePCBState(char *buf, size_t bufLen, ProcState state) {
     switch (state) {
-        case BLOCKED_MEMORY:
+        case PS_BLOCKED_MEMORY:
             return write_string(buf, bufLen, "Blocked on memory");
-        case BLOCKED_MESSAGE:
+        case PS_BLOCKED_MESSAGE:
             return write_string(buf, bufLen, "Blocked on message");
-        case NEW:
+        case PS_NEW:
             return write_string(buf, bufLen, "New");
-        case READY:
+        case PS_READY:
             return write_string(buf, bufLen, "Ready");
-        case RUNNING:
+        case PS_RUNNING:
             return write_string(buf, bufLen, "Running");
         default:
             break;
@@ -320,7 +316,7 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
                 PCB *pcb = &(procInfo->processes[i]);
                 
                 // Check if this is an unused process slot
-                if (pcb->state == UNUSED || pcb->debugEnv == NULL) {
+                if (pcb->state == PS_UNUSED || pcb->debugEnv == NULL) {
                     continue;
                 }
                 
@@ -364,7 +360,7 @@ void k_processUartOutput(ProcInfo *procInfo, MemInfo *memInfo) {
     }
 
     // If CRT proc is awake, then give up.
-    if (procInfo->processes[CRT_PID].state == READY) {
+    if (procInfo->processes[CRT_PID].state == PS_READY) {
         return;
     }
 
@@ -396,10 +392,10 @@ void k_processUartOutput(ProcInfo *procInfo, MemInfo *memInfo) {
 
 uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *messageInfo, ClockInfo *clockInfo, ReleaseReason reason) {
     PCB *nextProc = NULL;
-    ProcState oldState = NEW;
+    ProcState oldState = PS_NEW;
 
     // We need to set these three variables depending on the release reason
-    ProcState targetState = READY;
+    ProcState targetState = PS_READY;
     // We pull the next process to execute from the source queue
     PQ *srcQueue = NULL;
     // We push the currently executing process onto this queue
@@ -413,7 +409,7 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
         case OOM:
             srcQueue = &(procInfo->prq);
             dstQueue = &(procInfo->memq);
-            targetState = BLOCKED_MEMORY;
+            targetState = PS_BLOCKED_MEMORY;
             break;
         case YIELD:
         case CHANGED_PRIORITY:
@@ -421,7 +417,7 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
         case MEMORY_FREED:    
             srcQueue = &(procInfo->prq);
             dstQueue = &(procInfo->prq);
-            targetState = READY;
+            targetState = PS_READY;
 
             // If it was the null process that yielded, we don't add it to the ready queue.
             if (procInfo->currentProcess == procInfo->nullProcess) {
@@ -432,11 +428,11 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
             if (procInfo->currentProcess->mqHead == NULL) {
                 srcQueue = &(procInfo->prq);
                 dstQueue = NULL;
-                targetState = BLOCKED_MESSAGE;
+                targetState = PS_BLOCKED_MESSAGE;
             } else {
                 srcQueue = &(procInfo->prq);
                 dstQueue = &(procInfo->prq);
-                targetState = READY;
+                targetState = PS_READY;
             }
             break;
         default:
@@ -460,10 +456,10 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
     }
 
     oldState = nextProc->state;
-    nextProc->state = RUNNING;
+    nextProc->state = PS_RUNNING;
     procInfo->currentProcess = nextProc;
     __set_MSP((uint32_t) nextProc->stack);
-    if (oldState == NEW) {
+    if (oldState == PS_NEW) {
         __rte();
     }
 
@@ -554,7 +550,7 @@ PCB *k_getPCB(ProcInfo *procInfo, uint8_t pid) {
 
     pcb = &(procInfo->processes[pid]);
 
-    if (pcb->state == UNUSED) {
+    if (pcb->state == PS_UNUSED) {
         return NULL;
     }
 
