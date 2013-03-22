@@ -487,10 +487,10 @@ void stressCProcess(void) {
         if (msg->messageType == MESSAGE_TYPE_COUNT_REPORT) {
             // TODO(shale): determine if we want to filter in other locations as well.
 						uint32_t happyNumber = 
-							(msg->messageData[0] << (8*3)) +
-							(msg->messageData[1] << (8*2)) +
-							(msg->messageData[2] << (8*1)) +
-							(msg->messageData[3] << (8*0));
+							(((uint32_t) msg->messageData[0]) << (8*3)) +
+							(((uint32_t) msg->messageData[1]) << (8*2)) +
+							(((uint32_t) msg->messageData[2]) << (8*1)) +
+							(((uint32_t) msg->messageData[3]) << (8*0));
 
             if (happyNumber % 20 == 0) {
 								uint8_t i = 0;
