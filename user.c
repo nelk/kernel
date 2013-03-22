@@ -17,35 +17,36 @@ struct msgQueue {
     msgQueue *next;
 };
 
-void sleep(uint32_t ms) {
-    msgQueue *head = NULL;
-    msgQueue *tail = NULL;
+void sleep(uint32_t ms, Envelope ** listEnv) {
+    Envelope *envIter = NULL;
 
     Envelope* env = (Envelope *)request_memory_block();
     env->dstPid = pid();
     env->messageType = MESSAGE_TYPE_SLEEP;
     delayed_send(pid(), env, ms);
 
+    if (listEnv != NULL) {
+        envIter = *listEnv
+    }
+
 
     env = receive_message(NULL);
-    while(env->messageType != MESSAGE_TYPE_SLEEP) {
-        msgQueue *newTail = (msgQueue *)request_memory_block();
-        newTail->next = NULL;
-        newTail->value = env;
-        if (tail == NULL) {
-            tail = newTail;
-            head = newTail;
-        } else {
-            tail->next = newTail;
-            tail = newTail;
+
+    if (listEnv != NULL) {
+        // Deal with the local queue in here.
+        while(env->messageType != MESSAGE_TYPE_SLEEP) {
+            envIter->next = env;
+            envIter = env;
+            envIter->next = NULL;
+            env = receive_message(NULL);
         }
-        env = receive_message(NULL);
-    }
-    // TODO(shale): We lose the senders of these messages.
-    while (head != NULL) {
-        send_message(pid(), head->value);
-        head->value = NULL;
-        head = head->next;
+        envIter = *listEnv;
+        while (envIter != NULL) {
+            // TODO(shale): We lose the senders of these messages.
+            Envelope *temp = envIter;
+            send_message(pid(), envIter);
+            envIter = temp->next;
+        }
     }
     release_memory_block((void*)env);
 }
