@@ -448,10 +448,10 @@ void stressAProcess(void) {
         env->messageType = MESSAGE_TYPE_COUNT_REPORT;
 				
 				num++;
-				env->messageData[0] = (num & 0xFF000000) >> 6;
-				env->messageData[1] = (num & 0x00FF0000) >> 4;
-				env->messageData[2] = (num & 0x0000FF00) >> 2;
-				env->messageData[3] = (num & 0x000000FF) >> 0;
+				env->messageData[0] = (uint8_t)(num >> (8 * 3));
+				env->messageData[1] = (uint8_t)(num >> (8 * 2));
+				env->messageData[2] = (uint8_t)(num >> (8 * 1));
+				env->messageData[3] = (uint8_t)(num >> (8 * 0));
 			
         send_message(STRESS_B_PID, env);
 				env = NULL;
@@ -487,10 +487,10 @@ void stressCProcess(void) {
         if (msg->messageType == MESSAGE_TYPE_COUNT_REPORT) {
             // TODO(shale): determine if we want to filter in other locations as well.
 						uint32_t happyNumber = 
-							(msg->messageData[0] << 6) +
-							(msg->messageData[1] << 4) +
-							(msg->messageData[2] << 2) +
-							(msg->messageData[3] << 0);
+							(msg->messageData[0] << (8*3)) +
+							(msg->messageData[1] << (8*2)) +
+							(msg->messageData[2] << (8*1)) +
+							(msg->messageData[3] << (8*0));
 
             if (happyNumber % 20 == 0) {
 								uint8_t i = 0;
