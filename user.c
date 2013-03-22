@@ -39,6 +39,7 @@ void sleep(uint32_t ms) {
             tail->next = newTail;
             tail = newTail;
         }
+        env = receive_message(NULL);
     }
     // TODO(shale): We lose the senders of these messages.
     while (head != NULL) {
