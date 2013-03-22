@@ -476,13 +476,9 @@ void stressBProcess(void) {
 void stressCProcess(void) {
     Envelope *msg = NULL;
     while (1) {
-        if (queue == NULL) {
-            msg = receive_message(NULL);
-        } else {
-            msg = queue->value;
-            queue->value = NULL;
-            queue = queue->next;
-        }
+        // NOTE(shale): we deviate from the spec here. We do the message queing
+        // inside the sleep function, not here.
+        msg = receive_message(NULL);
         if (msg->messageType == MESSAGE_TYPE_COUNT_REPORT) {
             // TODO(shale): determine if we want to filter in other locations as well.
             if (msg->messageData[0] % 20 == 0) {
