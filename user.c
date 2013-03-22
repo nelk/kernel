@@ -11,15 +11,15 @@
 #define MESSAGE_TYPE_COUNT_REPORT (1)
 #define MESSAGE_TYPE_SLEEP (MESSAGE_TYPE_COUNT_REPORT+1)
 
-typedef struct msgQue msgQue;
-struct msgQue {
+typedef struct msgQueue msgQueue;
+struct msgQueue {
     Envelope *value;
-    msgQue *next;
+    msgQueue *next;
 };
 
 void sleep(uint32_t ms) {
-    msgQue *head = NULL;
-    msgQue *tail = NULL;
+    msgQueue *head = NULL;
+    msgQueue *tail = NULL;
 
     Envelope* env = (Envelope *)request_memory_block();
     env->dstPid = pid();
@@ -29,7 +29,7 @@ void sleep(uint32_t ms) {
 
     env = receive_message(NULL);
     while(env->messageType != MESSAGE_TYPE_SLEEP) {
-        msgQue *newTail = (msgQue *)request_memory_block();
+        msgQueue *newTail = (msgQueue *)request_memory_block();
         newTail->next = NULL;
         newTail->value = env;
         if (tail == NULL) {
