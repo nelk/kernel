@@ -230,17 +230,18 @@ void initClockCommand(ClockCmd *command) {
 uint8_t parseTime(char *message, int32_t *offset) {
     uint32_t field = 0;
     uint32_t requestedTime = 0;
+    size_t n = 0;
+
+    // TODO(sanjay): consider writing parseTime in the same style as all the
+    // string handling APIs for consistency. That is to say:
+    // size_t read_time(char *buf, size_t bufLen, uint32_t *time)
 
     // Check for any invalid characters.
     if (message[0] != '%' ||
             message[1] != 'W' ||
             message[2] != 'S' ||
             message[3] != ' ' ||
-            message[4] < '0' || message[4] > '9' ||
-            message[5] < '0' || message[5] > '9' ||
             message[6] != ':' ||
-            message[7] < '0' || message[7] > '9' ||
-            message[8] < '0' || message[8] > '9' ||
             message[9] != ':' ||
             message[10] < '0' || message[10] > '9' ||
             message[11] < '0' || message[11] > '9') {
@@ -248,27 +249,24 @@ uint8_t parseTime(char *message, int32_t *offset) {
     }
 
     // Read hours field.
-    field = read_uint32(message+4, 2);
-
-    if (field > 23) {
+    n = read_uint32(message+4, 2, &field);
+    if (field > 23 || n < 2) {
         return EINVAL;
     }
 
     requestedTime += (field * SECONDS_IN_HOUR * MILLISECONDS_IN_SECOND);
 
     // Read minutes field.
-    field = read_uint32(message+7, 2);
-
-    if (field > 59) {
+    n = read_uint32(message+7, 2, &field);
+    if (field > 59 || n < 2) {
         return EINVAL;
     }
 
     requestedTime += (field * SECONDS_IN_MINUTE * MILLISECONDS_IN_SECOND);
 
     // Read seconds field.
-    field = read_uint32(message+10, 2);
-
-    if (field > 59) {
+    n = read_uint32(message+10, 2, &field);
+    if (field > 59 || n < 2) {
         return EINVAL;
     }
 
