@@ -399,3 +399,25 @@ void clockProcess(void) {
         }
     }
 }
+
+void stressAProcess(void) {
+
+}
+
+void stressBProcess(void) {
+    Envelope *envelope = NULL;
+    while (1) {
+        // TODO(shale): determine how to get pids.
+        envelope = receive_message(NULL);
+        if (envelope->srcPid == STRESS_A_PID) {
+            send_message(STRESS_C_PID, envelope);
+        } else {
+            release_memory_block((void *) envelope);
+        }
+    }
+}
+
+void stressCProcess(void) {
+
+}
+
