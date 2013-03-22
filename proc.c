@@ -122,6 +122,26 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
 
+    // TODO(shale): Assert these pids match the spec.
+
+    // Stress Process A
+    process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
+    *(process->startLoc) = ((uint32_t) stressAProcess);
+    process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
+    pqAdd(&(procInfo->prq), process);
+
+    // Stress Process B
+    process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
+    *(process->startLoc) = ((uint32_t) stressBProcess);
+    process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
+    pqAdd(&(procInfo->prq), process);
+
+    // Stress Process C
+    process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
+    *(process->startLoc) = ((uint32_t) stressCProcess);
+    process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
+    pqAdd(&(procInfo->prq), process);
+
     procInfo->currentProcess = NULL;
 
     // Init UART keyboard global output data
