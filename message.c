@@ -35,7 +35,8 @@ int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, P
 		status = k_changeOwner(memInfo, (uint32_t)envelope, srcPid, PROC_ID_KERNEL);
 	
     // Set to new owner (and check if valid)
-    if (status != SUCCESS) { // TODO (alex) - should we be using SUCCESS here? Maybe have global return codes like SUCCESS that's not just for memory?
+    // TODO (alex) - should we be using SUCCESS here? Maybe have global return codes like SUCCESS that's not just for memory?
+    if (status != SUCCESS) { 
         return status;
     }
 
