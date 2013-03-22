@@ -11,12 +11,6 @@
 #define MESSAGE_TYPE_COUNT_REPORT (1)
 #define MESSAGE_TYPE_SLEEP (MESSAGE_TYPE_COUNT_REPORT+1)
 
-typedef struct msgQueue msgQueue;
-struct msgQueue {
-    Envelope *value;
-    msgQueue *next;
-};
-
 void sleep(uint32_t ms, Envelope ** listEnv) {
     Envelope *envIter = NULL;
 
