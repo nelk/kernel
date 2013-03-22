@@ -26,26 +26,23 @@ void sleep(uint32_t ms, Envelope ** listEnv) {
     delayed_send(pid(), env, ms);
 
     if (listEnv != NULL) {
-        envIter = *listEnv
+        envIter = *listEnv;
+        // Pass in the same queue without dropping entries/dealing with issues.
+        while (envIter != NULL) {
+            envIter = envIter->next;
+        }
     }
 
 
     env = receive_message(NULL);
 
     if (listEnv != NULL) {
-        // Deal with the local queue in here.
+        // Build the queue in here.
         while(env->messageType != MESSAGE_TYPE_SLEEP) {
             envIter->next = env;
             envIter = env;
             envIter->next = NULL;
             env = receive_message(NULL);
-        }
-        envIter = *listEnv;
-        while (envIter != NULL) {
-            // TODO(shale): We lose the senders of these messages.
-            Envelope *temp = envIter;
-            send_message(pid(), envIter);
-            envIter = temp->next;
         }
     }
     release_memory_block((void*)env);
@@ -86,7 +83,7 @@ void funProcess(void) {
             send_message(CRT_PID, envelope);
             envelope = NULL;
         }
-        sleep(3000);
+        sleep(3000, NULL);
     }
 }
 
@@ -104,7 +101,7 @@ void schizophrenicProcess(void) {
             send_message(CRT_PID, envelope);
             envelope = NULL;
         }
-        sleep(4000);
+        sleep(4000, NULL);
     }
 }
 
@@ -137,7 +134,7 @@ void fibProcess(void) {
             envelope = NULL;
 
             if (idx % 5 == 0) {
-                sleep(1000);
+                sleep(1000, NULL);
             }
         }
     }
@@ -474,10 +471,16 @@ void stressBProcess(void) {
 
 void stressCProcess(void) {
     Envelope *msg = NULL;
+    Envelope *msgQueue = NULL;
     while (1) {
         // NOTE(shale): we deviate from the spec here. We deal with the msgQueue
         // inside the sleep function, not here.
-        msg = receive_message(NULL);
+        if (msgQueue != NULL) {
+            msg = msgQueue;
+            msgQueue = msgQueue->next;
+        } else {
+            msg = receive_message(NULL);
+        }
         if (msg->messageType == MESSAGE_TYPE_COUNT_REPORT) {
             // TODO(shale): determine if we want to filter in other locations as well.
             if (msg->messageData[0] % 20 == 0) {
@@ -493,7 +496,7 @@ void stressCProcess(void) {
                 send_message(CRT_PID, envelope);
                 envelope = NULL;
 
-                sleep(10 * 1000);
+                sleep(10 * 1000, &msgQueue);
             }
         }
         release_memory_block((void *)msg);
