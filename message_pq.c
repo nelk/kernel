@@ -24,7 +24,7 @@ uint32_t mpqNextSeq(MessagePQ *q) {
     return nextSeq;
 }
 
-Envelope* mpqTop(MessagePQ *q) {
+Envelope *mpqTop(MessagePQ *q) {
     if (q->size == 0) {
         return NULL;
     }

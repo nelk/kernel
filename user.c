@@ -10,7 +10,7 @@
 void sleep(uint32_t ms) {
     // TODO(alex): make this more robust by forwarding non-sleep messages to ourselves on a delay
 
-    Envelope* env = (Envelope *)request_memory_block();
+    Envelope *env = (Envelope *)request_memory_block();
     delayed_send(pid(), env, ms);
     env = receive_message(NULL);
     release_memory_block((void*)env);
