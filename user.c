@@ -400,14 +400,41 @@ void clockProcess(void) {
     }
 }
 
-void stressAProcess(void) {
 
+// TODO(shale): extract/enumify?
+#define MESSAGE_TYPE_COUNT_REPORT (1)
+
+
+void stressAProcess(void) {
+    Envelope *env = request_memory_block();
+    uint32_t num = 0;
+
+    // TODO(shale): coagulate this with definitions.
+    env = (Envelope *)request_memory_block();
+    env->dstPid = KEYBOARD_PID;
+    env->messageData[0] = 'Z';
+    send_message(KEYBOARD_PID, env);
+    env = NULL;
+
+    //TODO(shale): their pseudocode says to loop until we receive a message from
+    //             the keyboard command, but here we assume we only receive from
+    //             the keyboard command. Verify assumption is reasonable once
+    //             done creating the stress tests.
+    env = receive_message(NULL);
+
+    while (1) {
+        env = (Envelope *)request_memory_block();
+        env->messageType = TYPE_COUNT_REPORT;
+        env->messageData[0] = ++num;
+        send_message(STRESS_B_PID, env);
+        release_processor();
+    }
 }
 
 void stressBProcess(void) {
     Envelope *envelope = NULL;
     while (1) {
-        // TODO(shale): determine how to get pids.
+        // TODO(shale): get pids & insert into the process.
         envelope = receive_message(NULL);
         if (envelope->srcPid == STRESS_A_PID) {
             send_message(STRESS_C_PID, envelope);
