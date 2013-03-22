@@ -12,11 +12,7 @@ struct FreeBlock {
 };
 
 uint32_t k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid);
-int8_t k_releaseMemoryBlock(
-    MemInfo *memInfo,
-    uint32_t addr,
-    ProcId oid
-);
+int8_t k_releaseMemoryBlock(MemInfo *memInfo, uint32_t addr, ProcId oid);
 
 // Changes owner of addr from fromOid to toOid. Validates addr.
 int8_t k_changeOwner(

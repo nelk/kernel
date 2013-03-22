@@ -44,6 +44,7 @@ ProcId *k_findOwnerSlot(MemInfo *memInfo, uint32_t addr) {
 // Assumes addr is owned by this memInfo, hence unsafe.
 uint8_t k_isOwnerUnsafe(MemInfo *memInfo, uint32_t addr, ProcId oid) {
     if (!(memInfo->trackOwners)) {
+        // TODO: constantify
         return 1;
     }
     return (*k_findOwnerSlot(memInfo, addr) == oid);
@@ -94,7 +95,7 @@ uint32_t k_getAlignedEndAddress(uint32_t end, uint32_t blockSizeBytes) {
 
 // Only for use during initialization. Extracted for testing purposes.
 // Note that blockSizeBytes must be greater than or equal to
-// sizeof(FreeBlock), or else madness will ensue.
+// sizeof(FreeBlock), or madness will ensue.
 void k_memInfoInit(
         MemInfo *memInfo,
         uint32_t startAddr,
@@ -125,10 +126,10 @@ void k_memInfoInit(
 // passed in owner id (oid).
 uint32_t k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
     FreeBlock *curFirstFree = NULL;
-    uint32_t ret = 0;
-    ProcId *header = NULL;
     uint8_t didAllocateHeader = 0;
+    ProcId *header = NULL;
     uint32_t memOffset = 0;
+    uint32_t ret = 0;
 
     // Try free list, first
     if (memInfo->firstFree != NULL) {
