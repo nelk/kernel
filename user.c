@@ -7,12 +7,47 @@
 
 // User Land
 
+// TODO(shale): extract/enumify?
+#define MESSAGE_TYPE_COUNT_REPORT (1)
+#define MESSAGE_TYPE_SLEEP (MESSAGE_TYPE_COUNT_REPORT+1)
+
+typedef struct msgQue msgQue;
+struct msgQue {
+    Envelope *value;
+    msgQue *next;
+};
+
 void sleep(uint32_t ms) {
-    // TODO(alex): make this more robust by forwarding non-sleep messages to ourselves on a delay
+    msgQue *head = NULL;
+    msgQue *tail = NULL;
 
     Envelope* env = (Envelope *)request_memory_block();
+    env->dstPid = pid();
+    env->messageType = MESSAGE_TYPE_SLEEP;
     delayed_send(pid(), env, ms);
-    env = receive_message(NULL);
+    env = NULL;
+    while(1) {
+        env = receive_message(NULL);
+        if (env->messageType != MESSAGE_TYPE_SLEEP) {
+            msgQue *newTail = (msgQue *)request_memory_block();
+            newTail->next = NULL;
+            newTail->value = env;
+            if (tail == NULL) {
+                tail = newTail;
+                head = newTail;
+            } else {
+                tail->next = newTail;
+                tail = newTail;
+            }
+        } else {
+            // TODO(shale): We lose the senders of these messages.
+            while (head != NULL) {
+                send_message(pid(), head->value);
+                head->value = NULL;
+                head = head->next;
+            }
+        }
+    }
     release_memory_block((void*)env);
 }
 
@@ -401,10 +436,6 @@ void clockProcess(void) {
 }
 
 
-// TODO(shale): extract/enumify?
-#define MESSAGE_TYPE_COUNT_REPORT (1)
-#define MESSAGE_TYPE_WAKEUP_TEN (MESSAGE_TYPE_COUNT_REPORT+1)
-
 void stressAProcess(void) {
     Envelope *env = request_memory_block();
     uint32_t num = 0;
@@ -444,14 +475,7 @@ void stressBProcess(void) {
     }
 }
 
-typedef struct msgQue msgQue;
-struct msgQue {
-    Envelope *value;
-    msgQue *next;
-};
-
 void stressCProcess(void) {
-    msgQue *queue = NULL;
     Envelope *msg = NULL;
     while (1) {
         if (queue == NULL) {
@@ -478,7 +502,7 @@ void stressCProcess(void) {
                 send_message(CRT_PID, envelope);
                 envelope = NULL;
 
-                // TODO(shale): call delay
+                sleep(10 * 1000);
             }
         }
         release_memory_block((void *)msg);
