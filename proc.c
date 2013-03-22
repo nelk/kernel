@@ -151,6 +151,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     procInfo->uartOutputEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
 
     // Init UART keyboard global input data
+    procInfo->prDbg = 0;
     procInfo->readIndex = 0;
     procInfo->writeIndex = 0;
     procInfo->inputBufOverflow = 0;
@@ -195,6 +196,9 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
         if (procInfo->currentEnvIndex == 0) {
             switch (new_char) {
                 case SHOW_DEBUG_PROCESSES:
+                    if (procInfo->prDbg == 1) {
+                        continue;
+                    }
                     k_sendMessage(memInfo, procInfo, procInfo->currentEnv, KEYBOARD_PID, KEYBOARD_PID);
                     procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
                     procInfo->currentEnvIndex = 0;

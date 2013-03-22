@@ -116,6 +116,7 @@ struct ProcInfo {
 
     // UART keyboard input data
     char inputBuf[UART_IN_BUF_SIZE];
+    uint8_t prDbg;
     volatile uint32_t readIndex; // Next read index
     volatile uint32_t writeIndex; // Next write index
     volatile uint32_t inputBufOverflow;

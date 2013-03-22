@@ -261,7 +261,7 @@ send_char:
             if (head == NULL) {
                 tail = NULL;
             }
-            release_memory_block((void*)temp);
+            release_memory_block((void *)temp);
             goto send_char;
         }
 
@@ -344,8 +344,19 @@ void uart_keyboard_proc(void) {
         } else if (message->messageData[0] == SHOW_DEBUG_PROCESSES) {
             Envelope *tempEnvelope = NULL;
             uint8_t i = 0;
+            gProcInfo.prDbg = 1;
 
-            for (; i < NUM_PROCS; i++) {
+            i += write_ansi_escape(message->messageData+i, 41);
+            i += write_string(message->messageData+i, "used mem = ", 11);
+            i += write_uint32(message->messageData+i, (gMemInfo.numSuccessfulAllocs-gMemInfo.numFreeCalls)*128, 2);
+            i += write_string(message->messageData+i, " bytes", 6);
+            i += write_ansi_escape(message->messageData+i, 0);
+            i += write_string(message->messageData+i, "\r\n", 2);
+            message->messageData[i++] = '\0';
+            send_message(CRT_PID, message);
+            message = NULL;
+
+            for (i = 0; i < NUM_PROCS; i++) {
                 uint32_t location = 0;
                 PCB *pcb = &(gProcInfo.processes[i]);
 
@@ -360,17 +371,8 @@ void uart_keyboard_proc(void) {
                 send_message(CRT_PID, tempEnvelope);
                 tempEnvelope = NULL;
             }
+            gProcInfo.prDbg = 0;
 
-            i = 0;
-            i += write_ansi_escape(message->messageData+i, 41);
-            i += write_string(message->messageData+i, "used mem = ", 11);
-            i += write_uint32(message->messageData+i, (gMemInfo.numSuccessfulAllocs-gMemInfo.numFreeCalls)*128, 2);
-            i += write_string(message->messageData+i, " bytes", 6);
-            i += write_ansi_escape(message->messageData+i, 0);
-            i += write_string(message->messageData+i, "\r\n", 2);
-            message->messageData[i++] = '\0';
-            send_message(CRT_PID, message);
-            message = NULL;
             continue;
         }
 
