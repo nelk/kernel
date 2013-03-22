@@ -25,28 +25,26 @@ void sleep(uint32_t ms) {
     env->dstPid = pid();
     env->messageType = MESSAGE_TYPE_SLEEP;
     delayed_send(pid(), env, ms);
-    env = NULL;
-    while(1) {
-        env = receive_message(NULL);
-        if (env->messageType != MESSAGE_TYPE_SLEEP) {
-            msgQue *newTail = (msgQue *)request_memory_block();
-            newTail->next = NULL;
-            newTail->value = env;
-            if (tail == NULL) {
-                tail = newTail;
-                head = newTail;
-            } else {
-                tail->next = newTail;
-                tail = newTail;
-            }
+
+
+    env = receive_message(NULL);
+    while(env->messageType != MESSAGE_TYPE_SLEEP) {
+        msgQue *newTail = (msgQue *)request_memory_block();
+        newTail->next = NULL;
+        newTail->value = env;
+        if (tail == NULL) {
+            tail = newTail;
+            head = newTail;
         } else {
-            // TODO(shale): We lose the senders of these messages.
-            while (head != NULL) {
-                send_message(pid(), head->value);
-                head->value = NULL;
-                head = head->next;
-            }
+            tail->next = newTail;
+            tail = newTail;
         }
+    }
+    // TODO(shale): We lose the senders of these messages.
+    while (head != NULL) {
+        send_message(pid(), head->value);
+        head->value = NULL;
+        head = head->next;
     }
     release_memory_block((void*)env);
 }
@@ -485,15 +483,13 @@ void stressCProcess(void) {
             queue->value = NULL;
             queue = queue->next;
         }
-        if (msg->type == MESSAGE_TYPE_COUNT_REPORT) {
+        if (msg->messageType == MESSAGE_TYPE_COUNT_REPORT) {
             // TODO(shale): determine if we want to filter in other locations as well.
             if (msg->messageData[0] % 20 == 0) {
                 // NOTE(shale): We deviate from the spec here. I'm allocating a
                 // new envelope so I don't need to do dealloc in a few places
                 Envelope *envelope = (Envelope *)request_memory_block();
                 uint8_t i = 0;
-
-                envelope->messageData = {0};
 
                 i += write_string(envelope->messageData+i, "Stress C Process ", 17);
                 i += write_uint32(envelope->messageData+i, msg->messageData[0], 32);
