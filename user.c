@@ -21,7 +21,6 @@ void sleep(uint32_t ms, Envelope ** listEnv) {
     Envelope *envIter = NULL;
 
     Envelope* env = (Envelope *)request_memory_block();
-    env->dstPid = pid();
     env->messageType = MESSAGE_TYPE_SLEEP;
     delayed_send(pid(), env, ms);
 
