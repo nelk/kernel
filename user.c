@@ -403,7 +403,7 @@ void clockProcess(void) {
 
 // TODO(shale): extract/enumify?
 #define MESSAGE_TYPE_COUNT_REPORT (1)
-
+#define MESSAGE_TYPE_WAKEUP_TEN (MESSAGE_TYPE_COUNT_REPORT+1)
 
 void stressAProcess(void) {
     Envelope *env = request_memory_block();
@@ -424,7 +424,7 @@ void stressAProcess(void) {
 
     while (1) {
         env = (Envelope *)request_memory_block();
-        env->messageType = TYPE_COUNT_REPORT;
+        env->messageType = MESSAGE_TYPE_COUNT_REPORT;
         env->messageData[0] = ++num;
         send_message(STRESS_B_PID, env);
         release_processor();
@@ -444,7 +444,45 @@ void stressBProcess(void) {
     }
 }
 
+typedef struct msgQue msgQue;
+struct msgQue {
+    Envelope *value;
+    msgQue *next;
+};
+
 void stressCProcess(void) {
+    msgQue *queue = NULL;
+    Envelope *msg = NULL;
+    while (1) {
+        if (queue == NULL) {
+            msg = receive_message(NULL);
+        } else {
+            msg = queue->value;
+            queue->value = NULL;
+            queue = queue->next;
+        }
+        if (msg->type == MESSAGE_TYPE_COUNT_REPORT) {
+            // TODO(shale): determine if we want to filter in other locations as well.
+            if (msg->messageData[0] %20 == 0) {
+                // NOTE(shale): We deviate from the spec here. I'm allocating a
+                // new envelope so I don't need to do dealloc in a few places
+                Envelope *envelope = (Envelope *)request_memory_block();
+                uint8_t i = 0;
 
+                envelope->messageData = {0};
+
+                i += write_string(envelope->messageData+i, "Stress C Process ", 17);
+                i += write_uint32(envelope->messageData+i, msg->messageData[0], 32);
+                i += write_string(envelope->messageData+i, "\r\n", 2);
+                envelope->messageData[i++] = '\0';
+                send_message(CRT_PID, envelope);
+                envelope = NULL;
+
+                // TODO(shale): call delay
+            }
+        }
+        release_memory_block((void *)msg);
+        msg = NULL;
+        release_processor();
+    }
 }
-
