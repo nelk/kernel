@@ -474,7 +474,7 @@ void stressBProcess(void) {
 void stressCProcess(void) {
     Envelope *msg = NULL;
     while (1) {
-        // NOTE(shale): we deviate from the spec here. We do the message queing
+        // NOTE(shale): we deviate from the spec here. We deal with the msgQueue
         // inside the sleep function, not here.
         msg = receive_message(NULL);
         if (msg->messageType == MESSAGE_TYPE_COUNT_REPORT) {
