@@ -27,6 +27,13 @@ size_t read_uint32(char *buf, size_t bufLen, uint32_t *out) {
     }
 
     return read;
+
+    // BUG(sanjay): this implementation allows overflow of a uint32.
+    // read_uint32("5000000000", 96, ptr) will return 10, and set ptr
+    // to 705032705 (this is hardware dependant). It should return 9,
+    // and set ptr to 500000000. On the other hand,
+    // read_uint32("4294967295", 96, ptr) should return 10, and set ptr to
+    // UINT_MAX, so we cannot just stop at 9 bytes.
 }
 
 size_t write_uint32(
