@@ -323,6 +323,10 @@ uint32_t k_setProcessPriority(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo 
 
     modifiedProcess = k_getPCB(procInfo, pid);
 
+    if (modifiedProcess == NULL) {
+        return EINVAL;
+    }
+
     // We don't allow changing the priority of the null process
     if (modifiedProcess == procInfo->nullProcess) {
         return EINVAL;
