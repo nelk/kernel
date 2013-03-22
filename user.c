@@ -470,6 +470,7 @@ void stressBProcess(void) {
         } else {
             release_memory_block((void *) envelope);
         }
+        envelope = NULL;
     }
 }
 
@@ -487,7 +488,7 @@ void stressCProcess(void) {
                 Envelope *envelope = (Envelope *)request_memory_block();
                 uint8_t i = 0;
 
-                i += write_string(envelope->messageData+i, "Stress C Process ", 17);
+                i += write_string(envelope->messageData+i, "Stress C Process: ", 18);
                 i += write_uint32(envelope->messageData+i, msg->messageData[0], 32);
                 i += write_string(envelope->messageData+i, "\r\n", 2);
                 envelope->messageData[i++] = '\0';
