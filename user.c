@@ -414,7 +414,6 @@ void clockProcess(void) {
     initClockCommand(&command);
 
     envelope = (Envelope *)request_memory_block();
-    envelope->dstPid = KEYBOARD_PID;
     envelope->messageData[0] = 'w';
     // TODO (alex) - make message type matter
     send_message(KEYBOARD_PID, envelope);
@@ -436,12 +435,9 @@ void clockProcess(void) {
 
 
 void stressAProcess(void) {
-    Envelope *env = request_memory_block();
+    Envelope *env = (Envelope *)request_memory_block();
     uint32_t num = 0;
 
-    // TODO(shale): coagulate this with definitions.
-    env = (Envelope *)request_memory_block();
-    env->dstPid = KEYBOARD_PID;
     env->messageData[0] = 'Z';
     send_message(KEYBOARD_PID, env);
     env = NULL;
