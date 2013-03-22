@@ -487,7 +487,7 @@ void stressCProcess(void) {
         }
         if (msg->type == MESSAGE_TYPE_COUNT_REPORT) {
             // TODO(shale): determine if we want to filter in other locations as well.
-            if (msg->messageData[0] %20 == 0) {
+            if (msg->messageData[0] % 20 == 0) {
                 // NOTE(shale): We deviate from the spec here. I'm allocating a
                 // new envelope so I don't need to do dealloc in a few places
                 Envelope *envelope = (Envelope *)request_memory_block();
