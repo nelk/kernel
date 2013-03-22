@@ -32,7 +32,9 @@ void sleep(uint32_t ms, Envelope ** listEnv) {
     if (listEnv != NULL) {
         // Build the queue in here.
         while(env->messageType != MESSAGE_TYPE_SLEEP) {
-            envIter->next = env;
+						if (envIter != NULL) {
+							envIter->next = env;
+						}
             envIter = env;
             envIter->next = NULL;
             env = receive_message(NULL);
@@ -438,12 +440,21 @@ void stressAProcess(void) {
     //             the keyboard command. Verify assumption is reasonable once
     //             done creating the stress tests.
     env = receive_message(NULL);
-
+		release_memory_block(env);
+		env = NULL;
+	
     while (1) {
         env = (Envelope *)request_memory_block();
         env->messageType = MESSAGE_TYPE_COUNT_REPORT;
-        env->messageData[0] = ++num;
+				
+				num++;
+				env->messageData[0] = (num & 0xFF000000) >> 6;
+				env->messageData[1] = (num & 0x00FF0000) >> 4;
+				env->messageData[2] = (num & 0x0000FF00) >> 2;
+				env->messageData[3] = (num & 0x000000FF) >> 0;
+			
         send_message(STRESS_B_PID, env);
+				env = NULL;
         release_processor();
     }
 }
@@ -451,7 +462,6 @@ void stressAProcess(void) {
 void stressBProcess(void) {
     Envelope *envelope = NULL;
     while (1) {
-        // TODO(shale): get pids & insert into the process.
         envelope = receive_message(NULL);
         if (envelope->srcPid == STRESS_A_PID) {
             send_message(STRESS_C_PID, envelope);
@@ -476,24 +486,28 @@ void stressCProcess(void) {
         }
         if (msg->messageType == MESSAGE_TYPE_COUNT_REPORT) {
             // TODO(shale): determine if we want to filter in other locations as well.
-            if (msg->messageData[0] % 20 == 0) {
-                // NOTE(shale): We deviate from the spec here. I'm allocating a
-                // new envelope so I don't need to do dealloc in a few places
-                Envelope *envelope = (Envelope *)request_memory_block();
-                uint8_t i = 0;
+						uint32_t happyNumber = 
+							(msg->messageData[0] << 6) +
+							(msg->messageData[1] << 4) +
+							(msg->messageData[2] << 2) +
+							(msg->messageData[3] << 0);
 
-                i += write_string(envelope->messageData+i, "Stress C Process: ", 18);
-                i += write_uint32(envelope->messageData+i, msg->messageData[0], 32);
-                i += write_string(envelope->messageData+i, "\r\n", 2);
-                envelope->messageData[i++] = '\0';
-                send_message(CRT_PID, envelope);
-                envelope = NULL;
+            if (happyNumber % 20 == 0) {
+								uint8_t i = 0;
+                i += write_string(msg->messageData+i, "C Proc: ", 8);
+                i += write_uint32(msg->messageData+i, happyNumber, 0);
+                i += write_string(msg->messageData+i, "\r\n", 2);
+                msg->messageData[i++] = '\0';
+                send_message(CRT_PID, msg);
+                msg = NULL;
 
                 sleep(10 * 1000, &msgQueue);
             }
         }
-        release_memory_block((void *)msg);
-        msg = NULL;
+				if (msg != NULL) {
+				    release_memory_block((void *)msg);
+				    msg = NULL;
+				}
         release_processor();
     }
 }

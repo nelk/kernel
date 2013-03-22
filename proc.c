@@ -122,22 +122,24 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
 
-    // TODO(shale): Assert these pids match the spec.
-
+    // TODO(shale): remove this assertion.
+		if ((FIRST_USER_PID + pidOffset) >= STRESS_A_PID) {
+				*((int *)-1) = 0;
+		}
     // Stress Process A
-    process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
+    process = &(procInfo->processes[STRESS_A_PID]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) stressAProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
 
     // Stress Process B
-    process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
+    process = &(procInfo->processes[STRESS_B_PID]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) stressBProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
 
     // Stress Process C
-    process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
+    process = &(procInfo->processes[STRESS_C_PID]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) stressCProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
