@@ -1,5 +1,6 @@
 #include <stddef.h>
 
+#include "helpers.h"
 #include "mem.h"
 
 
@@ -139,6 +140,7 @@ uint32_t k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
         // It's on free list, we can assume it's a legitimate address
         k_setOwnerUnsafe(memInfo, ret, oid);
         ++(memInfo->numSuccessfulAllocs);
+        memset((uint8_t *)ret, memInfo->blockSizeBytes, 0);
         return ret;
     }
 
@@ -159,12 +161,8 @@ uint32_t k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
     }
 
     if (didAllocateHeader) {
+        memset(header, memInfo->blockSizeBytes, PROC_ID_NONE);
         *header = PROC_ID_ALLOCATOR;
-        ++header;
-        while (header < (ProcId *)memInfo->nextAvailableAddress) {
-            *header = PROC_ID_NONE;
-            ++header;
-        }
     }
 
     ++(memInfo->numSuccessfulAllocs);
@@ -172,6 +170,7 @@ uint32_t k_acquireMemoryBlock(MemInfo *memInfo, ProcId oid) {
     ret = memInfo->nextAvailableAddress;
     k_setOwnerUnsafe(memInfo, ret, oid);
     memInfo->nextAvailableAddress += memInfo->blockSizeBytes;
+    memset((uint8_t *)ret, memInfo->blockSizeBytes, 0);
 
     return ret;
 }

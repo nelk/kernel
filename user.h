@@ -9,5 +9,10 @@ void memoryMuncherProcess(void);
 void releaseProcess(void);
 void clockProcess(void);
 
+
+void stressAProcess(void);
+void stressBProcess(void);
+void stressCProcess(void);
+
 #endif
 
