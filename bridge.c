@@ -50,19 +50,22 @@ int8_t bridge_releaseMemoryBlock(void *blk) {
         return status;
     }
 
+    // If there is nothing blocked on memory, then we're done.
     if (gProcInfo.memq.size == 0) {
         return SUCCESS;
     }
 
+    // Otherwise, we unblock the first process blocked on memory
     firstBlocked = pqTop(&(gProcInfo.memq));
-    if (firstBlocked->priority >= gProcInfo.currentProcess->priority) {
-        firstBlocked->state = READY;
-        pqRemove(&(gProcInfo.memq), 0);
-        pqAdd(&(gProcInfo.prq), firstBlocked);
-        return SUCCESS;
+    firstBlocked->state = READY;
+    pqRemove(&(gProcInfo.memq), 0);
+    pqAdd(&(gProcInfo.prq), firstBlocked);
+    
+    // If it has a higher priority than us, call releaseProcessor to give it a chance to run.
+    if (firstBlocked->priority < gProcInfo.currentProcess->priority) {
+        k_releaseProcessor(&gProcInfo, &gMemInfo, &gMessageInfo, &gClockInfo, MEMORY_FREED);
     }
-
-    k_releaseProcessor(&gProcInfo, &gMemInfo, &gMessageInfo, &gClockInfo, MEMORY_FREED);
+    
     return SUCCESS;
 }
 

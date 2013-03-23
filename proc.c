@@ -280,11 +280,6 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
     k_processDelayedMessages(messageInfo, procInfo, memInfo, clockInfo);
 
     switch (reason) {
-        case MEMORY_FREED:
-            srcQueue = &(procInfo->memq);
-            dstQueue = &(procInfo->prq);
-            targetState = READY;
-            break;
         case OOM:
             srcQueue = &(procInfo->prq);
             dstQueue = &(procInfo->memq);
@@ -293,6 +288,7 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
         case YIELD:
         case CHANGED_PRIORITY:
         case MESSAGE_SENT:
+        case MEMORY_FREED:    
             srcQueue = &(procInfo->prq);
             dstQueue = &(procInfo->prq);
             targetState = READY;
