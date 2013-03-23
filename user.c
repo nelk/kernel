@@ -372,37 +372,38 @@ void printTime(uint32_t currentTime, uint32_t offset) {
     uint32_t field = 0;
     uint32_t index = 0;
     Envelope *printMessage = (Envelope *)request_memory_block();
-    char *messageData = printMessage->messageData;
+    char *buf = printMessage->messageData;
+    size_t bufLen = MESSAGEDATA_SIZE_BYTES-1;
 
     clockTime = (currentTime + offset) % (SECONDS_IN_DAY * MILLISECONDS_IN_SECOND);
     clockTime /= MILLISECONDS_IN_SECOND;
 
     // Add ANSI colour code.
-    index += write_ansi_escape(messageData+index, 31 + (clockTime % 6));
+    index += write_ansi_escape(buf+index, bufLen-index, 31 + (clockTime % 6));
 
     // Print hours.
     field = clockTime / SECONDS_IN_HOUR;
     clockTime %= SECONDS_IN_HOUR;
-    index += write_uint32(messageData + index, MESSAGEDATA_SIZE_BYTES - index, field, 2);
+    index += write_uint32(buf+index, bufLen-index, field, 2);
 
-    messageData[index++] = ':';
+    buf[index++] = ':';
 
     // Print minutes.
     field = clockTime / SECONDS_IN_MINUTE;
     clockTime %= SECONDS_IN_MINUTE;
-    index += write_uint32(messageData + index, MESSAGEDATA_SIZE_BYTES - index, field, 2);
+    index += write_uint32(buf+index, bufLen-index, field, 2);
 
-    messageData[index++] = ':';
+    buf[index++] = ':';
 
     // Print seconds.
     field = clockTime;
-    index += write_uint32(messageData + index, MESSAGEDATA_SIZE_BYTES - index, field, 2);
+    index += write_uint32(buf+index, bufLen-index, field, 2);
 
     // Add ANSI reset.
-    index += write_ansi_escape(messageData+index, 0);
+    index += write_ansi_escape(buf+index, bufLen-index, 0);
 
-    index += write_string(messageData+index, 2, "\r\n");
-    messageData[index++] = '\0';
+    index += write_string(buf+index, bufLen-index, "\r\n");
+    buf[index++] = '\0';
     send_message(CRT_PID, printMessage);
 }
 
@@ -500,9 +501,10 @@ void stressCProcess(void) {
 
             if (happyNumber % 20 == 0) {
 				uint8_t i = 0;
-                i += write_string(msg->messageData+i, 8, "C Proc: ");
-                i += write_uint32(msg->messageData+i, MESSAGEDATA_SIZE_BYTES - i - 3, happyNumber, 0);
-                i += write_string(msg->messageData+i, 2, "\r\n");
+                size_t bufLen = MESSAGEDATA_SIZE_BYTES - 1; // -1 for null byte
+                i += write_string(msg->messageData+i, bufLen-i, "C Proc: ");
+                i += write_uint32(msg->messageData+i, bufLen-i, happyNumber, 0);
+                i += write_string(msg->messageData+i, bufLen-i, "\r\n");
                 msg->messageData[i++] = '\0';
                 send_message(CRT_PID, msg);
                 msg = NULL;

@@ -330,7 +330,7 @@ void uart_keyboard_proc(void) {
                 2
             );
             i += write_string(message->messageData+i, bufLen-i, " bytes");
-            i += write_ansi_escape(message->messageData+i, 0);
+            i += write_ansi_escape(message->messageData+i, bufLen-i, 0);
             i += write_string(message->messageData+i, bufLen-i, "\r\n");
             message->messageData[i++] = '\0';
             send_message(CRT_PID, message);
@@ -356,25 +356,6 @@ void uart_keyboard_proc(void) {
                 tempEnvelope = NULL;
             }
             gProcInfo.prDbg = 0;
-
-            i = 0;
-            bufLen = MESSAGEDATA_SIZE_BYTES-1; // -1 for null byte
-
-            i += write_ansi_escape(message->messageData+i, bufLen-i, 41);
-            i += write_string(message->messageData+i, bufLen-i, "used mem = ");
-            i += write_uint32(
-                message->messageData+i,
-                bufLen-i,
-                (gMemInfo.numSuccessfulAllocs-gMemInfo.numFreeCalls)*128,
-                2
-            );
-            i += write_string(message->messageData+i, bufLen-i, " bytes");
-            i += write_ansi_escape(message->messageData+i, 0);
-            i += write_string(message->messageData+i, bufLen-i, "\r\n");
-            message->messageData[i++] = '\0';
-            send_message(CRT_PID, message);
-            message = NULL;
->>>>>>> master
             continue;
         }
 
