@@ -238,10 +238,10 @@ void crt_proc(void) {
 
         for (
             i = 0;
-            i < UART_OUTPUT_BUFSIZE && hasData(&(gProcInfo.coq), &gMemInfo);
+            i < UART_OUTPUT_BUFSIZE && hasData(&(gProcInfo.coq));
             i++
         ) {
-            uart->THR = getData(&(gProcInfo.coq), &gMemInfo);
+            uart->THR = getData(&(gProcInfo.coq));
         }
     }
 }
