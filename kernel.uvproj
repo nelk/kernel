@@ -546,6 +546,11 @@
               <FileType>5</FileType>
               <FilePath>.\message_pq.h</FilePath>
             </File>
+            <File>
+              <FileName>coq.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\coq.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

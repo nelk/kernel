@@ -77,6 +77,8 @@ struct PCB {
 
     struct Envelope *mqHead;
     struct Envelope *mqTail;
+    
+    struct Envelope *debugEnv;
 };
 
 typedef struct PQEntry PQEntry;
@@ -125,7 +127,7 @@ struct ProcInfo {
 
     // UART keyboard input data
     char inputBuf[UART_IN_BUF_SIZE];
-    uint8_t prDbg;
+    uint8_t debugSem;
     volatile uint32_t readIndex; // Next read index
     volatile uint32_t writeIndex; // Next write index
     volatile uint32_t inputBufOverflow;
