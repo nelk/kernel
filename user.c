@@ -165,17 +165,17 @@ void memoryMuncherProcess(void) {
 
         envelope = (Envelope *)try_request_memory_block();
         if (envelope == NULL) {
-        break;
-    }
+            break;
+        }
 
-    index = 0;
-    bufLen = MESSAGEDATA_SIZE_BYTES - 1; // -1 for null byte
-    index += write_string(envelope->messageData+index, bufLen-index, "I have eaten ");
-    index += write_uint32(envelope->messageData+index, bufLen-index, (uint32_t)memList, 0);
-    index += write_string(envelope->messageData+index, bufLen-index, ".\r\n");
-    envelope->messageData[index++] = '\0';
-    send_message(CRT_PID, envelope);
-    envelope = NULL;
+        index = 0;
+        bufLen = MESSAGEDATA_SIZE_BYTES - 1; // -1 for null byte
+        index += write_string(envelope->messageData+index, bufLen-index, "I have eaten ");
+        index += write_uint32(envelope->messageData+index, bufLen-index, (uint32_t)memList, 0);
+        index += write_string(envelope->messageData+index, bufLen-index, ".\r\n");
+        envelope->messageData[index++] = '\0';
+        send_message(CRT_PID, envelope);
+        envelope = NULL;
     }
 
     index = 0;
@@ -534,21 +534,21 @@ void stressAProcess(void) {
     //             the keyboard command. Verify assumption is reasonable once
     //             done creating the stress tests.
     env = receive_message(NULL);
-        release_memory_block(env);
-        env = NULL;
+    release_memory_block(env);
+    env = NULL;
 
     while (1) {
         env = (Envelope *)request_memory_block();
         env->messageType = MT_COUNT_REPORT;
 
-                num++;
-                env->messageData[0] = (uint8_t)(num >> (8 * 3));
-                env->messageData[1] = (uint8_t)(num >> (8 * 2));
-                env->messageData[2] = (uint8_t)(num >> (8 * 1));
-                env->messageData[3] = (uint8_t)(num >> (8 * 0));
+        num++;
+        env->messageData[0] = (uint8_t)(num >> (8 * 3));
+        env->messageData[1] = (uint8_t)(num >> (8 * 2));
+        env->messageData[2] = (uint8_t)(num >> (8 * 1));
+        env->messageData[3] = (uint8_t)(num >> (8 * 0));
 
         send_message(STRESS_B_PID, env);
-                env = NULL;
+        env = NULL;
         release_processor();
     }
 }
@@ -580,11 +580,11 @@ void stressCProcess(void) {
         }
         if (msg->messageType == MT_COUNT_REPORT) {
             // TODO(shale): determine if we want to filter in other locations as well.
-                        uint32_t happyNumber =
-                            (((uint32_t) msg->messageData[0]) << (8*3)) +
-                            (((uint32_t) msg->messageData[1]) << (8*2)) +
-                            (((uint32_t) msg->messageData[2]) << (8*1)) +
-                            (((uint32_t) msg->messageData[3]) << (8*0));
+            uint32_t happyNumber =
+                (((uint32_t) msg->messageData[0]) << (8*3)) +
+                (((uint32_t) msg->messageData[1]) << (8*2)) +
+                (((uint32_t) msg->messageData[2]) << (8*1)) +
+                (((uint32_t) msg->messageData[3]) << (8*0));
 
             if (happyNumber % 20 == 0) {
                 uint8_t i = 0;
@@ -599,10 +599,10 @@ void stressCProcess(void) {
                 sleep(10 * 1000, &msgQueue);
             }
         }
-                if (msg != NULL) {
-                    release_memory_block((void *)msg);
-                    msg = NULL;
-                }
+        if (msg != NULL) {
+            release_memory_block((void *)msg);
+            msg = NULL;
+        }
         release_processor();
     }
 }
