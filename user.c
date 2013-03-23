@@ -17,30 +17,38 @@ void sleep(uint32_t ms, Envelope ** listEnv) {
     Envelope* env = (Envelope *)request_memory_block();
     env->messageType = MESSAGE_TYPE_SLEEP;
     delayed_send(pid(), env, ms);
+    env = NULL;
 
+    // If the user passed us a message queue, advance it as far as possible
+    // so we're writing to the back of that queue.
     if (listEnv != NULL) {
-        envIter = *listEnv;
-        // Pass in the same queue without dropping entries/dealing with issues.
-        while (envIter != NULL) {
-            envIter = envIter->next;
+        while (*listEnv != NULL) {
+            listEnv = &((*listEnv)->next);
         }
     }
 
+    while (1) {
+        env = receive_message(NULL);
 
-    env = receive_message(NULL);
+        // If this is a wake-up message, then just release it and break.
+        if (env->messageType == MESSAGE_TYPE_SLEEP) {
+            release_memory_block((void*)env);
+            break;
+        }
 
-    if (listEnv != NULL) {
-        // Build the queue in here.
-        while(env->messageType != MESSAGE_TYPE_SLEEP) {
-						if (envIter != NULL) {
-							envIter->next = env;
-						}
-            envIter = env;
-            envIter->next = NULL;
-            env = receive_message(NULL);
+        // Otherwise we need to save this message.
+        // If the user passed us a queue use that, otherwise just send it on
+        // a delay.
+        if (listEnv != NULL) {
+            env->next = NULL;
+            *listEnv = env;
+            listEnv = &(env->next);
+        } else {
+            // TODO(sanjay): we don't need to delay it this much, we could delay
+            // it less.
+            delayed_send(pid(), env, ms);
         }
     }
-    release_memory_block((void*)env);
 }
 
 
@@ -442,17 +450,17 @@ void stressAProcess(void) {
     env = receive_message(NULL);
 		release_memory_block(env);
 		env = NULL;
-	
+
     while (1) {
         env = (Envelope *)request_memory_block();
         env->messageType = MESSAGE_TYPE_COUNT_REPORT;
-				
+
 				num++;
 				env->messageData[0] = (uint8_t)(num >> (8 * 3));
 				env->messageData[1] = (uint8_t)(num >> (8 * 2));
 				env->messageData[2] = (uint8_t)(num >> (8 * 1));
 				env->messageData[3] = (uint8_t)(num >> (8 * 0));
-			
+
         send_message(STRESS_B_PID, env);
 				env = NULL;
         release_processor();
@@ -486,7 +494,7 @@ void stressCProcess(void) {
         }
         if (msg->messageType == MESSAGE_TYPE_COUNT_REPORT) {
             // TODO(shale): determine if we want to filter in other locations as well.
-						uint32_t happyNumber = 
+						uint32_t happyNumber =
 							(((uint32_t) msg->messageData[0]) << (8*3)) +
 							(((uint32_t) msg->messageData[1]) << (8*2)) +
 							(((uint32_t) msg->messageData[2]) << (8*1)) +
