@@ -75,9 +75,9 @@ void funProcess(void) {
             Envelope *envelope = (Envelope *)request_memory_block();
             uint8_t index = 0;
 
-            index += write_string(envelope->messageData+index, "Fun ", 4);
-            index += write_uint32(envelope->messageData+index, i, 1);
-            index += write_string(envelope->messageData+index, "\r\n", 2);
+            index += write_string(envelope->messageData+index, 4, "Fun ");
+            index += write_uint32(envelope->messageData+index, 1, i, 1);
+            index += write_string(envelope->messageData+index, 2, "\r\n");
             envelope->messageData[index++] = '\0';
             send_message(CRT_PID, envelope);
             envelope = NULL;
@@ -93,9 +93,9 @@ void schizophrenicProcess(void) {
             Envelope *envelope = (Envelope *)request_memory_block();
             uint8_t index = 0;
 
-            index += write_string(envelope->messageData+index, "Schizophrenic ", 14);
-            index += write_uint32(envelope->messageData+index, i, 1);
-            index += write_string(envelope->messageData+index, "\r\n", 2);
+            index += write_string(envelope->messageData+index, 14, "Schizophrenic ");
+            index += write_uint32(envelope->messageData+index, 2, i, 1);
+            index += write_string(envelope->messageData+index, 2, "\r\n");
             envelope->messageData[index++] = '\0';
             send_message(CRT_PID, envelope);
             envelope = NULL;
@@ -123,10 +123,10 @@ void fibProcess(void) {
             idx++;
 
             envelope = (Envelope *)request_memory_block();
-            index += write_string(envelope->messageData+index, "fib(", 4);
-            index += write_uint32(envelope->messageData+index, idx, 1);
+            index += write_string(envelope->messageData+index, 4, "fib(");
+            index += write_uint32(envelope->messageData+index, MESSAGEDATA_SIZE_BYTES - index, idx, 1);
             index += write_string(envelope->messageData+index, ") = ", 4);
-            index += write_uint32(envelope->messageData+index, cur, 1);
+            index += write_uint32(envelope->messageData+index, MESSAGEDATA_SIZE_BYTES - index - 3, cur, 1);
             index += write_string(envelope->messageData+index, "\r\n", 2);
             envelope->messageData[index++] = '\0';
             send_message(CRT_PID, envelope);
@@ -168,8 +168,8 @@ void memoryMuncherProcess(void) {
 				}
 				
 				index = 0;
-        index += write_string(envelope->messageData+index, "I have eaten ", 13);
-        index += write_uint32(envelope->messageData+index, (uint32_t)memList, 0);
+        index += write_string(envelope->messageData+index, 13, "I have eaten ");
+        index += write_uint32(envelope->messageData+index, MESSAGEDATA_SIZE_BYTES - index - 4, (uint32_t)memList, 0);
         index += write_string(envelope->messageData+index, ".\r\n", 3);
         envelope->messageData[index++] = '\0';
         send_message(CRT_PID, envelope);
@@ -207,8 +207,8 @@ void releaseProcess(void) {
     Envelope *envelope = (Envelope *)request_memory_block();
     uint8_t index = 0;
 
-    index += write_string(envelope->messageData+index, "releaseProcess: taken mem ", 26);
-    index += write_uint32(envelope->messageData+index, (uint32_t)mem, 0);
+    index += write_string(envelope->messageData+index, 26, "releaseProcess: taken mem ");
+    index += write_uint32(envelope->messageData+index, MESSAGEDATA_SIZE_BYTES - index - 3, (uint32_t)mem, 0);
     index += write_string(envelope->messageData+index, "\r\n", 2);
     envelope->messageData[index++] = '\0';
     send_message(CRT_PID, envelope);
@@ -383,25 +383,25 @@ void printTime(uint32_t currentTime, uint32_t offset) {
     // Print hours.
     field = clockTime / SECONDS_IN_HOUR;
     clockTime %= SECONDS_IN_HOUR;
-    index += write_uint32(messageData + index, field, 2);
+    index += write_uint32(messageData + index, MESSAGEDATA_SIZE_BYTES - index, field, 2);
 
     messageData[index++] = ':';
 
     // Print minutes.
     field = clockTime / SECONDS_IN_MINUTE;
     clockTime %= SECONDS_IN_MINUTE;
-    index += write_uint32(messageData + index, field, 2);
+    index += write_uint32(messageData + index, MESSAGEDATA_SIZE_BYTES - index, field, 2);
 
     messageData[index++] = ':';
 
     // Print seconds.
     field = clockTime;
-    index += write_uint32(messageData + index, field, 2);
+    index += write_uint32(messageData + index, MESSAGEDATA_SIZE_BYTES - index, field, 2);
 
     // Add ANSI reset.
     index += write_ansi_escape(messageData+index, 0);
 
-    index += write_string(messageData+index, "\r\n", 2);
+    index += write_string(messageData+index, 2, "\r\n");
     messageData[index++] = '\0';
     send_message(CRT_PID, printMessage);
 }
@@ -499,10 +499,10 @@ void stressCProcess(void) {
 							(((uint32_t) msg->messageData[3]) << (8*0));
 
             if (happyNumber % 20 == 0) {
-								uint8_t i = 0;
-                i += write_string(msg->messageData+i, "C Proc: ", 8);
-                i += write_uint32(msg->messageData+i, happyNumber, 0);
-                i += write_string(msg->messageData+i, "\r\n", 2);
+				uint8_t i = 0;
+                i += write_string(msg->messageData+i, 8, "C Proc: ");
+                i += write_uint32(msg->messageData+i, MESSAGEDATA_SIZE_BYTES - i - 3, happyNumber, 0);
+                i += write_string(msg->messageData+i, 2, "\r\n");
                 msg->messageData[i++] = '\0';
                 send_message(CRT_PID, msg);
                 msg = NULL;
