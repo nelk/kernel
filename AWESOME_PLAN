@@ -112,7 +112,7 @@ private Implementation:
             moveto_(0, mismatchPos);
             outq.enqueue(lineBuf[mismatchPos]);
             screenBuf[mismatchPos] = lineBuf[mispatchPos];
-            screenCursorPos = (0 << 7) | (mismatchPos+1);
+            setcursor_(0, mismatchPos+1);
             return;
         }
 
@@ -123,7 +123,7 @@ private Implementation:
             outq.enqueue(lineBuf[mismatchPos]);
             screenBufLen++;
             screenBuf[mismatchPos] = lineBuf[mismatchPos];
-            screenCursorPos = (0 << 7) | (mismatchPos+1);
+            setcursor_(0, mismatchPos+1);
             return;
         }
 
@@ -159,6 +159,7 @@ private Implementation:
                 moveto_(1, 0); // procCursorPos is now 0
                 outq.enqueue(nextByte);
                 cursorOwner = nextEnv->srcPid;
+                setcursor_(1, 1);
                 return;
             }
 
@@ -178,6 +179,7 @@ private Implementation:
             moveto_(1, procCursorPos);
             procCursorPos++;
             outq.enqueue(nextByte);
+            setcursor_(1, procCursorPos);
             return;
         }
     }
