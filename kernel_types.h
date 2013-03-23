@@ -41,7 +41,7 @@ struct MemInfo {
 
 // Process-control related types
 
-#define NUM_PROCS (13)
+#define NUM_PROCS (14)
 
 #define PROC_ID_KERNEL    (0x80)
 #define PROC_ID_ALLOCATOR (0x81)

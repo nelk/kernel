@@ -161,6 +161,13 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
     process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
+        
+    // Set Priority Process
+    process = &(procInfo->processes[SET_PRIORITY_PID]); // Push process function address onto stack
+    *(process->startLoc) = ((uint32_t) setPriorityProcess);
+    process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
+    pqAdd(&(procInfo->prq), process);
+    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
 
     procInfo->currentProcess = NULL;
 
@@ -356,17 +363,19 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
 uint32_t k_setProcessPriority(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *messageInfo, ClockInfo *clockInfo, ProcId pid, uint8_t priority) {
     PCB *topProcess = NULL;
     PCB *modifiedProcess = NULL;
-    uint8_t oldPriority;
+    uint32_t oldPriority = 0;
+		uint32_t newPriority = 0;
 
     if (procInfo->currentProcess == NULL) {
         // TODO(sanjay): this error code seems a little inappropriate...
         return EINVAL;
     }
-    if (pid >= NUM_PROCS) {
+
+    modifiedProcess = k_getPCB(procInfo, pid);
+
+    if (modifiedProcess == NULL) {
         return EINVAL;
     }
-
-    modifiedProcess = &(procInfo->processes[pid]);
 
     // We don't allow changing the priority of the null process
     if (modifiedProcess == procInfo->nullProcess) {
@@ -374,10 +383,10 @@ uint32_t k_setProcessPriority(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo 
     }
 
     oldPriority = modifiedProcess->priority;
-    priority =
+    newPriority =
         (priority & USER_PRIORITY_MASK) |
         (oldPriority & KERN_PRIORITY_MASK);
-    modifiedProcess->priority = priority;
+    modifiedProcess->priority = newPriority;
 
     // These are safe to call if the specified PCB is not in the particular
     // queue.
@@ -385,7 +394,7 @@ uint32_t k_setProcessPriority(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo 
     pqChangedPriority(&(procInfo->memq), modifiedProcess);
 
     // If we just improved our own priority, do not preempt.
-    if (procInfo->currentProcess == modifiedProcess && oldPriority >= priority) {
+    if (procInfo->currentProcess == modifiedProcess && oldPriority >= newPriority) {
         return SUCCESS;
     }
 
@@ -420,4 +429,18 @@ ProcId k_getPid(ProcInfo *procInfo) {
     return procInfo->currentProcess->pid;
 }
 
+PCB *k_getPCB(ProcInfo *procInfo, uint8_t pid) {
+    PCB *pcb = NULL;
 
+    if (pid >= NUM_PROCS) {
+        return NULL;
+    }
+
+    pcb = &(procInfo->processes[pid]);
+
+    if (*(pcb->startLoc) == 0) {
+        return NULL;
+    }
+
+    return pcb;
+}

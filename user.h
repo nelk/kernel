@@ -8,6 +8,7 @@ void schizophrenicProcess(void);
 void memoryMuncherProcess(void);
 void releaseProcess(void);
 void clockProcess(void);
+void setPriorityProcess(void);
 
 
 void stressAProcess(void);
