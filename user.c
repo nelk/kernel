@@ -132,11 +132,11 @@ void memoryMuncherProcess(void) {
         tempNode = NULL;
 
         envelope = (Envelope *)try_request_memory_block();
-				if (envelope == NULL) {
-						break;
-				}
-				
-				index = 0;
+                if (envelope == NULL) {
+                        break;
+                }
+
+        index = 0;
         index += write_string(envelope->messageData+index, "I have eaten ", 13);
         index += write_uint32(envelope->messageData+index, (uint32_t)memList, 0);
         index += write_string(envelope->messageData+index, ".\r\n", 3);
@@ -404,7 +404,7 @@ void clockProcess(void) {
 
 uint8_t parseSetMessage(char *message) {
     uint8_t index = 2;
-    uint8_t offsetIndex = 0;
+    uint8_t numLength = 0;
     uint8_t pid = 0;
     uint8_t priority = 0;
 
@@ -413,52 +413,19 @@ uint8_t parseSetMessage(char *message) {
     }
 
     // Starts at index 3 (after '%C ')
-    offsetIndex = index;
-    while (offsetIndex < MESSAGEDATA_SIZE_BYTES) {
-        if (message[offsetIndex] == ' ') {
-            break;
-        }
-        ++offsetIndex;
-    }
+    numLength = read_uint32(message + index, MESSAGEDATA_SIZE_BYTES - index, &pid);
 
-    // Break if larger than two characters or less than one.
-    if (offsetIndex == index + 1 || offsetIndex > index + 2) {
+    if (numLength == 0) {
         return EINVAL;
     }
 
-    // Break if the input is not an integer (up to two digits).
-    if (message[index] < '0' || message[index] > '9' ||
-        (index != offsetIndex - 1 && (message[index + 1] < '0' || message[index + 1] > '9'))) {
+    index += numLength;
+
+    numLength = read_uint32(message + index, MESSAGEDATA_SIZE_BYTES - index, &priority);
+
+    if (numLength == 0) {
         return EINVAL;
     }
-
-    pid = read_uint32(message + index, offsetIndex - index);
-
-    ++offsetIndex;
-    index = offsetIndex;
-
-    // Starts after the second space.
-    // TODO(Jon): Verify what the last character after a finished number would be.
-    while (offsetIndex < MESSAGEDATA_SIZE_BYTES) {
-        if (message[offsetIndex] == '\0') {
-            break;
-        }
-        ++offsetIndex;
-    }
-
-    // Break if larger than three characters or less than one.
-    if (offsetIndex == index + 1 || offsetIndex > index + 3) {
-        return EINVAL;
-    }
-
-    // Break if the input is not an integer (up to three digits).
-    if (message[index] < '0' || message[index] > '9' ||
-        (index != offsetIndex - 2 && (message[index + 2] < '0' || message[index + 2] > '9')) ||
-        (index != offsetIndex - 1 && (message[index + 1] < '0' || message[index + 1] > '9'))) {
-        return EINVAL;
-    }
-
-    priority = read_uint32(message + index, offsetIndex - index);
 
     return set_process_priority(pid, priority);
 
@@ -468,7 +435,7 @@ void printSetErrorMessage(Envelope *envelope) {
     uint8_t index = 0;
     char *messageData = envelope->messageData;
 
-    index += write_string(messageData + index, "Please provide a proper process ID and priority.\r\n", 50);
+    index += write_string(messageData + index, 50, "Please provide a proper process ID and priority.\r\n");
     messageData[index++] = '\0';
     send_message(CRT_PID, envelope);
 }
