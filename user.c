@@ -12,8 +12,6 @@
 #define MESSAGE_TYPE_SLEEP (MESSAGE_TYPE_COUNT_REPORT+1)
 
 void sleep(uint32_t ms, Envelope ** listEnv) {
-    Envelope *envIter = NULL;
-
     Envelope* env = (Envelope *)request_memory_block();
     env->messageType = MESSAGE_TYPE_SLEEP;
     delayed_send(pid(), env, ms);
