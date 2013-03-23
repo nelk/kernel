@@ -41,7 +41,7 @@ struct MemInfo {
 
 // Process-control related types
 
-#define NUM_PROCS (13)
+#define NUM_PROCS (14)
 
 #define PROC_ID_KERNEL    (0x80)
 #define PROC_ID_ALLOCATOR (0x81)
@@ -125,6 +125,7 @@ struct ProcInfo {
 
     // UART keyboard input data
     char inputBuf[UART_IN_BUF_SIZE];
+    uint8_t prDbg;
     volatile uint32_t readIndex; // Next read index
     volatile uint32_t writeIndex; // Next write index
     volatile uint32_t inputBufOverflow;

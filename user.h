@@ -10,5 +10,10 @@ void releaseProcess(void);
 void clockProcess(void);
 void setPriorityProcess(void);
 
+
+void stressAProcess(void);
+void stressBProcess(void);
+void stressCProcess(void);
+
 #endif
 

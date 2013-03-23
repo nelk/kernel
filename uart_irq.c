@@ -317,8 +317,26 @@ void uart_keyboard_proc(void) {
             Envelope *tempEnvelope = NULL;
             uint8_t i = 0;
             uint8_t bufLen = 0;
+            gProcInfo.prDbg = 1;
 
-            for (; i < NUM_PROCS; i++) {
+            bufLen = MESSAGEDATA_SIZE_BYTES-1; // -1 for null byte
+
+            i += write_ansi_escape(message->messageData+i, bufLen-i, 41);
+            i += write_string(message->messageData+i, bufLen-i, "used mem = ");
+            i += write_uint32(
+                message->messageData+i,
+                bufLen-i,
+                (gMemInfo.numSuccessfulAllocs-gMemInfo.numFreeCalls)*128,
+                2
+            );
+            i += write_string(message->messageData+i, bufLen-i, " bytes");
+            i += write_ansi_escape(message->messageData+i, bufLen-i, 0);
+            i += write_string(message->messageData+i, bufLen-i, "\r\n");
+            message->messageData[i++] = '\0';
+            send_message(CRT_PID, message);
+            message = NULL;
+
+            for (i = 0; i < NUM_PROCS; i++) {
                 uint32_t location = 0;
                 PCB *pcb = &(gProcInfo.processes[i]);
 
@@ -337,24 +355,7 @@ void uart_keyboard_proc(void) {
                 send_message(CRT_PID, tempEnvelope);
                 tempEnvelope = NULL;
             }
-
-            i = 0;
-            bufLen = MESSAGEDATA_SIZE_BYTES-1; // -1 for null byte
-
-            i += write_ansi_escape(message->messageData+i, bufLen-i, 41);
-            i += write_string(message->messageData+i, bufLen-i, "used mem = ");
-            i += write_uint32(
-                message->messageData+i,
-                bufLen-i,
-                (gMemInfo.numSuccessfulAllocs-gMemInfo.numFreeCalls)*128,
-                2
-            );
-            i += write_string(message->messageData+i, bufLen-i, " bytes");
-            i += write_ansi_escape(message->messageData+i, 0);
-            i += write_string(message->messageData+i, bufLen-i, "\r\n");
-            message->messageData[i++] = '\0';
-            send_message(CRT_PID, message);
-            message = NULL;
+            gProcInfo.prDbg = 0;
             continue;
         }
 

@@ -123,6 +123,34 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
 
+    // TODO(shale): remove this assertion.
+		if ((FIRST_USER_PID + pidOffset) >= STRESS_A_PID) {
+				*((int *)-1) = 0;
+		}
+    // Stress Process A
+    process = &(procInfo->processes[STRESS_A_PID]); // Push process function address onto stack
+    *(process->startLoc) = ((uint32_t) stressAProcess);
+    process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
+    pqAdd(&(procInfo->prq), process);
+
+    // Stress Process B
+    process = &(procInfo->processes[STRESS_B_PID]); // Push process function address onto stack
+    *(process->startLoc) = ((uint32_t) stressBProcess);
+    process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
+    pqAdd(&(procInfo->prq), process);
+
+    // Stress Process C
+    process = &(procInfo->processes[STRESS_C_PID]); // Push process function address onto stack
+    *(process->startLoc) = ((uint32_t) stressCProcess);
+    process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
+    pqAdd(&(procInfo->prq), process);
+        
+    // Set Priority Process
+    process = &(procInfo->processes[SET_PRIORITY_PID]); // Push process function address onto stack
+    *(process->startLoc) = ((uint32_t) setPriorityProcess);
+    process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
+    pqAdd(&(procInfo->prq), process);
+
     procInfo->currentProcess = NULL;
 
     // Init UART keyboard global output data
@@ -134,6 +162,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     procInfo->coq.toFree = NULL;
 
     // Init UART keyboard global input data
+    procInfo->prDbg = 0;
     procInfo->readIndex = 0;
     procInfo->writeIndex = 0;
     procInfo->inputBufOverflow = 0;
@@ -178,6 +207,9 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
         if (procInfo->currentEnvIndex == 0) {
             switch (new_char) {
                 case SHOW_DEBUG_PROCESSES:
+                    if (procInfo->prDbg == 1) {
+                        continue;
+                    }
                     k_sendMessage(memInfo, procInfo, procInfo->currentEnv, KEYBOARD_PID, KEYBOARD_PID);
                     procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
                     procInfo->currentEnvIndex = 0;
@@ -254,11 +286,6 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
     k_processDelayedMessages(messageInfo, procInfo, memInfo, clockInfo);
 
     switch (reason) {
-        case MEMORY_FREED:
-            srcQueue = &(procInfo->memq);
-            dstQueue = &(procInfo->prq);
-            targetState = READY;
-            break;
         case OOM:
             srcQueue = &(procInfo->prq);
             dstQueue = &(procInfo->memq);
@@ -267,6 +294,7 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
         case YIELD:
         case CHANGED_PRIORITY:
         case MESSAGE_SENT:
+        case MEMORY_FREED:    
             srcQueue = &(procInfo->prq);
             dstQueue = &(procInfo->prq);
             targetState = READY;
@@ -399,7 +427,7 @@ PCB *k_getPCB(ProcInfo *procInfo, uint8_t pid) {
         return NULL;
     }
 
-    pcb = procInfo->processes[pid];
+    pcb = &(procInfo->processes[pid]);
 
     if (*(pcb->startLoc) == 0) {
         return NULL;
