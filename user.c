@@ -7,13 +7,40 @@
 
 // User Land
 
-void sleep(uint32_t ms) {
-    // TODO(alex): make this more robust by forwarding non-sleep messages to ourselves on a delay
-
-    Envelope *env = (Envelope *)request_memory_block();
+void sleep(uint32_t ms, Envelope ** listEnv) {
+    Envelope* env = (Envelope *)request_memory_block();
+    env->messageType = MT_SLEEP;
     delayed_send(pid(), env, ms);
-    env = receive_message(NULL);
-    release_memory_block((void*)env);
+    env = NULL;
+
+    // If the user passed us a message queue, advance it as far as possible
+    // so we're writing to the back of that queue.
+    if (listEnv != NULL) {
+        while (*listEnv != NULL) {
+            listEnv = &((*listEnv)->next);
+        }
+    }
+
+    while (1) {
+        env = receive_message(NULL);
+
+        // If this is a wake-up message, then just release it and break.
+        // Otherwise we need to save this message. If the user passed us a
+        // queue use that, otherwise just send it to ourself on a delay.
+        // If we send it to ourself, we lose srcPid.
+        if (env->messageType == MT_SLEEP) {
+            release_memory_block((void*)env);
+            break;
+        } else if (listEnv != NULL) {
+            env->next = NULL;
+            *listEnv = env;
+            listEnv = &(env->next);
+        } else {
+            // TODO(sanjay): we don't need to delay it this much, we could delay
+            // it less.
+            delayed_send(pid(), env, ms);
+        }
+    }
 }
 
 
@@ -27,9 +54,10 @@ void printProcess(char *c) {
     while (1) {
         Envelope *envelope = (Envelope *)request_memory_block();
         uint8_t i = 0;
+        uint8_t bufLen = MESSAGEDATA_SIZE_BYTES - 1; // -1 for null byte
 
-        i += write_string(envelope->messageData+i, c, 100);
-        i += write_string(envelope->messageData+i, "\r\n", 2);
+        i += write_string(envelope->messageData+i, bufLen-i, c);
+        i += write_string(envelope->messageData+i, bufLen-i, "\r\n");
         envelope->messageData[i++] = '\0';
         send_message(CRT_PID, envelope);
         envelope = NULL;
@@ -43,15 +71,16 @@ void funProcess(void) {
         for (i = 0; i < 5; ++i) {
             Envelope *envelope = (Envelope *)request_memory_block();
             uint8_t index = 0;
+            uint8_t bufLen = MESSAGEDATA_SIZE_BYTES - 1; // -1 for null byte
 
-            index += write_string(envelope->messageData+index, "Fun ", 4);
-            index += write_uint32(envelope->messageData+index, i, 1);
-            index += write_string(envelope->messageData+index, "\r\n", 2);
+            index += write_string(envelope->messageData+index, bufLen-index, "Fun ");
+            index += write_uint32(envelope->messageData+index, bufLen-index, i, 1);
+            index += write_string(envelope->messageData+index, bufLen-index, "\r\n");
             envelope->messageData[index++] = '\0';
             send_message(CRT_PID, envelope);
             envelope = NULL;
         }
-        sleep(3000);
+        sleep(3000, NULL);
     }
 }
 
@@ -61,15 +90,16 @@ void schizophrenicProcess(void) {
         for (i = 9; i >= 5; --i) {
             Envelope *envelope = (Envelope *)request_memory_block();
             uint8_t index = 0;
+            uint8_t bufLen = MESSAGEDATA_SIZE_BYTES - 1; // -1 for null byte
 
-            index += write_string(envelope->messageData+index, "Schizophrenic ", 14);
-            index += write_uint32(envelope->messageData+index, i, 1);
-            index += write_string(envelope->messageData+index, "\r\n", 2);
+            index += write_string(envelope->messageData+index, bufLen-index, "Schizophrenic ");
+            index += write_uint32(envelope->messageData+index, bufLen-index, i, 1);
+            index += write_string(envelope->messageData+index, bufLen-index, "\r\n");
             envelope->messageData[index++] = '\0';
             send_message(CRT_PID, envelope);
             envelope = NULL;
         }
-        sleep(4000);
+        sleep(4000, NULL);
     }
 }
 
@@ -86,23 +116,24 @@ void fibProcess(void) {
         idx = 0;
         while (cur < 1000000000) {
             uint8_t index = 0;
+            uint8_t bufLen = MESSAGEDATA_SIZE_BYTES - 1; // -1 for null byte
             temp = prev;
             prev = cur;
             cur = cur + temp;
             idx++;
 
             envelope = (Envelope *)request_memory_block();
-            index += write_string(envelope->messageData+index, "fib(", 4);
-            index += write_uint32(envelope->messageData+index, idx, 1);
-            index += write_string(envelope->messageData+index, ") = ", 4);
-            index += write_uint32(envelope->messageData+index, cur, 1);
-            index += write_string(envelope->messageData+index, "\r\n", 2);
+            index += write_string(envelope->messageData+index, bufLen-index, "fib(");
+            index += write_uint32(envelope->messageData+index, bufLen-index, idx, 1);
+            index += write_string(envelope->messageData+index, bufLen-index, ") = ");
+            index += write_uint32(envelope->messageData+index, bufLen-index, cur, 1);
+            index += write_string(envelope->messageData+index, bufLen-index, "\r\n");
             envelope->messageData[index++] = '\0';
             send_message(CRT_PID, envelope);
             envelope = NULL;
 
             if (idx % 5 == 0) {
-                sleep(1000);
+                sleep(1000, NULL);
             }
         }
     }
@@ -121,6 +152,7 @@ void memoryMuncherProcess(void) {
     uint8_t index = 0;
 
     while (1) {
+        uint8_t bufLen = 0;
         tempBlock = try_request_memory_block();
         if (tempBlock == NULL) {
             break;
@@ -132,14 +164,15 @@ void memoryMuncherProcess(void) {
         tempNode = NULL;
 
         envelope = (Envelope *)try_request_memory_block();
-				if (envelope == NULL) {
+        if (envelope == NULL) {
 						break;
-				}
+        }
 				
 				index = 0;
-        index += write_string(envelope->messageData+index, "I have eaten ", 13);
-        index += write_uint32(envelope->messageData+index, (uint32_t)memList, 0);
-        index += write_string(envelope->messageData+index, ".\r\n", 3);
+				bufLen = MESSAGEDATA_SIZE_BYTES - 1; // -1 for null byte
+        index += write_string(envelope->messageData+index, bufLen-index, "I have eaten ");
+        index += write_uint32(envelope->messageData+index, bufLen-index, (uint32_t)memList, 0);
+        index += write_string(envelope->messageData+index, bufLen-index, ".\r\n");
         envelope->messageData[index++] = '\0';
         send_message(CRT_PID, envelope);
         envelope = NULL;
@@ -147,7 +180,7 @@ void memoryMuncherProcess(void) {
 
     index = 0;
     envelope = (Envelope *)request_memory_block();
-    index += write_string(envelope->messageData+index, "I am out of things to eat.\r\n", 28);
+    index += write_string(envelope->messageData+index, 28, "I am out of things to eat.\r\n");
     envelope->messageData[index++] = '\0';
     send_message(CRT_PID, envelope);
     envelope = NULL;
@@ -156,7 +189,7 @@ void memoryMuncherProcess(void) {
 
     index = 0;
     envelope = (Envelope *)request_memory_block();
-    index += write_string(envelope->messageData+index, "I am too full.  I will release all the memory that I ate.\r\n", 59);
+    index += write_string(envelope->messageData+index, MESSAGEDATA_SIZE_BYTES-index, "I am too full.  I will release all the memory that I ate.\r\n");
     envelope->messageData[index++] = '\0';
     send_message(CRT_PID, envelope);
     envelope = NULL;
@@ -175,21 +208,28 @@ void releaseProcess(void) {
     void *mem = request_memory_block();
     Envelope *envelope = (Envelope *)request_memory_block();
     uint8_t index = 0;
+    char *buf = envelope->messageData;
+    size_t bufLen = MESSAGEDATA_SIZE_BYTES-1; // -1 for \0
 
-    index += write_string(envelope->messageData+index, "releaseProcess: taken mem ", 26);
-    index += write_uint32(envelope->messageData+index, (uint32_t)mem, 0);
-    index += write_string(envelope->messageData+index, "\r\n", 2);
-    envelope->messageData[index++] = '\0';
+    index += write_string(buf+index, bufLen-index, "releaseProcess: taken mem ");
+    index += write_uint32(buf+index, bufLen-index, (uint32_t)mem, 0);
+    index += write_string(buf+index, bufLen-index, "\r\n");
+    buf[index++] = '\0';
+    buf = NULL;
     send_message(CRT_PID, envelope);
     envelope = NULL;
 
     set_process_priority(pid(), get_process_priority(1));
     release_processor();
 
-    index = 0;
     envelope = (Envelope *)request_memory_block();
-    index += write_string(envelope->messageData+index, "releaseProcess: I am in control\r\n", 32);
-    envelope->messageData[index++] = '\0';
+    index = 0;
+    bufLen = MESSAGEDATA_SIZE_BYTES-1;
+    buf = envelope->messageData;
+    
+    index += write_string(buf+index, bufLen-index, "releaseProcess: I am in control\r\n");
+    buf[index++] = '\0';
+    buf = NULL;
     send_message(CRT_PID, envelope);
     envelope = NULL;
     release_memory_block(mem);
@@ -341,37 +381,38 @@ void printTime(uint32_t currentTime, uint32_t offset) {
     uint32_t field = 0;
     uint32_t index = 0;
     Envelope *printMessage = (Envelope *)request_memory_block();
-    char *messageData = printMessage->messageData;
+    char *buf = printMessage->messageData;
+    size_t bufLen = MESSAGEDATA_SIZE_BYTES-1;
 
     clockTime = (currentTime + offset) % (SECONDS_IN_DAY * MILLISECONDS_IN_SECOND);
     clockTime /= MILLISECONDS_IN_SECOND;
 
     // Add ANSI colour code.
-    index += write_ansi_escape(messageData+index, 31 + (clockTime % 6));
+    index += write_ansi_escape(buf+index, bufLen-index, 31 + (clockTime % 6));
 
     // Print hours.
     field = clockTime / SECONDS_IN_HOUR;
     clockTime %= SECONDS_IN_HOUR;
-    index += write_uint32(messageData + index, field, 2);
+    index += write_uint32(buf+index, bufLen-index, field, 2);
 
-    messageData[index++] = ':';
+    buf[index++] = ':';
 
     // Print minutes.
     field = clockTime / SECONDS_IN_MINUTE;
     clockTime %= SECONDS_IN_MINUTE;
-    index += write_uint32(messageData + index, field, 2);
+    index += write_uint32(buf+index, bufLen-index, field, 2);
 
-    messageData[index++] = ':';
+    buf[index++] = ':';
 
     // Print seconds.
     field = clockTime;
-    index += write_uint32(messageData + index, field, 2);
+    index += write_uint32(buf+index, bufLen-index, field, 2);
 
     // Add ANSI reset.
-    index += write_ansi_escape(messageData+index, 0);
+    index += write_ansi_escape(buf+index, bufLen-index, 0);
 
-    index += write_string(messageData+index, "\r\n", 2);
-    messageData[index++] = '\0';
+    index += write_string(buf+index, bufLen-index, "\r\n");
+    buf[index++] = '\0';
     send_message(CRT_PID, printMessage);
 }
 
@@ -382,7 +423,6 @@ void clockProcess(void) {
     initClockCommand(&command);
 
     envelope = (Envelope *)request_memory_block();
-    envelope->dstPid = KEYBOARD_PID;
     envelope->messageData[0] = 'w';
     // TODO (alex) - make message type matter
     send_message(KEYBOARD_PID, envelope);
@@ -399,5 +439,92 @@ void clockProcess(void) {
             command.isRunning = 1;
             delayed_send(CLOCK_PID, command.selfEnvelope, 1000);
         }
+    }
+}
+
+
+void stressAProcess(void) {
+    Envelope *env = (Envelope *)request_memory_block();
+    uint32_t num = 0;
+
+    env->messageData[0] = 'Z';
+    send_message(KEYBOARD_PID, env);
+    env = NULL;
+
+    //TODO(shale): their pseudocode says to loop until we receive a message from
+    //             the keyboard command, but here we assume we only receive from
+    //             the keyboard command. Verify assumption is reasonable once
+    //             done creating the stress tests.
+    env = receive_message(NULL);
+		release_memory_block(env);
+		env = NULL;
+
+    while (1) {
+        env = (Envelope *)request_memory_block();
+        env->messageType = MT_COUNT_REPORT;
+
+				num++;
+				env->messageData[0] = (uint8_t)(num >> (8 * 3));
+				env->messageData[1] = (uint8_t)(num >> (8 * 2));
+				env->messageData[2] = (uint8_t)(num >> (8 * 1));
+				env->messageData[3] = (uint8_t)(num >> (8 * 0));
+
+        send_message(STRESS_B_PID, env);
+				env = NULL;
+        release_processor();
+    }
+}
+
+void stressBProcess(void) {
+    Envelope *envelope = NULL;
+    while (1) {
+        envelope = receive_message(NULL);
+        if (envelope->srcPid == STRESS_A_PID) {
+            send_message(STRESS_C_PID, envelope);
+        } else {
+            release_memory_block((void *) envelope);
+        }
+        envelope = NULL;
+    }
+}
+
+void stressCProcess(void) {
+    Envelope *msg = NULL;
+    Envelope *msgQueue = NULL;
+    while (1) {
+        // NOTE(shale): we deviate from the spec here. We deal with the msgQueue
+        // inside the sleep function, not here.
+        if (msgQueue != NULL) {
+            msg = msgQueue;
+            msgQueue = msgQueue->next;
+        } else {
+            msg = receive_message(NULL);
+        }
+        if (msg->messageType == MT_COUNT_REPORT) {
+            // TODO(shale): determine if we want to filter in other locations as well.
+						uint32_t happyNumber =
+							(((uint32_t) msg->messageData[0]) << (8*3)) +
+							(((uint32_t) msg->messageData[1]) << (8*2)) +
+							(((uint32_t) msg->messageData[2]) << (8*1)) +
+							(((uint32_t) msg->messageData[3]) << (8*0));
+
+            if (happyNumber % 20 == 0) {
+				uint8_t i = 0;
+                size_t bufLen = MESSAGEDATA_SIZE_BYTES - 1; // -1 for null byte
+                i += write_string(msg->messageData+i, bufLen-i, "C Proc: ");
+                i += write_uint32(msg->messageData+i, bufLen-i, happyNumber, 0);
+                i += write_string(msg->messageData+i, bufLen-i, "\r\n");
+                msg->messageData[i++] = '\0';
+                send_message(CRT_PID, msg);
+                msg = NULL;
+
+                sleep(10 * 1000, &msgQueue);
+            }
+        }
+				if (msg != NULL) {
+				    release_memory_block((void *)msg);
+				    msg = NULL;
+				}
+        release_processor();
     }
 }

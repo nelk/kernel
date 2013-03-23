@@ -1,5 +1,20 @@
 #include "helpers.h"
 
+size_t memset(uint8_t *buf, size_t bufLen, uint8_t val) {
+    size_t temp = bufLen;
+
+    if (buf == NULL) {
+        return bufLen;
+    }
+    
+    while(bufLen > 0) {
+        *(buf++) = val;
+        --bufLen;
+    }
+    
+    return temp;		
+}
+
 uint8_t is_numeric(char c) {
     return c >= '0' && c <= '9';
 }

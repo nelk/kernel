@@ -218,6 +218,11 @@ void crt_proc(void) {
         while (gProcInfo.coq.toFree != NULL) {
             temp = gProcInfo.coq.toFree;
             gProcInfo.coq.toFree = gProcInfo.coq.toFree->next;
+            if (temp->messageType == MT_DEBUG && temp->srcPid == KEYBOARD_PID) {
+                send_message(KEYBOARD_PID, temp);
+                continue;
+            }
+            
             release_memory_block((void*)temp);
         }
 
@@ -304,7 +309,11 @@ void uart_keyboard_proc(void) {
 
         // If the message is not "from ourself", that means we should
         // register this character with the associated pid
-        if (message->srcPid != KEYBOARD_PID) {
+        if (message->messageType == MT_DEBUG && message->srcPid == CRT_PID) {
+            // NOTE(sanjay): we DO NOT want to free this envelope, it's a preallocated buffer stored inside a process' PCB
+            --(gProcInfo.debugSem);
+            continue;
+        } else if (message->srcPid != KEYBOARD_PID) {
             c = toLowerAndIsLetter(message->messageData[0]);
             if ('a' <= c && c <= 'z') {
                 registry[c - 'a'] = message->srcPid;
@@ -318,27 +327,6 @@ void uart_keyboard_proc(void) {
             uint8_t i = 0;
             uint8_t bufLen = 0;
 
-            for (; i < NUM_PROCS; i++) {
-                uint32_t location = 0;
-                PCB *pcb = &(gProcInfo.processes[i]);
-
-                // Check if this is an unused process slot
-                if (*(pcb->startLoc) == 0) {
-                    continue;
-                }
-
-                tempEnvelope = (Envelope *)request_memory_block();
-                location += writeProcessInfo(
-                    tempEnvelope->messageData,
-                    MESSAGEDATA_SIZE_BYTES - 1, // -1 for null byte
-                    pcb
-                );
-                tempEnvelope->messageData[location++] = '\0';
-                send_message(CRT_PID, tempEnvelope);
-                tempEnvelope = NULL;
-            }
-
-            i = 0;
             bufLen = MESSAGEDATA_SIZE_BYTES-1; // -1 for null byte
 
             i += write_ansi_escape(message->messageData+i, bufLen-i, 41);
@@ -350,11 +338,35 @@ void uart_keyboard_proc(void) {
                 2
             );
             i += write_string(message->messageData+i, bufLen-i, " bytes");
-            i += write_ansi_escape(message->messageData+i, 0);
+            i += write_ansi_escape(message->messageData+i, bufLen-i, 0);
             i += write_string(message->messageData+i, bufLen-i, "\r\n");
             message->messageData[i++] = '\0';
             send_message(CRT_PID, message);
             message = NULL;
+
+            for (i = 0; i < NUM_PROCS; i++) {
+                uint32_t location = 0;
+                PCB *pcb = &(gProcInfo.processes[i]);
+                
+                // Check if this is an unused process slot
+                if (*(pcb->startLoc) == 0 || pcb->debugEnv == NULL) {
+                    continue;
+                }
+                
+                ++(gProcInfo.debugSem);
+
+                tempEnvelope = pcb->debugEnv;
+                location += writeProcessInfo(
+                    tempEnvelope->messageData,
+                    MESSAGEDATA_SIZE_BYTES - 1, // -1 for null byte
+                    pcb
+                );
+                tempEnvelope->messageData[location++] = '\0';
+                tempEnvelope->messageType = MT_DEBUG;
+                send_message(CRT_PID, tempEnvelope);
+                tempEnvelope = NULL;
+            }
+            --(gProcInfo.debugSem);
             continue;
         }
 
