@@ -58,9 +58,10 @@ void printProcess(char *c) {
     while (1) {
         Envelope *envelope = (Envelope *)request_memory_block();
         uint8_t i = 0;
+        uint8_t bufLen = MESSAGEDATA_SIZE_BYTES - 1; // -1 for null byte
 
-        i += write_string(envelope->messageData+i, 100, c);
-        i += write_string(envelope->messageData+i, 2, "\r\n");
+        i += write_string(envelope->messageData+i, bufLen-i, c);
+        i += write_string(envelope->messageData+i, bufLen-i, "\r\n");
         envelope->messageData[i++] = '\0';
         send_message(CRT_PID, envelope);
         envelope = NULL;
@@ -74,10 +75,11 @@ void funProcess(void) {
         for (i = 0; i < 5; ++i) {
             Envelope *envelope = (Envelope *)request_memory_block();
             uint8_t index = 0;
+            uint8_t bufLen = MESSAGEDATA_SIZE_BYTES - 1; // -1 for null byte
 
-            index += write_string(envelope->messageData+index, 4, "Fun ");
-            index += write_uint32(envelope->messageData+index, 1, i, 1);
-            index += write_string(envelope->messageData+index, 2, "\r\n");
+            index += write_string(envelope->messageData+index, bufLen-index, "Fun ");
+            index += write_uint32(envelope->messageData+index, bufLen-index i, 1);
+            index += write_string(envelope->messageData+index, bufLen-index "\r\n");
             envelope->messageData[index++] = '\0';
             send_message(CRT_PID, envelope);
             envelope = NULL;
@@ -92,10 +94,11 @@ void schizophrenicProcess(void) {
         for (i = 9; i >= 5; --i) {
             Envelope *envelope = (Envelope *)request_memory_block();
             uint8_t index = 0;
+            uint8_t bufLen = MESSAGEDATA_SIZE_BYTES - 1; // -1 for null byte
 
-            index += write_string(envelope->messageData+index, 14, "Schizophrenic ");
-            index += write_uint32(envelope->messageData+index, 2, i, 1);
-            index += write_string(envelope->messageData+index, 2, "\r\n");
+            index += write_string(envelope->messageData+index, bufLen-index, "Schizophrenic ");
+            index += write_uint32(envelope->messageData+index, bufLen-index, i, 1);
+            index += write_string(envelope->messageData+index, bufLen-index, "\r\n");
             envelope->messageData[index++] = '\0';
             send_message(CRT_PID, envelope);
             envelope = NULL;
@@ -117,17 +120,18 @@ void fibProcess(void) {
         idx = 0;
         while (cur < 1000000000) {
             uint8_t index = 0;
+            uint8_t bufLen = MESSAGEDATA_SIZE_BYTES - 1; // -1 for null byte
             temp = prev;
             prev = cur;
             cur = cur + temp;
             idx++;
 
             envelope = (Envelope *)request_memory_block();
-            index += write_string(envelope->messageData+index, 4, "fib(");
-            index += write_uint32(envelope->messageData+index, MESSAGEDATA_SIZE_BYTES - index, idx, 1);
-            index += write_string(envelope->messageData+index, 4, ") = ");
-            index += write_uint32(envelope->messageData+index, MESSAGEDATA_SIZE_BYTES - index - 3, cur, 1);
-            index += write_string(envelope->messageData+index, 2, "\r\n");
+            index += write_string(envelope->messageData+index, bufLen-index, "fib(");
+            index += write_uint32(envelope->messageData+index, bufLen-index, idx, 1);
+            index += write_string(envelope->messageData+index, bufLen-index, ") = ");
+            index += write_uint32(envelope->messageData+index, bufLen-index, cur, 1);
+            index += write_string(envelope->messageData+index, bufLen-index, "\r\n");
             envelope->messageData[index++] = '\0';
             send_message(CRT_PID, envelope);
             envelope = NULL;
@@ -152,6 +156,7 @@ void memoryMuncherProcess(void) {
     uint8_t index = 0;
 
     while (1) {
+        uint8_t bufLen = MESSAGEDATA_SIZE_BYTES - 1; // -1 for null byte
         tempBlock = try_request_memory_block();
         if (tempBlock == NULL) {
             break;
@@ -167,10 +172,10 @@ void memoryMuncherProcess(void) {
 						break;
 				}
 				
-				index = 0;
-        index += write_string(envelope->messageData+index, 13, "I have eaten ");
-        index += write_uint32(envelope->messageData+index, MESSAGEDATA_SIZE_BYTES - index - 4, (uint32_t)memList, 0);
-        index += write_string(envelope->messageData+index, 3, ".\r\n");
+		index = 0;
+        index += write_string(envelope->messageData+index, bufLen-index, "I have eaten ");
+        index += write_uint32(envelope->messageData+index, bufLen-index, (uint32_t)memList, 0);
+        index += write_string(envelope->messageData+index, bufLen-index ".\r\n");
         envelope->messageData[index++] = '\0';
         send_message(CRT_PID, envelope);
         envelope = NULL;
@@ -187,7 +192,7 @@ void memoryMuncherProcess(void) {
 
     index = 0;
     envelope = (Envelope *)request_memory_block();
-    index += write_string(envelope->messageData+index, 59, "I am too full.  I will release all the memory that I ate.\r\n");
+    index += write_string(envelope->messageData+index, MESSAGEDATA_SIZE_BYTES-index, "I am too full.  I will release all the memory that I ate.\r\n");
     envelope->messageData[index++] = '\0';
     send_message(CRT_PID, envelope);
     envelope = NULL;
@@ -206,10 +211,11 @@ void releaseProcess(void) {
     void *mem = request_memory_block();
     Envelope *envelope = (Envelope *)request_memory_block();
     uint8_t index = 0;
+    uint8_t bufLen = MESSAGEDATA_SIZE_BYTES - 1; // -1 for null byte
 
-    index += write_string(envelope->messageData+index, 26, "releaseProcess: taken mem ");
-    index += write_uint32(envelope->messageData+index, MESSAGEDATA_SIZE_BYTES - index - 3, (uint32_t)mem, 0);
-    index += write_string(envelope->messageData+index, 2, "\r\n");
+    index += write_string(envelope->messageData+index, bufLen-index, "releaseProcess: taken mem ");
+    index += write_uint32(envelope->messageData+index, bufLen-index, (uint32_t)mem, 0);
+    index += write_string(envelope->messageData+index, bufLen-index "\r\n");
     envelope->messageData[index++] = '\0';
     send_message(CRT_PID, envelope);
     envelope = NULL;
@@ -219,7 +225,7 @@ void releaseProcess(void) {
 
     index = 0;
     envelope = (Envelope *)request_memory_block();
-    index += write_string(envelope->messageData+index, 32, "releaseProcess: I am in control\r\n");
+    index += write_string(envelope->messageData+index, MESSAGEDATA_SIZE_BYTES-index, "releaseProcess: I am in control\r\n");
     envelope->messageData[index++] = '\0';
     send_message(CRT_PID, envelope);
     envelope = NULL;
