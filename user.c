@@ -165,17 +165,17 @@ void memoryMuncherProcess(void) {
 
         envelope = (Envelope *)try_request_memory_block();
         if (envelope == NULL) {
-		break;
-	}
+        break;
+    }
 
-	index = 0;
-	bufLen = MESSAGEDATA_SIZE_BYTES - 1; // -1 for null byte
-	index += write_string(envelope->messageData+index, bufLen-index, "I have eaten ");
-	index += write_uint32(envelope->messageData+index, bufLen-index, (uint32_t)memList, 0);
-	index += write_string(envelope->messageData+index, bufLen-index, ".\r\n");
-	envelope->messageData[index++] = '\0';
-	send_message(CRT_PID, envelope);
-	envelope = NULL;
+    index = 0;
+    bufLen = MESSAGEDATA_SIZE_BYTES - 1; // -1 for null byte
+    index += write_string(envelope->messageData+index, bufLen-index, "I have eaten ");
+    index += write_uint32(envelope->messageData+index, bufLen-index, (uint32_t)memList, 0);
+    index += write_string(envelope->messageData+index, bufLen-index, ".\r\n");
+    envelope->messageData[index++] = '\0';
+    send_message(CRT_PID, envelope);
+    envelope = NULL;
     }
 
     index = 0;
@@ -226,7 +226,7 @@ void releaseProcess(void) {
     index = 0;
     bufLen = MESSAGEDATA_SIZE_BYTES-1;
     buf = envelope->messageData;
-    
+
     index += write_string(buf+index, bufLen-index, "releaseProcess: I am in control\r\n");
     buf[index++] = '\0';
     buf = NULL;
@@ -442,7 +442,7 @@ void clockProcess(void) {
     }
 }
 
-uint8_t parseSetMessage(char *message) {
+uint8_t processSetMessage(char *message) {
     uint8_t index = 2;
     uint8_t numLength = 0;
     uint32_t pid = 0;
@@ -461,10 +461,10 @@ uint8_t parseSetMessage(char *message) {
 
     index += numLength;
 
-		if (message[index++] != ' ') {
+    if (message[index++] != ' ') {
         return EINVAL;
     }
-		
+
     numLength = read_uint32(message + index, MESSAGEDATA_SIZE_BYTES - index, &priority);
 
     if (numLength == 0 || priority > 255) {
@@ -479,42 +479,15 @@ void printSetErrorMessage(Envelope *envelope) {
     uint8_t index = 0;
     char *messageData = envelope->messageData;
 
-    index += write_string(messageData + index, 50, "Please provide a proper process ID and priority.\r\n");
+    index += write_string(messageData + index, MESSAGEDATA_SIZE_BYTES - 1, "Please provide a proper process ID and priority.\r\n");
     messageData[index++] = '\0';
     send_message(CRT_PID, envelope);
 }
 
-void processSetMessage(void) {
+void setPriorityProcess(void) {
     Envelope *envelope = NULL;
     char *message = NULL;
     uint8_t status = 0;
-
-    envelope = receive_message(NULL);
-
-    if (envelope->srcPid != KEYBOARD_PID) {
-        release_memory_block((void *)envelope);
-        return;
-    }
-
-    message = envelope->messageData;
-
-    // Check for an invalid message type.
-    if (message[0] != '%' || message[1] != 'C') {
-        release_memory_block((void *)envelope);
-        return;
-    }
-
-    status = parseSetMessage(message);
-
-    if (status == EINVAL) {
-        printSetErrorMessage(envelope);
-    } else {
-        release_memory_block((void *)envelope);
-    }
-}
-
-void setPriorityProcess(void) {
-    Envelope *envelope = NULL;
 
     envelope = (Envelope *)request_memory_block();
     envelope->dstPid = KEYBOARD_PID;
@@ -523,7 +496,28 @@ void setPriorityProcess(void) {
     envelope = NULL;
 
     while(1) {
-        processSetMessage();
+        envelope = receive_message(NULL);
+
+        if (envelope->srcPid != KEYBOARD_PID) {
+            release_memory_block((void *)envelope);
+            continue;
+        }
+
+        message = envelope->messageData;
+
+        // Check for an invalid message type.
+        if (message[0] != '%' || message[1] != 'C') {
+            release_memory_block((void *)envelope);
+            continue;
+        }
+
+        status = processSetMessage(message);
+
+        if (status == EINVAL) {
+            printSetErrorMessage(envelope);
+        } else {
+            release_memory_block((void *)envelope);
+        }
     }
 }
 
@@ -540,21 +534,21 @@ void stressAProcess(void) {
     //             the keyboard command. Verify assumption is reasonable once
     //             done creating the stress tests.
     env = receive_message(NULL);
-		release_memory_block(env);
-		env = NULL;
+        release_memory_block(env);
+        env = NULL;
 
     while (1) {
         env = (Envelope *)request_memory_block();
         env->messageType = MT_COUNT_REPORT;
 
-				num++;
-				env->messageData[0] = (uint8_t)(num >> (8 * 3));
-				env->messageData[1] = (uint8_t)(num >> (8 * 2));
-				env->messageData[2] = (uint8_t)(num >> (8 * 1));
-				env->messageData[3] = (uint8_t)(num >> (8 * 0));
+                num++;
+                env->messageData[0] = (uint8_t)(num >> (8 * 3));
+                env->messageData[1] = (uint8_t)(num >> (8 * 2));
+                env->messageData[2] = (uint8_t)(num >> (8 * 1));
+                env->messageData[3] = (uint8_t)(num >> (8 * 0));
 
         send_message(STRESS_B_PID, env);
-				env = NULL;
+                env = NULL;
         release_processor();
     }
 }
@@ -586,14 +580,14 @@ void stressCProcess(void) {
         }
         if (msg->messageType == MT_COUNT_REPORT) {
             // TODO(shale): determine if we want to filter in other locations as well.
-						uint32_t happyNumber =
-							(((uint32_t) msg->messageData[0]) << (8*3)) +
-							(((uint32_t) msg->messageData[1]) << (8*2)) +
-							(((uint32_t) msg->messageData[2]) << (8*1)) +
-							(((uint32_t) msg->messageData[3]) << (8*0));
+                        uint32_t happyNumber =
+                            (((uint32_t) msg->messageData[0]) << (8*3)) +
+                            (((uint32_t) msg->messageData[1]) << (8*2)) +
+                            (((uint32_t) msg->messageData[2]) << (8*1)) +
+                            (((uint32_t) msg->messageData[3]) << (8*0));
 
             if (happyNumber % 20 == 0) {
-				uint8_t i = 0;
+                uint8_t i = 0;
                 size_t bufLen = MESSAGEDATA_SIZE_BYTES - 1; // -1 for null byte
                 i += write_string(msg->messageData+i, bufLen-i, "C Proc: ");
                 i += write_uint32(msg->messageData+i, bufLen-i, happyNumber, 0);
@@ -605,10 +599,10 @@ void stressCProcess(void) {
                 sleep(10 * 1000, &msgQueue);
             }
         }
-				if (msg != NULL) {
-				    release_memory_block((void *)msg);
-				    msg = NULL;
-				}
+                if (msg != NULL) {
+                    release_memory_block((void *)msg);
+                    msg = NULL;
+                }
         release_processor();
     }
 }
