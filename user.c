@@ -467,7 +467,7 @@ uint8_t parseSetMessage(char *message) {
 		
     numLength = read_uint32(message + index, MESSAGEDATA_SIZE_BYTES - index, &priority);
 
-    if (numLength == 0) {
+    if (numLength == 0 || priority > 255) {
         return EINVAL;
     }
 
@@ -524,7 +524,7 @@ void setPriorityProcess(void) {
 
     while(1) {
         processSetMessage();
-	}
+    }
 }
 
 void stressAProcess(void) {
