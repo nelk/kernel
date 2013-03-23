@@ -31,15 +31,13 @@ void sleep(uint32_t ms, Envelope ** listEnv) {
         env = receive_message(NULL);
 
         // If this is a wake-up message, then just release it and break.
+        // Otherwise we need to save this message. If the user passed us a
+        // queue use that, otherwise just send it to ourself on a delay.
+        // If we send it to ourself, we lose srcPid.
         if (env->messageType == MESSAGE_TYPE_SLEEP) {
             release_memory_block((void*)env);
             break;
-        }
-
-        // Otherwise we need to save this message.
-        // If the user passed us a queue use that, otherwise just send it on
-        // a delay.
-        if (listEnv != NULL) {
+        } else if (listEnv != NULL) {
             env->next = NULL;
             *listEnv = env;
             listEnv = &(env->next);
