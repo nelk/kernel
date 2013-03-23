@@ -28,7 +28,8 @@ struct CRTData {
     uint8_t screenBuf[80]
     uint8_t screenBufLen;
 
-    // The horizontal position of the user's cursor on the user line
+    // This index answers the question "if the user typed a character, where in
+    // lineBuf would that character be inserted?"
     uint8_t userCursorPos;
 };
 
