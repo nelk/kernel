@@ -19,7 +19,6 @@ void advance(CrtOutputQueue *coq, MemInfo *memInfo) {
         if (coq->head == NULL) {
             coq->tail = NULL;
         }
-        coq->readIndex = 0;
 
         // Link temp into coq's toFree list.
         temp->next = coq->toFree;
