@@ -33,7 +33,7 @@ void *bridge_acquireMemoryBlock(void) {
     uint32_t mem = 0;
 
     mem = k_acquireMemoryBlock(&gMemInfo, gProcInfo.currentProcess->pid);
-    while (mem == NULL) {
+    while (mem == 0) {
         k_releaseProcessor(&gProcInfo, &gMemInfo, &gMessageInfo, &gClockInfo, OOM);
         mem = k_acquireMemoryBlock(&gMemInfo, gProcInfo.currentProcess->pid);
     }

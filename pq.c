@@ -26,7 +26,7 @@ uint32_t pqNextSeq(PQ *q) {
     return nextSeq;
 }
 
-PCB* pqTop(PQ *q) {
+PCB *pqTop(PQ *q) {
     if (q->size == 0) {
         return NULL;
     }
