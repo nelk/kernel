@@ -78,8 +78,8 @@ void funProcess(void) {
             uint8_t bufLen = MESSAGEDATA_SIZE_BYTES - 1; // -1 for null byte
 
             index += write_string(envelope->messageData+index, bufLen-index, "Fun ");
-            index += write_uint32(envelope->messageData+index, bufLen-index i, 1);
-            index += write_string(envelope->messageData+index, bufLen-index "\r\n");
+            index += write_uint32(envelope->messageData+index, bufLen-index, i, 1);
+            index += write_string(envelope->messageData+index, bufLen-index, "\r\n");
             envelope->messageData[index++] = '\0';
             send_message(CRT_PID, envelope);
             envelope = NULL;
@@ -175,7 +175,7 @@ void memoryMuncherProcess(void) {
 		index = 0;
         index += write_string(envelope->messageData+index, bufLen-index, "I have eaten ");
         index += write_uint32(envelope->messageData+index, bufLen-index, (uint32_t)memList, 0);
-        index += write_string(envelope->messageData+index, bufLen-index ".\r\n");
+        index += write_string(envelope->messageData+index, bufLen-index, ".\r\n");
         envelope->messageData[index++] = '\0';
         send_message(CRT_PID, envelope);
         envelope = NULL;
@@ -215,7 +215,7 @@ void releaseProcess(void) {
 
     index += write_string(envelope->messageData+index, bufLen-index, "releaseProcess: taken mem ");
     index += write_uint32(envelope->messageData+index, bufLen-index, (uint32_t)mem, 0);
-    index += write_string(envelope->messageData+index, bufLen-index "\r\n");
+    index += write_string(envelope->messageData+index, bufLen-index, "\r\n");
     envelope->messageData[index++] = '\0';
     send_message(CRT_PID, envelope);
     envelope = NULL;
