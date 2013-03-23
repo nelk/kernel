@@ -30,7 +30,7 @@ void heapInit(heap *h, size_t n) {
     }
 }
 
-void heapAdd(heap* h) {
+void heapAdd(heap *h) {
     ++(h->len);
     heapBubbleUp(h, h->len - 1);
 }

@@ -1,8 +1,9 @@
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #include <LPC17xx.h>
 
+#include "coq.h"
 #include "kernel_types.h"
 #include "mem.h"
 #include "message.h"
@@ -147,8 +148,12 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     procInfo->currentProcess = NULL;
 
     // Init UART keyboard global output data
-    procInfo->uartOutputPending = 0;
     procInfo->uartOutputEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
+    procInfo->coq.readIndex = 0;
+    procInfo->coq.head = NULL;
+    procInfo->coq.tail = NULL;
+    procInfo->coq.advanced = 0;
+    procInfo->coq.toFree = NULL;
 
     // Init UART keyboard global input data
     procInfo->prDbg = 0;
@@ -221,6 +226,14 @@ void k_processUartOutput(ProcInfo *procInfo, MemInfo *memInfo) {
     LPC_UART_TypeDef *uart = (LPC_UART_TypeDef *)LPC_UART0;
     Envelope *temp = NULL;
 
+    // NOTE(sanjay): these checks are sorted roughly in order of cheapness.
+
+    // If we don't have our global envelope, we've already
+    // pinged CRT proc, so give up.
+    if (procInfo->uartOutputEnv == NULL) {
+        return;
+    }
+
     // If CRT proc is awake, then give up.
     if (procInfo->processes[CRT_PID].state == READY) {
         return;
@@ -234,7 +247,7 @@ void k_processUartOutput(ProcInfo *procInfo, MemInfo *memInfo) {
 
     // If CRT proc would be able to do something, but has nothing to send,
     // give up.
-    if (!(procInfo->uartOutputPending)) {
+    if (!hasData(&(procInfo->coq), memInfo)) {
         return;
     }
 
@@ -290,15 +303,15 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
             }
             break;
         case MESSAGE_RECEIVE:
-						if (procInfo->currentProcess->mqHead == NULL) {
-							srcQueue = &(procInfo->prq);
-							dstQueue = NULL;
-							targetState = BLOCKED_MESSAGE;
-						} else {
-							srcQueue = &(procInfo->prq);
-							dstQueue = &(procInfo->prq);
-							targetState = READY;
-						}
+            if (procInfo->currentProcess->mqHead == NULL) {
+                srcQueue = &(procInfo->prq);
+                dstQueue = NULL;
+                targetState = BLOCKED_MESSAGE;
+            } else {
+                srcQueue = &(procInfo->prq);
+                dstQueue = &(procInfo->prq);
+                targetState = READY;
+            }
             break;
         default:
             break;
@@ -392,6 +405,7 @@ uint32_t k_setProcessPriority(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo 
 int16_t k_getProcessPriority(ProcInfo *procInfo, ProcId pid) {
     uint8_t priority = 0;
     if (pid >= NUM_PROCS) {
+        // TODO: Constantify
         return -1;
     }
 

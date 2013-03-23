@@ -33,7 +33,7 @@ void *bridge_acquireMemoryBlock(void) {
     uint32_t mem = 0;
 
     mem = k_acquireMemoryBlock(&gMemInfo, gProcInfo.currentProcess->pid);
-    while (mem == NULL) {
+    while (mem == 0) {
         k_releaseProcessor(&gProcInfo, &gMemInfo, &gMessageInfo, &gClockInfo, OOM);
         mem = k_acquireMemoryBlock(&gMemInfo, gProcInfo.currentProcess->pid);
     }
@@ -65,7 +65,6 @@ int8_t bridge_releaseMemoryBlock(void *blk) {
     k_releaseProcessor(&gProcInfo, &gMemInfo, &gMessageInfo, &gClockInfo, MEMORY_FREED);
     return SUCCESS;
 }
-
 
 int8_t bridge_sendMessage(uint8_t pid, Envelope *envelope) {
     int8_t releaseProcessor = k_sendMessage(&gMemInfo, &gProcInfo, envelope, gProcInfo.currentProcess->pid, pid);

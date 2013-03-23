@@ -99,6 +99,15 @@ struct PQ {
     storeIndexFunc getIndexInStore; // takes a PCB* and returns a ssize_t*
 };
 
+typedef struct CrtOutputQueue CrtOutputQueue;
+struct CrtOutputQueue {
+    size_t readIndex;
+    Envelope *head;
+    Envelope *tail;
+    uint8_t advanced;
+    Envelope *toFree;
+};
+
 typedef struct ProcInfo ProcInfo;
 struct ProcInfo {
     PCB processes[NUM_PROCS]; // Actual process blocks
@@ -111,7 +120,7 @@ struct ProcInfo {
     PQ memq; // Memory blocked queue
     PQEntry memQueue[NUM_PROCS];
 
-    uint8_t uartOutputPending;
+    CrtOutputQueue coq; // FIFO queue for CRT output
     Envelope *uartOutputEnv;
 
     // UART keyboard input data
