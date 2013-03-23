@@ -6,9 +6,11 @@
  */
 
 #include <LPC17xx.h>
-#include "rtx.h"
+
+#include "coq.h"
 #include "helpers.h"
 #include "kernel_types.h"
+#include "rtx.h"
 #include "uart.h"
 
 extern MemInfo gMemInfo;
@@ -207,30 +209,25 @@ Note: read RBR will clear the interrupt
 }
 
 void crt_proc(void) {
-    uint8_t readIndex = 0;
-    Envelope *head = NULL;
-    Envelope *tail = NULL;
-    Envelope *temp = NULL;
-    Envelope *nextMsg = NULL;
     LPC_UART_TypeDef *uart = (LPC_UART_TypeDef *)LPC_UART0;
-    uint8_t sendCount = 0;
-
+    Envelope *temp = NULL;
     while (1) {
+        Envelope *nextMsg = NULL;
+        uint8_t i = 0;
+
+        while (gProcInfo.coq.toFree != NULL) {
+            temp = gProcInfo.coq.toFree;
+            gProcInfo.coq.toFree = gProcInfo.coq.toFree->next;
+            release_memory_block((void*)temp);
+        }
+
         nextMsg = (Envelope *)receive_message(NULL);
         if (nextMsg == NULL) {
             continue;
         }
 
         if (nextMsg->srcPid != CRT_PID) {
-            // This is from a user process, enqueue it for output
-            nextMsg->next = NULL;
-            if (tail == NULL) {
-                head = nextMsg;
-                tail = nextMsg;
-            } else {
-                tail->next = nextMsg;
-                tail = nextMsg;
-            }
+            pushEnvelope(&(gProcInfo.coq), nextMsg);
         } else {
             gProcInfo.uartOutputEnv = nextMsg;
         }
@@ -239,38 +236,13 @@ void crt_proc(void) {
             continue;
         }
 
-        sendCount = 0;
-
-send_char:
-        if (sendCount >= UART_OUTPUT_BUFSIZE) {
-            continue;
+        for (
+            i = 0;
+            i < UART_OUTPUT_BUFSIZE && hasData(&(gProcInfo.coq), &gMemInfo);
+            i++
+        ) {
+            uart->THR = getData(&(gProcInfo.coq), &gMemInfo);
         }
-
-        if (head == NULL) {
-            gProcInfo.uartOutputPending = 0;
-            continue;
-        }
-
-        // If we reached a NULL byte or end of buffer, then we pop this
-        // envelope from our queue, release its memory, and then retry.
-        if (readIndex >= MESSAGEDATA_SIZE_BYTES ||
-                head->messageData[readIndex] == '\0') {
-            readIndex = 0;
-            temp = head;
-            head = head->next;
-            if (head == NULL) {
-                tail = NULL;
-            }
-            release_memory_block((void*)temp);
-            goto send_char;
-        }
-
-        gProcInfo.uartOutputPending = 1;
-
-        uart->THR = head->messageData[readIndex];
-        readIndex++;
-        sendCount++;
-        goto send_char;
     }
 }
 
@@ -283,35 +255,35 @@ char toLowerAndIsLetter(char c) {
     return '\0';
 }
 
-uint32_t writePCBState(char *buffer, ProcState state) {
+size_t writePCBState(char *buf, size_t bufLen, ProcState state) {
     switch (state) {
         case BLOCKED_MEMORY:
-            return write_string(buffer, "Blocked on memory", 17);
+            return write_string(buf, bufLen, "Blocked on memory");
         case BLOCKED_MESSAGE:
-            return write_string(buffer, "Blocked on message", 18);
+            return write_string(buf, bufLen, "Blocked on message");
         case NEW:
-            return write_string(buffer, "New", 3);
+            return write_string(buf, bufLen, "New");
         case READY:
-            return write_string(buffer, "Ready", 5);
+            return write_string(buf, bufLen, "Ready");
         case RUNNING:
-            return write_string(buffer, "Running", 7);
+            return write_string(buf, bufLen, "Running");
         default:
             break;
     }
 
-    return write_string(buffer, "???", 3);
+    return write_string(buf, bufLen, "???");
 }
 
-uint32_t writeProcessInfo(char *buffer, PCB *pcb) {
-    uint32_t i = 0;
-    i += write_ansi_escape(buffer+i, 41);
-    i += write_uint32(buffer+i, pcb->pid, 0);
-    i += write_string(buffer+i, "$ Priority=", 11);
-    i += write_uint32(buffer+i, pcb->priority, 0);
-    i += write_string(buffer+i, ", Status=", 9);
-    i += writePCBState(buffer+i, pcb->state);
-    i += write_ansi_escape(buffer+i, 0);
-    i += write_string(buffer+i, "\r\n", 2);
+size_t writeProcessInfo(char *buf, size_t bufLen, PCB *pcb) {
+    size_t i = 0;
+    i += write_ansi_escape(buf+i, bufLen-i, 41);
+    i += write_uint32(buf+i, bufLen-i, pcb->pid, 0);
+    i += write_string(buf+i, bufLen-i, "$ Priority=");
+    i += write_uint32(buf+i, bufLen-i, pcb->priority, 0);
+    i += write_string(buf+i, bufLen-i, ", Status=");
+    i += writePCBState(buf+i, bufLen-i, pcb->state);
+    i += write_ansi_escape(buf+i, bufLen-i, 0);
+    i += write_string(buf+i, bufLen-i, "\r\n");
     return i;
 }
 
@@ -344,6 +316,7 @@ void uart_keyboard_proc(void) {
         } else if (message->messageData[0] == SHOW_DEBUG_PROCESSES) {
             Envelope *tempEnvelope = NULL;
             uint8_t i = 0;
+            uint8_t bufLen = 0;
 
             for (; i < NUM_PROCS; i++) {
                 uint32_t location = 0;
@@ -355,19 +328,30 @@ void uart_keyboard_proc(void) {
                 }
 
                 tempEnvelope = (Envelope *)request_memory_block();
-                location += writeProcessInfo(tempEnvelope->messageData, pcb);
+                location += writeProcessInfo(
+                    tempEnvelope->messageData,
+                    MESSAGEDATA_SIZE_BYTES - 1, // -1 for null byte
+                    pcb
+                );
                 tempEnvelope->messageData[location++] = '\0';
                 send_message(CRT_PID, tempEnvelope);
                 tempEnvelope = NULL;
             }
 
             i = 0;
-            i += write_ansi_escape(message->messageData+i, 41);
-            i += write_string(message->messageData+i, "used mem = ", 11);
-            i += write_uint32(message->messageData+i, (gMemInfo.numSuccessfulAllocs-gMemInfo.numFreeCalls)*128, 2);
-            i += write_string(message->messageData+i, " bytes", 6);
+            bufLen = MESSAGEDATA_SIZE_BYTES-1; // -1 for null byte
+
+            i += write_ansi_escape(message->messageData+i, bufLen-i, 41);
+            i += write_string(message->messageData+i, bufLen-i, "used mem = ");
+            i += write_uint32(
+                message->messageData+i,
+                bufLen-i,
+                (gMemInfo.numSuccessfulAllocs-gMemInfo.numFreeCalls)*128,
+                2
+            );
+            i += write_string(message->messageData+i, bufLen-i, " bytes");
             i += write_ansi_escape(message->messageData+i, 0);
-            i += write_string(message->messageData+i, "\r\n", 2);
+            i += write_string(message->messageData+i, bufLen-i, "\r\n");
             message->messageData[i++] = '\0';
             send_message(CRT_PID, message);
             message = NULL;
