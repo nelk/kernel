@@ -461,6 +461,10 @@ uint8_t parseSetMessage(char *message) {
 
     index += numLength;
 
+		if (message[index++] != ' ') {
+        return EINVAL;
+    }
+		
     numLength = read_uint32(message + index, MESSAGEDATA_SIZE_BYTES - index, &priority);
 
     if (numLength == 0) {
