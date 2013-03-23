@@ -21,8 +21,6 @@
 #define CRT_PID (11)
 #define KEYBOARD_PID (12)
 
-
-
 // exposed so we can expose the size of messages in the envelopes
 #define BLOCKSIZE_BYTES (1 << 7)
 #define MESSAGEDATA_SIZE_BYTES (96)
@@ -31,6 +29,13 @@
 #define SECONDS_IN_MINUTE       (60)
 #define SECONDS_IN_HOUR         (3600)  // 60 * 60
 #define SECONDS_IN_DAY          (86400) // 60 * 60 * 24
+
+enum MessageType {
+    MT_UNSET,
+    MT_COUNT_REPORT,
+    MT_SLEEP,
+    MT_DEBUG,
+};
 
 // ProcId is used to store pids and is typedef'd
 // to distinguish it from regular integers.

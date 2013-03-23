@@ -7,13 +7,9 @@
 
 // User Land
 
-// TODO(shale): extract/enumify?
-#define MESSAGE_TYPE_COUNT_REPORT (1)
-#define MESSAGE_TYPE_SLEEP (MESSAGE_TYPE_COUNT_REPORT+1)
-
 void sleep(uint32_t ms, Envelope ** listEnv) {
     Envelope* env = (Envelope *)request_memory_block();
-    env->messageType = MESSAGE_TYPE_SLEEP;
+    env->messageType = MT_SLEEP;
     delayed_send(pid(), env, ms);
     env = NULL;
 
@@ -32,7 +28,7 @@ void sleep(uint32_t ms, Envelope ** listEnv) {
         // Otherwise we need to save this message. If the user passed us a
         // queue use that, otherwise just send it to ourself on a delay.
         // If we send it to ourself, we lose srcPid.
-        if (env->messageType == MESSAGE_TYPE_SLEEP) {
+        if (env->messageType == MT_SLEEP) {
             release_memory_block((void*)env);
             break;
         } else if (listEnv != NULL) {
@@ -163,11 +159,11 @@ void memoryMuncherProcess(void) {
         tempNode = NULL;
 
         envelope = (Envelope *)try_request_memory_block();
-				if (envelope == NULL) {
-						break;
-				}
+        if (envelope == NULL) {
+                break;
+        }
 				
-				index = 0;
+        index = 0;
         index += write_string(envelope->messageData+index, 13, "I have eaten ");
         index += write_uint32(envelope->messageData+index, MESSAGEDATA_SIZE_BYTES - index - 4, (uint32_t)memList, 0);
         index += write_string(envelope->messageData+index, 3, ".\r\n");
@@ -206,21 +202,28 @@ void releaseProcess(void) {
     void *mem = request_memory_block();
     Envelope *envelope = (Envelope *)request_memory_block();
     uint8_t index = 0;
+    char *buf = envelope->messageData;
+    size_t bufLen = MESSAGEDATA_SIZE_BYTES-1; // -1 for \0
 
-    index += write_string(envelope->messageData+index, 26, "releaseProcess: taken mem ");
-    index += write_uint32(envelope->messageData+index, MESSAGEDATA_SIZE_BYTES - index - 3, (uint32_t)mem, 0);
-    index += write_string(envelope->messageData+index, 2, "\r\n");
-    envelope->messageData[index++] = '\0';
+    index += write_string(buf+index, bufLen-index, "releaseProcess: taken mem ");
+    index += write_uint32(buf+index, bufLen-index, (uint32_t)mem, 0);
+    index += write_string(buf+index, bufLen-index, "\r\n");
+    buf[index++] = '\0';
+    buf = NULL;
     send_message(CRT_PID, envelope);
     envelope = NULL;
 
     set_process_priority(pid(), get_process_priority(1));
     release_processor();
 
-    index = 0;
     envelope = (Envelope *)request_memory_block();
-    index += write_string(envelope->messageData+index, 32, "releaseProcess: I am in control\r\n");
-    envelope->messageData[index++] = '\0';
+    index = 0;
+    bufLen = MESSAGEDATA_SIZE_BYTES-1;
+    buf = envelope->messageData;
+    
+    index += write_string(buf+index, bufLen-index, "releaseProcess: I am in control\r\n");
+    buf[index++] = '\0';
+    buf = NULL;
     send_message(CRT_PID, envelope);
     envelope = NULL;
     release_memory_block(mem);
@@ -452,7 +455,7 @@ void stressAProcess(void) {
 
     while (1) {
         env = (Envelope *)request_memory_block();
-        env->messageType = MESSAGE_TYPE_COUNT_REPORT;
+        env->messageType = MT_COUNT_REPORT;
 
 				num++;
 				env->messageData[0] = (uint8_t)(num >> (8 * 3));
@@ -491,7 +494,7 @@ void stressCProcess(void) {
         } else {
             msg = receive_message(NULL);
         }
-        if (msg->messageType == MESSAGE_TYPE_COUNT_REPORT) {
+        if (msg->messageType == MT_COUNT_REPORT) {
             // TODO(shale): determine if we want to filter in other locations as well.
 						uint32_t happyNumber =
 							(((uint32_t) msg->messageData[0]) << (8*3)) +
