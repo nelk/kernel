@@ -59,8 +59,8 @@ void printProcess(char *c) {
         Envelope *envelope = (Envelope *)request_memory_block();
         uint8_t i = 0;
 
-        i += write_string(envelope->messageData+i, c, 100);
-        i += write_string(envelope->messageData+i, "\r\n", 2);
+        i += write_string(envelope->messageData+i, 100, c);
+        i += write_string(envelope->messageData+i, 2, "\r\n");
         envelope->messageData[i++] = '\0';
         send_message(CRT_PID, envelope);
         envelope = NULL;
@@ -125,9 +125,9 @@ void fibProcess(void) {
             envelope = (Envelope *)request_memory_block();
             index += write_string(envelope->messageData+index, 4, "fib(");
             index += write_uint32(envelope->messageData+index, MESSAGEDATA_SIZE_BYTES - index, idx, 1);
-            index += write_string(envelope->messageData+index, ") = ", 4);
+            index += write_string(envelope->messageData+index, 4, ") = ");
             index += write_uint32(envelope->messageData+index, MESSAGEDATA_SIZE_BYTES - index - 3, cur, 1);
-            index += write_string(envelope->messageData+index, "\r\n", 2);
+            index += write_string(envelope->messageData+index, 2, "\r\n");
             envelope->messageData[index++] = '\0';
             send_message(CRT_PID, envelope);
             envelope = NULL;
@@ -170,7 +170,7 @@ void memoryMuncherProcess(void) {
 				index = 0;
         index += write_string(envelope->messageData+index, 13, "I have eaten ");
         index += write_uint32(envelope->messageData+index, MESSAGEDATA_SIZE_BYTES - index - 4, (uint32_t)memList, 0);
-        index += write_string(envelope->messageData+index, ".\r\n", 3);
+        index += write_string(envelope->messageData+index, 3, ".\r\n");
         envelope->messageData[index++] = '\0';
         send_message(CRT_PID, envelope);
         envelope = NULL;
@@ -178,7 +178,7 @@ void memoryMuncherProcess(void) {
 
     index = 0;
     envelope = (Envelope *)request_memory_block();
-    index += write_string(envelope->messageData+index, "I am out of things to eat.\r\n", 28);
+    index += write_string(envelope->messageData+index, 28, "I am out of things to eat.\r\n");
     envelope->messageData[index++] = '\0';
     send_message(CRT_PID, envelope);
     envelope = NULL;
@@ -187,7 +187,7 @@ void memoryMuncherProcess(void) {
 
     index = 0;
     envelope = (Envelope *)request_memory_block();
-    index += write_string(envelope->messageData+index, "I am too full.  I will release all the memory that I ate.\r\n", 59);
+    index += write_string(envelope->messageData+index, 59, "I am too full.  I will release all the memory that I ate.\r\n");
     envelope->messageData[index++] = '\0';
     send_message(CRT_PID, envelope);
     envelope = NULL;
@@ -209,7 +209,7 @@ void releaseProcess(void) {
 
     index += write_string(envelope->messageData+index, 26, "releaseProcess: taken mem ");
     index += write_uint32(envelope->messageData+index, MESSAGEDATA_SIZE_BYTES - index - 3, (uint32_t)mem, 0);
-    index += write_string(envelope->messageData+index, "\r\n", 2);
+    index += write_string(envelope->messageData+index, 2, "\r\n");
     envelope->messageData[index++] = '\0';
     send_message(CRT_PID, envelope);
     envelope = NULL;
@@ -219,7 +219,7 @@ void releaseProcess(void) {
 
     index = 0;
     envelope = (Envelope *)request_memory_block();
-    index += write_string(envelope->messageData+index, "releaseProcess: I am in control\r\n", 32);
+    index += write_string(envelope->messageData+index, 32, "releaseProcess: I am in control\r\n");
     envelope->messageData[index++] = '\0';
     send_message(CRT_PID, envelope);
     envelope = NULL;
