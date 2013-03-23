@@ -53,8 +53,8 @@ private Implementation:
         readIndex = 0;
         outq.enqueue("\x1b[2J"); // clear screen
 
-        screenCursorPos = 255; // force moveto_ to do something
-        moveto_((0 << 7) | 0); // move to user typing location
+        setcursor_(1, 0); // force moveto_ to do something
+        moveto_(0, 0); // move to user typing location
 
         procCursorPos = 0;
         cursorOwner = PROC_ID_NONE;
@@ -87,7 +87,7 @@ private Implementation:
         // If the screen is showing more than our internal model, then we
         // need to clear the latter part of the screen.
         if (screenBufLen > lineBufLen) {
-            moveto_((0 << 7) | lineBufLen);
+            moveto_(0, lineBufLen);
             outq.enqueue("\x1b[0K"); // clear from cursor to end of line
             screenBufLen = lineBufLen;
             return;
@@ -108,19 +108,21 @@ private Implementation:
         // that position, and output some characters (note that this will
         // simply overwrite any characters that may be on the screen right now)
         if (mismatchPos < screenBufLen) {
-            moveto_((0 << 7) | mismatchPos);
+            moveto_(0, mismatchPos);
             outq.enqueue(lineBuf[mismatchPos]);
             screenBuf[mismatchPos] = lineBuf[mispatchPos];
+            screenCursorPos = (0 << 7) | (mismatchPos+1);
             return;
         }
 
         // If there is no mismatch, but we are showing less than our internal
         // model, then show the next character in our internal model.
         if (mismatchPos == screenBufLen && screenBufLen < lineBufLen) {
-            moveto_((0 << 7) | mismatchPos);
+            moveto_(0, mismatchPos);
             outq.enqueue(lineBuf[mismatchPos]);
             screenBufLen++;
             screenBuf[mismatchPos] = lineBuf[mismatchPos];
+            screenCursorPos = (0 << 7) | (mismatchPos+1);
             return;
         }
 
@@ -153,7 +155,7 @@ private Implementation:
             // the beginning of the process line, and output this byte.
             if (nextEnv->srcPid != cursorOwner && procCursorPos > 0) {
                 scrollProcessArea_();
-                moveto_((1 << 7) | 0); // procCursorPos is now 0
+                moveto_(1, 0); // procCursorPos is now 0
                 outq.enqueue(nextByte);
                 cursorOwner = nextEnv->srcPid;
                 return;
@@ -172,7 +174,7 @@ private Implementation:
 
             // Otherwise, merely move the currect location, and output the next
             // byte.
-            moveto_((1 << 7) | procCursorPos);
+            moveto_(1, procCursorPos);
             procCursorPos++;
             outq.enqueue(nextByte);
             return;
@@ -180,7 +182,7 @@ private Implementation:
     }
 
     void scrollProcessArea_() {
-        moveto_((0 << 7) | 0); // move to beginning of user line
+        moveto_(0, 0); // move to beginning of user line
         outq.enqueue("\x1b[2K"); // clear entire line
         outq.enqueue("\x1b[1S"); // scroll up one
 
@@ -189,7 +191,9 @@ private Implementation:
     }
 
     // desired is in the same format as screenCursorPos, see above
-    void moveto_(uint8_t desired) {
+    void moveto_(uint8_t isProcLine, uint8_t pos) {
+        uint8_t desired = (isProcLine << 7) | (pos & 0x7f);
+
         if (screenCursorPos == desired) {
             return;
         }
@@ -203,6 +207,10 @@ private Implementation:
         }
 
         screenCursorPos = desired;
+    }
+
+    void setcursor_(uint8_t isProcLine, uint8_t pos) {
+        screenCursorPos = (isProcLine << 7) | (pos & 0x7f);
     }
 
     void pushProcEnv(Envelope *env) {
