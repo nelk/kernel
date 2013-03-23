@@ -363,7 +363,8 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
 uint32_t k_setProcessPriority(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *messageInfo, ClockInfo *clockInfo, ProcId pid, uint8_t priority) {
     PCB *topProcess = NULL;
     PCB *modifiedProcess = NULL;
-    uint8_t oldPriority;
+    uint32_t oldPriority = 0;
+		uint32_t newPriority = 0;
 
     if (procInfo->currentProcess == NULL) {
         // TODO(sanjay): this error code seems a little inappropriate...
@@ -382,10 +383,10 @@ uint32_t k_setProcessPriority(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo 
     }
 
     oldPriority = modifiedProcess->priority;
-    priority =
+    newPriority =
         (priority & USER_PRIORITY_MASK) |
         (oldPriority & KERN_PRIORITY_MASK);
-    modifiedProcess->priority = priority;
+    modifiedProcess->priority = newPriority;
 
     // These are safe to call if the specified PCB is not in the particular
     // queue.
@@ -393,7 +394,7 @@ uint32_t k_setProcessPriority(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo 
     pqChangedPriority(&(procInfo->memq), modifiedProcess);
 
     // If we just improved our own priority, do not preempt.
-    if (procInfo->currentProcess == modifiedProcess && oldPriority >= priority) {
+    if (procInfo->currentProcess == modifiedProcess && oldPriority >= newPriority) {
         return SUCCESS;
     }
 
