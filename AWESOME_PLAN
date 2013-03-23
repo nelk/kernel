@@ -171,7 +171,7 @@ private Implementation:
 
             // If the process has output more than 80 characters, truncate.
             if (procCursorPos >= 80) {
-                continue; // truncate process content at 80-chars
+                continue;
             }
 
             // Otherwise, merely move the currect location, and output the next
@@ -193,7 +193,7 @@ private Implementation:
         screenBufLen = 0; // This will cause the user line to be recopied.
     }
 
-    // desired is in the same format as screenCursorPos, see above
+    // Desired is in the same format as screenCursorPos, see above
     void moveto_(uint8_t isProcLine, uint8_t pos) {
         uint8_t desired = (isProcLine << 7) | (pos & 0x7f);
 
@@ -262,4 +262,3 @@ private Implementation:
         ++userCursorPos;
         ++lineBufLen;
     }
-
