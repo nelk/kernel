@@ -1,7 +1,7 @@
 #include "coq.h"
 #include "mem.h"
 
-void advance(CrtOutputQueue *coq, MemInfo *memInfo) {
+void advance(CrtOutputQueue *coq) {
     if (coq->advanced) {
         return;
     }
@@ -28,14 +28,14 @@ void advance(CrtOutputQueue *coq, MemInfo *memInfo) {
     coq->advanced = 1;
 }
 
-uint8_t hasData(CrtOutputQueue* coq, MemInfo *memInfo) {
-    advance(coq, memInfo);
+uint8_t hasData(CrtOutputQueue* coq) {
+    advance(coq);
     return coq->head != NULL;
 }
 
-uint8_t getData(CrtOutputQueue* coq, MemInfo *memInfo) {
-    advance(coq, memInfo);
-    if (!hasData(coq, memInfo)) {
+uint8_t getData(CrtOutputQueue* coq) {
+    advance(coq);
+    if (!hasData(coq)) {
         return 0;
     }
     coq->advanced = 0;
