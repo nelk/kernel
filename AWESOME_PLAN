@@ -202,7 +202,7 @@ private Implementation:
         }
 
         // This moves it to the right column, at the bottom of the screen
-        outq.enqueue(sprintf("\x1b[10000;%dK", desired & 0x7f));
+        outq.enqueue(sprintf("\x1b[10000;%dK", (desired & 0x7f)+1));
 
         // Move it up a row if necessary
         if (((screenCursorPos) >> 7) == 1) {
