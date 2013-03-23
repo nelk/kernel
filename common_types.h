@@ -20,6 +20,7 @@
 #define CLOCK_PID (10)
 #define CRT_PID (11)
 #define KEYBOARD_PID (12)
+#define SET_PRIORITY_PID (13)
 
 // exposed so we can expose the size of messages in the envelopes
 #define BLOCKSIZE_BYTES (1 << 7)
