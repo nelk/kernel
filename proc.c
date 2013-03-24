@@ -287,6 +287,7 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
                 k_sendMessage(memInfo, procInfo, kcdEnv, KEYBOARD_PID, KEYBOARD_PID);
             }
 
+            crtData->lineBufLen = 0;
             kcdEnv = NULL;
             continue;
         } else if (new_char == SHOW_DEBUG_PROCESSES) {

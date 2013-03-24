@@ -262,7 +262,7 @@ void crt_pushProcEnv(CRTData *crt, Envelope *env) {
 
 void crt_pushUserByte(CRTData *crt, uint8_t c) {
     // First, handle backspaces
-    if (c == '\b') {
+    if (c == 0x7F) {
         uint8_t i = 0;
 
         // If the line is empty, or user is at beginning of string, give up
