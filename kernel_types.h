@@ -137,7 +137,7 @@ struct CRTData {
     uint8_t lineBufLen;
 
     // The screen buffer is what is currently on the screen on the user line
-    uint8_t screenBuf[CRT_LINE_LIMIT]
+    uint8_t screenBuf[CRT_LINE_LIMIT];
     uint8_t screenBufLen;
 
     // This index answers the question "if the user typed a character, where in
