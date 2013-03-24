@@ -227,7 +227,7 @@ void crt_moveTo_(CRTData *crt, uint8_t isProcLine, uint8_t pos) {
     );
 
     // Then, we move it up a row if necessary
-    if (((screenCursorPos) >> 7) == 1) {
+    if (((crt->screenCursorPos) >> 7) == 1) {
         crt->outqWriter += write_string(
             crt->outqBuf + crt->outqWriter,
             CRT_OUTQ_LEN - crt->outqWriter,
@@ -307,7 +307,7 @@ uint8_t crt_hasFreeEnv(CRTData *crt) {
     return crt->freeList != NULL;
 }
 
-Envelope *crt_getFreeEnv(CRTData *) {
+Envelope *crt_getFreeEnv(CRTData *crt) {
     Envelope *temp = crt->freeList;
     if (temp != NULL) {
         crt->freeList = temp->next;
