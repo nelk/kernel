@@ -81,7 +81,7 @@ void crt_advance_(CRTData *crt) {
         crt_moveTo_(crt, 0, mismatchPos);
         // NOTE(sanjay): this is an unsafe write
         crt->outqBuf[(crt->outqWriter)++] = crt->lineBuf[mismatchPos];
-        crt->screenBuf[mismatchPos] = crt->lineBuf[mispatchPos];
+        crt->screenBuf[mismatchPos] = crt->lineBuf[mismatchPos];
         crt_setCursor_(crt, 0, mismatchPos+1);
         return;
     }
