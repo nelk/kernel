@@ -50,9 +50,11 @@ enum ForegroundColor {
     FC_MAGENTA,
     FC_CYAN,
     FC_WHITE,
+
+    FC_NUM_COLORS,
 };
 
-#define BACKGROUND_COLOR_BASE (FC_WHITE+1)
+#define BACKGROUND_COLOR_BASE (FC_NUM_COLORS+1)
 enum BackgroundColor {
     BC_BLACK = BACKGROUND_COLOR_BASE,
     BC_RED,
@@ -62,6 +64,8 @@ enum BackgroundColor {
     BC_MAGENTA,
     BC_CYAN,
     BC_WHITE,
+
+    BC_NUM_COLORS,
 };
 
 
