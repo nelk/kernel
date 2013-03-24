@@ -136,23 +136,48 @@ void crt_advance_(CRTData *crt) {
 
         // The only special character we support for now is \n, any other
         // special characters are simply skipped.
-        if (!is_printable(nextByte) && nextByte != '\n') {
+        if (!(
+                is_printable(nextByte) ||
+                nextByte != '\n' ||
+                (
+                    nextByte >= FOREGROUND_COLOR_BASE &&
+                    nextByte < FC_UPPER_BOUND
+                ) ||
+                (
+                    nextByte >= BACKGROUND_COLOR_BASE &&
+                    nextByte < BC_UPPER_BOUND
+                )
+        )) {
             continue;
         }
 
         // If we just switched to a new cursorOwner and we have some content
         // on the process line, then scroll the process area up, move to
         // the beginning of the process line, and output this byte.
-        if (nextEnv->srcPid != crt->cursorOwner && crt->procCursorPos > 0) {
-            crt_scrollCursorArea_(crt);
-            crt_moveTo_(crt, 1, 0); // procCursorPos is now 0
-            crt_setCursor_(crt, 1, 1);
+
+        if (nextEnv->srcPid != crt->cursorOwner) {
+            crt->cursorOwner = nextEnv->srcPid;
+
+            // We always reset the color
+            // TODO(sanjay): only reset color if we have to
+            crt->outqWriter += write_string(
+                (char *)(crt->outqBuf + crt->outqWriter),
+                CRT_OUTQ_LEN - crt->outqWriter,
+                "\x1b[0m"
+            );
+
+            // If they had content on this line, then scroll to the next line
+            if (crt->cursorPos > 0) {
+                crt_scrollCursorArea_(crt);
+                crt_moveTo_(crt, 1, 0); // procCursorPos is now 0
+            }
+
+            return;
         }
 
         // If we are printing a newline, then just scroll this process area.
         if (nextByte == '\n' && crt->procCursorPos > 0) {
             crt_scrollCursorArea_(crt);
-            crt->cursorOwner = nextEnv->srcPid;
             return;
         }
 
@@ -161,9 +186,49 @@ void crt_advance_(CRTData *crt) {
             continue;
         }
 
+        if (nextByte >= FOREGROUND_COLOR_BASE && nextByte < FC_UPPER_BOUND) {
+            crt->outqWriter += write_string(
+                (char *)(crt->outqBuf + crt->outqWriter),
+                CRT_OUTQ_LEN - crt->outqWriter,
+                "\x1b["
+            );
+            crt->outqWriter += write_uint32(
+                (char *)(crt->outqBuf + crt->outqWriter),
+                CRT_OUTQ_LEN - crt->outqWriter,
+                nextByte - FOREGROUND_COLOR_BASE + 30
+                0
+            );
+            crt->outqWriter += write_string(
+                (char *)(crt->outqBuf + crt->outqWriter),
+                CRT_OUTQ_LEN - crt->outqWriter,
+                "m"
+            );
+            return;
+        } else if (
+            nextByte >= BACKGROUND_COLOR_BASE &&
+            nextByte < BC_UPPER_BOUND
+        ) {
+            crt->outqWriter += write_string(
+                (char *)(crt->outqBuf + crt->outqWriter),
+                CRT_OUTQ_LEN - crt->outqWriter,
+                "\x1b["
+            );
+            crt->outqWriter += write_uint32(
+                (char *)(crt->outqBuf + crt->outqWriter),
+                CRT_OUTQ_LEN - crt->outqWriter,
+                nextByte - BACKGROUND_COLOR_BASE + 40
+                0
+            );
+            crt->outqWriter += write_string(
+                (char *)(crt->outqBuf + crt->outqWriter),
+                CRT_OUTQ_LEN - crt->outqWriter,
+                "m"
+            );
+            return;
+        }
+
         // Otherwise, merely move to the correct location, and output the
         // next byte.
-        crt->cursorOwner = nextEnv->srcPid;
         crt_moveTo_(crt, 1, crt->procCursorPos);
         crt_setCursor_(crt, 1, (crt->procCursorPos)+1);
         ++(crt->procCursorPos);
