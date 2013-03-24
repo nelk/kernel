@@ -50,15 +50,16 @@ struct MemInfo {
 #define UART_IN_BUF_SIZE (64)
 
 enum ProcState {
-    BLOCKED_MEMORY,
-    BLOCKED_MESSAGE,
-    NEW,
-    READY,
-    RUNNING,
+    PS_BLOCKED_MEMORY,
+    PS_BLOCKED_MESSAGE,
+    PS_NEW,
+    PS_READY,
+    PS_RUNNING,
+    PS_UNUSED,
 };
 typedef enum ProcState ProcState;
 
-#define USER_PRIORITY_MASK ((uint32_t)0xff)
+#define USER_PRIORITY_MASK ((uint32_t)0xFF)
 #define KERN_PRIORITY_MASK (~(USER_PRIORITY_MASK))
 #define KERN_PRIORITY_SHIFT (8)
 #define MAX_PRIORITY (USER_PRIORITY_MASK)
