@@ -118,6 +118,8 @@ struct CRTData {
 
     Envelope *freeList;
 
+    uint8_t lastMismatchPos;
+
     // The position of the cursor on the screen
     // Format of screenCursorPos is as follows:
     // Highest order bit (i.e. (screenCursorPos >> 7)) stores whether its

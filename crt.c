@@ -66,13 +66,15 @@ void crt_advance_(CRTData *crt) {
     // Otherwise, we know that the screen is showing less than or equal to
     // our internal model. We try to find the first mismatch.
 
-    mismatchPos = 0;
+    mismatchPos = crt->lastMismatchPos;
     while (mismatchPos < crt->screenBufLen && mismatchPos < crt->lineBufLen) {
         if (crt->screenBuf[mismatchPos] != crt->lineBuf[mismatchPos]) {
             break;
         }
         ++mismatchPos;
     }
+
+    crt->lastMismatchPos = mismatchPos;
 
     // If the mismatch is before what our screen is showing, then we go to
     // that position, and output some characters (note that this will
@@ -190,6 +192,7 @@ void crt_scrollCursorArea_(CRTData *crt) {
 
     crt->procCursorPos = 0;
     crt->screenBufLen = 0; // This will cause the user line to be recopied.
+    crt->lastMismatchPos = 0;
 }
 
 void crt_moveTo_(CRTData *crt, uint8_t isProcLine, uint8_t pos) {
@@ -272,6 +275,9 @@ void crt_pushUserByte(CRTData *crt, uint8_t c) {
         for (i = crt->userCursorPos; i < crt->lineBufLen; ++i) {
             crt->lineBuf[i] = crt->lineBuf[i+1];
         }
+
+        crt->lastMismatchPos = 0;
+
         return;
     }
 
