@@ -235,8 +235,10 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
     while (procInfo->currentEnv != NULL && localReader != localWriter) {
         Envelope *kcdEnv = NULL;
         char new_char = procInfo->inputBuf[localReader];
-        localReader = (localReader + 1) % UART_IN_BUF_SIZE;
         CRTData *crt = &(procInfo->crtData);
+
+        localReader = (localReader + 1) % UART_IN_BUF_SIZE;
+
 
         if (new_char == '\r') {
             uint8_t i = 0;
