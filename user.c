@@ -596,6 +596,7 @@ void stressCProcess(void) {
                 send_message(CRT_PID, msg);
                 msg = NULL;
 
+								// TODO (all): fix deadlock
                 sleep(10 * 1000, &msgQueue);
             }
         }

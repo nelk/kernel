@@ -27,8 +27,8 @@ ssize_t *memqStoreIndexFunc(PCB *pcb) {
 }
 
 void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
-    ProcId i;
-    int j;
+    ProcId i = 0;
+    int j = 0;
     PCB *process = NULL;
     uint32_t *stack = NULL;
     uint8_t pidOffset = 0;
@@ -79,63 +79,63 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     *(process->startLoc) = ((uint32_t) nullProcess);
     process->priority = (2 << KERN_PRIORITY_SHIFT) | MAX_PRIORITY;
     procInfo->nullProcess = process;
-    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
+    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
 
     // Clock Process
     process = &(procInfo->processes[CLOCK_PID]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) clockProcess);
     process->priority = (0 << KERN_PRIORITY_SHIFT) | 2;
     pqAdd(&(procInfo->prq), process);
-    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
+    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
 
     // CRT Process
     process = &(procInfo->processes[CRT_PID]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) crt_proc);
     process->priority = (0 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
-    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
+    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
 
     // Keyboard Process
     process = &(procInfo->processes[KEYBOARD_PID]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) uart_keyboard_proc);
     process->priority = (0 << KERN_PRIORITY_SHIFT) | 1;
     pqAdd(&(procInfo->prq), process);
-    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
+    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
 
     // Fun Process
     process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) funProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 3;
     pqAdd(&(procInfo->prq), process);
-    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
+    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
 
     // Schizo Process
     process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) schizophrenicProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 3;
     pqAdd(&(procInfo->prq), process);
-    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
+    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
 
     // Fib Process
     process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) fibProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 2;
     pqAdd(&(procInfo->prq), process);
-    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
+    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
 
     // Memory muncher Process
     process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) memoryMuncherProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 1;
     pqAdd(&(procInfo->prq), process);
-    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
+    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
 
     // Release Process
     process = &(procInfo->processes[FIRST_USER_PID + pidOffset++]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) releaseProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
-    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
+    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
 
     // TODO(shale): remove this assertion.
     if ((FIRST_USER_PID + pidOffset) >= STRESS_A_PID) {
@@ -146,45 +146,80 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     *(process->startLoc) = ((uint32_t) stressAProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
-    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
+    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
     
     // Stress Process B
     process = &(procInfo->processes[STRESS_B_PID]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) stressBProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
-    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
+    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
 
     // Stress Process C
     process = &(procInfo->processes[STRESS_C_PID]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) stressCProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
-    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
+    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
         
     // Set Priority Process
     process = &(procInfo->processes[SET_PRIORITY_PID]); // Push process function address onto stack
     *(process->startLoc) = ((uint32_t) setPriorityProcess);
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
-    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
+    process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
 
     procInfo->currentProcess = NULL;
 
     // Init UART keyboard global output data
     procInfo->uartOutputEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
+		procInfo->uartOutputEnv->messageType = MT_CRT_WAKEUP;
+		
     // Init UART keyboard global input data
-    procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
+    procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
+    procInfo->currentEnv->messageType = MT_KEYBOARD;
 }
+
+
+size_t writePCBState(char *buf, size_t bufLen, ProcState state) {
+    switch (state) {
+        case BLOCKED_MEMORY:
+            return write_string(buf, bufLen, "Blocked on memory");
+        case BLOCKED_MESSAGE:
+            return write_string(buf, bufLen, "Blocked on message");
+        case NEW:
+            return write_string(buf, bufLen, "New");
+        case READY:
+            return write_string(buf, bufLen, "Ready");
+        case RUNNING:
+            return write_string(buf, bufLen, "Running");
+        default:
+            break;
+    }
+
+    return write_string(buf, bufLen, "???");
+}
+
+size_t writeProcessInfo(char *buf, size_t bufLen, PCB *pcb) {
+    size_t i = 0;
+    i += write_ansi_escape(buf+i, bufLen-i, 41);
+    i += write_uint32(buf+i, bufLen-i, pcb->pid, 0);
+    i += write_string(buf+i, bufLen-i, "$ Priority=");
+    i += write_uint32(buf+i, bufLen-i, pcb->priority, 0);
+    i += write_string(buf+i, bufLen-i, ", Status=");
+    i += writePCBState(buf+i, bufLen-i, pcb->state);
+    i += write_ansi_escape(buf+i, bufLen-i, 0);
+    i += write_string(buf+i, bufLen-i, "\r\n");
+    return i;
+}
+
 
 void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
     uint32_t localReader = procInfo->readIndex;
     uint32_t localWriter = procInfo->writeIndex;
 
-    if (procInfo->currentEnv == NULL) {
-        procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
-    }
     while (procInfo->currentEnv != NULL && localReader != localWriter) {
+        Envelope *kcdEnv = NULL;
         char new_char = procInfo->inputBuf[localReader];
         localReader = (localReader + 1) % UART_IN_BUF_SIZE;
 
@@ -201,30 +236,81 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
             procInfo->currentEnv->messageData[procInfo->currentEnvIndex++] = '\n';
             procInfo->currentEnv->messageData[procInfo->currentEnvIndex++] = '\0';
 
-            k_sendMessage(memInfo, procInfo, procInfo->currentEnv, KEYBOARD_PID, KEYBOARD_PID); // No preemption
-            procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
             procInfo->currentEnvIndex = 0;
+            
+            
+            // Try to allocate a new envelope to send to KCD.
+            kcdEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
+            copy_envelope(kcdEnv, procInfo->currentEnv); // Will do nothing if kcdEnv is null
+            
+            k_sendMessage(memInfo, procInfo, procInfo->currentEnv, CRT_PID, CRT_PID);
+            procInfo->currentEnv = NULL;
+            
+						// If we're out of memory we will silently fail sending the message to KCD (it still shows on screen).
+            if (kcdEnv != NULL) {
+                k_sendMessage(memInfo, procInfo, kcdEnv, KEYBOARD_PID, KEYBOARD_PID);
+            }
+ 
             continue;
         }
 
         // Write new character into message
         procInfo->currentEnv->messageData[procInfo->currentEnvIndex] = new_char;
 
-        // If first character in message.
-        if (procInfo->currentEnvIndex == 0) {
-            switch (new_char) {
-                case SHOW_DEBUG_PROCESSES:
-                    if (procInfo->debugSem > 0) {
-                        continue;
-                    }
-                    ++(procInfo->debugSem);
-                    k_sendMessage(memInfo, procInfo, procInfo->currentEnv, KEYBOARD_PID, KEYBOARD_PID);
-                    procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
-                    procInfo->currentEnvIndex = 0;
+        // Debug Output.
+        if (procInfo->currentEnvIndex == 0 && new_char == SHOW_DEBUG_PROCESSES) {
+						uint8_t i = 0;
+            uint8_t bufLen = 0;
+						char *buf = NULL;
+					
+						if (procInfo->debugSem > 0) {
+								continue;
+						}
+						
+						++(procInfo->debugSem);
+						
+						i = 0;
+						buf = procInfo->currentEnv->messageData;
+            bufLen = MESSAGEDATA_SIZE_BYTES-1; // -1 for null byte
+
+            i += write_ansi_escape(buf+i, bufLen-i, 41);
+            i += write_string(buf+i, bufLen-i, "used mem = ");
+            i += write_uint32(buf+i, bufLen-i, (memInfo->numSuccessfulAllocs-memInfo->numFreeCalls)*128, 2);
+            i += write_string(buf+i, bufLen-i, " bytes");
+            i += write_ansi_escape(buf+i, bufLen-i, 0);
+            i += write_string(buf+i, bufLen-i, "\r\n");
+            buf[i++] = '\0';
+						
+            k_sendMessage(memInfo, procInfo, procInfo->currentEnv, CRT_PID, CRT_PID);
+            procInfo->currentEnv = NULL;
+						buf = NULL;
+
+            for (i = 0; i < NUM_PROCS; i++) {
+								Envelope *tempEnvelope = NULL;
+                uint32_t location = 0;
+                PCB *pcb = &(procInfo->processes[i]);
+                
+                // Check if this is an unused process slot
+                if (*(pcb->startLoc) == 0 || pcb->debugEnv == NULL) {
                     continue;
-                default:
-                    break;
+                }
+                
+                ++(procInfo->debugSem);
+
+                tempEnvelope = pcb->debugEnv;
+                location += writeProcessInfo(
+                    tempEnvelope->messageData,
+                    MESSAGEDATA_SIZE_BYTES - 1, // -1 for null byte
+                    pcb
+                );
+                tempEnvelope->messageData[location++] = '\0';
+                tempEnvelope->messageType = MT_DEBUG;
+                k_sendMessage(memInfo, procInfo, tempEnvelope, CRT_PID, CRT_PID);
+                tempEnvelope = NULL;
             }
+            --(procInfo->debugSem);
+            
+						continue;
         }
         if (procInfo->currentEnvIndex >= MESSAGEDATA_SIZE_BYTES - 3) { // -3 for \r\n\0
             procInfo->inputBufOverflow = 1;
@@ -274,6 +360,7 @@ void k_processUartOutput(ProcInfo *procInfo, MemInfo *memInfo) {
     // Otherwise, CRT proc is asleep, can print something,
     // and has something to print, so we should wake it up.
     temp = procInfo->uartOutputEnv;
+		temp->messageType = MT_CRT_WAKEUP;
     procInfo->uartOutputEnv = NULL;
     k_sendMessage(memInfo, procInfo, temp, CRT_PID, CRT_PID);
 }

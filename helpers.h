@@ -14,5 +14,7 @@ size_t write_uint32(
     uint32_t number,
     uint8_t minDigits
 );
+void copy_envelope(Envelope *dst, Envelope *src);
+
 
 #endif
