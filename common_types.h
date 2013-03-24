@@ -37,8 +37,33 @@ enum MessageType {
     MT_SLEEP,
     MT_DEBUG,
     MT_KEYBOARD,
-		MT_CRT_WAKEUP,
+    MT_CRT_WAKEUP,
 };
+
+#define FOREGROUND_COLOR_BASE (128)
+enum ForegroundColor {
+    FC_BLACK = FOREGROUND_COLOR_BASE,
+    FC_RED,
+    FC_GREEN,
+    FC_YELLOW,
+    FC_BLUE,
+    FC_MAGENTA,
+    FC_CYAN,
+    FC_WHITE,
+};
+
+#define BACKGROUND_COLOR_BASE (FC_WHITE+1)
+enum BackgroundColor {
+    BC_BLACK = BACKGROUND_COLOR_BASE,
+    BC_RED,
+    BC_GREEN,
+    BC_YELLOW,
+    BC_BLUE,
+    BC_MAGENTA,
+    BC_CYAN,
+    BC_WHITE,
+};
+
 
 // ProcId is used to store pids and is typedef'd
 // to distinguish it from regular integers.
