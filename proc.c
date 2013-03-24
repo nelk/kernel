@@ -288,6 +288,7 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
             }
 
             crt->lineBufLen = 0;
+            crt->userCursorPos = 0;
             kcdEnv = NULL;
             continue;
         } else if (new_char == SHOW_DEBUG_PROCESSES) {
