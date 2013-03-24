@@ -284,7 +284,7 @@ void uart_keyboard_proc(void) {
                 registry[c - 'a'] = message->srcPid;
             }
 
-            release_memory_block(message);
+            release_memory_block((void *)message);
             message = NULL;
             continue;
         }

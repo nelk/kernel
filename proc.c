@@ -172,7 +172,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
     process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
-		process->state = NEW;
+    process->state = NEW;
 
     // Set Priority Process
     process = &(procInfo->processes[SET_PRIORITY_PID]); // Push process function address onto stack
@@ -277,7 +277,8 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
             if (kcdEnv != NULL) {
                 k_sendMessage(memInfo, procInfo, kcdEnv, KEYBOARD_PID, KEYBOARD_PID);
             }
-
+            
+            kcdEnv = NULL;
             continue;
         }
 
@@ -338,7 +339,7 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
             }
             --(procInfo->debugSem);
             
-						continue;
+            continue;
         }
         if (procInfo->currentEnvIndex >= MESSAGEDATA_SIZE_BYTES - 3) { // -3 for \r\n\0
             procInfo->inputBufOverflow = 1;
@@ -388,7 +389,7 @@ void k_processUartOutput(ProcInfo *procInfo, MemInfo *memInfo) {
     // Otherwise, CRT proc is asleep, can print something,
     // and has something to print, so we should wake it up.
     temp = procInfo->uartOutputEnv;
-		temp->messageType = MT_CRT_WAKEUP;
+    temp->messageType = MT_CRT_WAKEUP;
     procInfo->uartOutputEnv = NULL;
     k_sendMessage(memInfo, procInfo, temp, CRT_PID, CRT_PID);
 }
