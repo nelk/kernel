@@ -50,15 +50,17 @@ struct MemInfo {
 #define UART_IN_BUF_SIZE (64)
 
 enum ProcState {
+		// TODO(nelk): prepend PS_ to these so we don't have a global 'NEW' defined here
     BLOCKED_MEMORY,
     BLOCKED_MESSAGE,
     NEW,
     READY,
     RUNNING,
+		UNUSED,
 };
 typedef enum ProcState ProcState;
 
-#define USER_PRIORITY_MASK ((uint32_t)0xff)
+#define USER_PRIORITY_MASK ((uint32_t)0xFF)
 #define KERN_PRIORITY_MASK (~(USER_PRIORITY_MASK))
 #define KERN_PRIORITY_SHIFT (8)
 #define MAX_PRIORITY (USER_PRIORITY_MASK)
@@ -77,7 +79,7 @@ struct PCB {
 
     struct Envelope *mqHead;
     struct Envelope *mqTail;
-    
+
     struct Envelope *debugEnv;
 };
 
@@ -101,14 +103,48 @@ struct PQ {
     storeIndexFunc getIndexInStore; // takes a PCB* and returns a ssize_t*
 };
 
-typedef struct CrtOutputQueue CrtOutputQueue;
-struct CrtOutputQueue {
-    size_t readIndex;
-    Envelope *head;
-    Envelope *tail;
-    uint8_t advanced;
-    Envelope *toFree;
+#define CRT_OUTQ_LEN (80)
+#define CRT_LINE_LIMIT (80)
+
+typedef struct CRTData CRTData;
+struct CRTData {
+    uint8_t outqBuf[CRT_OUTQ_LEN];
+    uint8_t outqWriter;
+    uint8_t outqReader;
+
+    uint8_t readIndex;
+    Envelope *envqHead;
+    Envelope *envqTail;
+
+    Envelope *freeList;
+
+    // The position of the cursor on the screen
+    // Format of screenCursorPos is as follows:
+    // Highest order bit (i.e. (screenCursorPos >> 7)) stores whether its
+    // on the user line (0) or on the process line (1).
+    // The remaining 7 bits (i.e. screenCursorPos & 0x7f) stores where on that
+    // line the cursor is.
+    uint8_t screenCursorPos;
+
+    // The horizontal position of the cursor in the process line
+    uint8_t procCursorPos;
+
+    // The last process to print something
+    ProcId cursorOwner;
+
+    // The line buffer is our internal model of what the user has typed
+    uint8_t lineBuf[CRT_LINE_LIMIT];
+    uint8_t lineBufLen;
+
+    // The screen buffer is what is currently on the screen on the user line
+    uint8_t screenBuf[CRT_LINE_LIMIT];
+    uint8_t screenBufLen;
+
+    // This index answers the question "if the user typed a character, where in
+    // lineBuf would that character be inserted?"
+    uint8_t userCursorPos;
 };
+
 
 typedef struct ProcInfo ProcInfo;
 struct ProcInfo {
@@ -122,7 +158,7 @@ struct ProcInfo {
     PQ memq; // Memory blocked queue
     PQEntry memQueue[NUM_PROCS];
 
-    CrtOutputQueue coq; // FIFO queue for CRT output
+    CRTData crtData;
     Envelope *uartOutputEnv;
 
     // UART keyboard input data
@@ -132,7 +168,6 @@ struct ProcInfo {
     volatile uint32_t writeIndex; // Next write index
     volatile uint32_t inputBufOverflow;
     Envelope *currentEnv; // This is initialized to new block
-    uint32_t currentEnvIndex;
 };
 
 enum ReleaseReason {
