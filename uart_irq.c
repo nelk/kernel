@@ -329,7 +329,7 @@ void uart_keyboard_proc(void) {
         if (reject) {
             size_t i = 0;
             size_t bufLen = MESSAGEDATA_SIZE_BYTES - 1;
-            message->messageData[index++] = FC_RED;
+            message->messageData[i++] = FC_RED;
             i += write_string(message->messageData+i, bufLen-i, "No handler found for this command.\n");
             message->messageData[i++] = '\0';
             message->messageType = MT_UNSET;
