@@ -9,9 +9,9 @@ void crt_advance_(CRTData *crt);
 void crt_init(CRTData *crt) {
     memset((uint8_t *)crt, sizeof(CRTData), 0);
 
-    cursorOwner = PROC_ID_NONE;
+    crt->cursorOwner = PROC_ID_NONE;
 
-    crt->outqWriter += write_string(crt->outqBuf, CRT_OUTQ_LEN, "\x1b[2J");
+    crt->outqWriter += write_string((char *)crt->outqBuf, CRT_OUTQ_LEN, "\x1b[2J");
 
     crt_setCursor_(crt, 1, 0); // force moveto_ to do something
     crt_moveTo_(crt, 0, 0); // move to user typing location
