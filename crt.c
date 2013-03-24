@@ -112,7 +112,7 @@ void crt_advance_(CRTData *crt) {
         // If we see a null byte in our current envelope, or we've fallen
         // off the end of this envelope, give up on this envelope.
         if (
-            crt->readIndex >= 96 ||
+            crt->readIndex >= MESSAGEDATA_SIZE_BYTES ||
             nextEnv->messageData[crt->readIndex] == '\0'
         ) {
             // Dequeue from envQ
@@ -120,6 +120,8 @@ void crt_advance_(CRTData *crt) {
             if (crt->envqHead == NULL) {
                 crt->envqTail = NULL;
             }
+
+            crt->readIndex = 0;
 
             // Put on free list
             nextEnv->next = crt->freeList;
