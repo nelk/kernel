@@ -219,10 +219,14 @@ void crt_proc(void) {
             temp = gProcInfo.coq.toFree;
             gProcInfo.coq.toFree = gProcInfo.coq.toFree->next;
             if (temp->messageType == MT_DEBUG && temp->srcPid == CRT_PID) {
-							  // NOTE(sanjay): we DO NOT want to free this envelope, it's a preallocated buffer stored inside a process' PCB
+				// NOTE(sanjay): we DO NOT want to free this envelope, it's a preallocated buffer stored inside a process' PCB
                 --(gProcInfo.debugSem);
                 continue;
-            }
+            } else if (temp->srcPid == CRT_PID && temp->messageType == MT_KEYBOARD) {
+                // NOTE(sanjay): we DO NOT want to free this envelope, it's a preallocated buffer that echoes keyboard output
+				gProcInfo.currentEnv = temp;
+                continue;
+			}
             
             release_memory_block((void*)temp);
         }
@@ -232,10 +236,8 @@ void crt_proc(void) {
             continue;
         }
 
-        if (nextMsg->srcPid == CRT_PID && nextMsg->messageType == MT_KEYBOARD) {
-						gProcInfo.currentEnv = nextMsg;
-				} else if (nextMsg->srcPid == CRT_PID && nextMsg->messageType == MT_CRT_WAKEUP) {
-						gProcInfo.uartOutputEnv = nextMsg;
+        if (nextMsg->srcPid == CRT_PID && nextMsg->messageType == MT_CRT_WAKEUP) {
+			gProcInfo.uartOutputEnv = nextMsg;
         } else {
             pushEnvelope(&(gProcInfo.coq), nextMsg);
         }
@@ -265,7 +267,6 @@ char toLowerAndIsLetter(char c) {
 
 void uart_keyboard_proc(void) {
     Envelope *message = NULL;
-    Envelope *messageCopy = NULL;
     ProcId registry['z' - 'a' + 1] = {0};
     ProcId destPid = 0;
     char c = '\0';
@@ -277,7 +278,7 @@ void uart_keyboard_proc(void) {
             continue;
         }
 
-        if (message->srcPid == CRT_PID) {
+        if (message->srcPid != KEYBOARD_PID) {
             c = toLowerAndIsLetter(message->messageData[0]);
             if ('a' <= c && c <= 'z') {
                 registry[c - 'a'] = message->srcPid;
@@ -302,23 +303,19 @@ void uart_keyboard_proc(void) {
         }
 
         if (reject) {
-            // Set copy for crt proc this message (since original is not being sent anywhere)
-            messageCopy = message;
+            size_t i = 0;
+            size_t bufLen = MESSAGEDATA_SIZE_BYTES - 1;
+            i += write_ansi_escape(message->messageData+i, bufLen-i, 31);
+            i += write_string(message->messageData+i, bufLen-i, "No handler found for this command.\r\n");
+            i += write_ansi_escape(message->messageData+i, bufLen-i, 0);
+            message->messageData[i++] = '\0';
+            message->messageType = MT_UNSET;
+            send_message(CRT_PID, message);
             message = NULL;
         } else {
-            // Create copy to send to crt proc
-            messageCopy = (Envelope *)request_memory_block();
-            copy_envelope(messageCopy, message);
-
             // Send the message to the proc that registered with this character
             send_message(destPid, message);
             message = NULL;
-        }
-
-        // Send copy of message to CRT proc
-        if (messageCopy != NULL) {
-            send_message(CRT_PID, messageCopy);
-            messageCopy = NULL;
         }
     }
 }
