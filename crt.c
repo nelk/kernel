@@ -6,6 +6,9 @@ void crt_setCursor_(CRTData *crt, uint8_t, uint8_t);
 void crt_moveTo_(CRTData *crt, uint8_t, uint8_t);
 void crt_advance_(CRTData *crt);
 
+void crt_setBC_(CRTData *crt, uint8_t);
+void crt_setFC_(CRTData *crt, uint8_t);
+
 void crt_init(CRTData *crt) {
     memset((uint8_t *)crt, sizeof(CRTData), 0);
 
@@ -51,6 +54,8 @@ void crt_advance_(CRTData *crt) {
     // need to clear the latter part of the screen.
     if (crt->screenBufLen > crt->lineBufLen) {
         crt_moveTo_(crt, 0, crt->lineBufLen);
+        crt_setBC_(crt, BC_BLACK);
+        crt_setFC_(crt, FC_WHITE);
 
         // clear from cursor to end of line
         crt->outqWriter += write_string(
@@ -81,6 +86,9 @@ void crt_advance_(CRTData *crt) {
     // simply overwrite any characters that may be on the screen right now)
     if (mismatchPos < crt->screenBufLen) {
         crt_moveTo_(crt, 0, mismatchPos);
+        crt_setBC_(crt, BC_BLACK);
+        crt_setFC_(crt, FC_WHITE);
+
         // NOTE(sanjay): this is an unsafe write
         crt->outqBuf[(crt->outqWriter)++] = crt->lineBuf[mismatchPos];
         crt->screenBuf[mismatchPos] = crt->lineBuf[mismatchPos];
@@ -95,6 +103,9 @@ void crt_advance_(CRTData *crt) {
         crt->screenBufLen < crt->lineBufLen
     ) {
         crt_moveTo_(crt, 0, mismatchPos);
+        crt_setBC_(crt, BC_BLACK);
+        crt_setFC_(crt, FC_WHITE);
+
         // NOTE(sanjay): this is an unsafe write
         crt->outqBuf[(crt->outqWriter)++] = crt->lineBuf[mismatchPos];
         ++(crt->screenBufLen);
@@ -128,43 +139,39 @@ void crt_advance_(CRTData *crt) {
             // Put on free list
             nextEnv->next = crt->freeList;
             crt->freeList = nextEnv;
+
+            // Reset colors
+            crt->procBC = BC_BLACK;
+            crt->procFC = FC_WHITE;
             continue;
         }
 
         nextByte = nextEnv->messageData[crt->readIndex];
         ++(crt->readIndex);
 
+        if (nextByte >= FOREGROUND_COLOR_BASE && nextByte < FC_UPPER_BOUND) {
+            crt->procFC = nextByte;
+            continue;
+        } else if (
+            nextByte >= BACKGROUND_COLOR_BASE &&
+            nextByte < BC_UPPER_BOUND
+        ) {
+            crt->procBC = nextByte;
+            continue;
+        }
+
+
         // The only special character we support for now is \n, any other
         // special characters are simply skipped.
-        if (!(
-                is_printable(nextByte) ||
-                nextByte != '\n' ||
-                (
-                    nextByte >= FOREGROUND_COLOR_BASE &&
-                    nextByte < FC_UPPER_BOUND
-                ) ||
-                (
-                    nextByte >= BACKGROUND_COLOR_BASE &&
-                    nextByte < BC_UPPER_BOUND
-                )
-        )) {
+        if (!is_printable(nextByte) && nextByte != '\n') {
             continue;
         }
 
         // If we just switched to a new cursorOwner and we have some content
         // on the process line, then scroll the process area up, move to
         // the beginning of the process line, and output this byte.
-
         if (nextEnv->srcPid != crt->cursorOwner) {
             crt->cursorOwner = nextEnv->srcPid;
-
-            // We always reset the color
-            // TODO(sanjay): only reset color if we have to
-            crt->outqWriter += write_string(
-                (char *)(crt->outqBuf + crt->outqWriter),
-                CRT_OUTQ_LEN - crt->outqWriter,
-                "\x1b[0m"
-            );
 
             // If they had content on this line, then scroll to the next line
             if (crt->procCursorPos > 0) {
@@ -186,52 +193,13 @@ void crt_advance_(CRTData *crt) {
             continue;
         }
 
-        if (nextByte >= FOREGROUND_COLOR_BASE && nextByte < FC_UPPER_BOUND) {
-            crt->outqWriter += write_string(
-                (char *)(crt->outqBuf + crt->outqWriter),
-                CRT_OUTQ_LEN - crt->outqWriter,
-                "\x1b["
-            );
-            crt->outqWriter += write_uint32(
-                (char *)(crt->outqBuf + crt->outqWriter),
-                CRT_OUTQ_LEN - crt->outqWriter,
-                nextByte - FOREGROUND_COLOR_BASE + 30,
-                0
-            );
-            crt->outqWriter += write_string(
-                (char *)(crt->outqBuf + crt->outqWriter),
-                CRT_OUTQ_LEN - crt->outqWriter,
-                "m"
-            );
-            return;
-        } else if (
-            nextByte >= BACKGROUND_COLOR_BASE &&
-            nextByte < BC_UPPER_BOUND
-        ) {
-            crt->outqWriter += write_string(
-                (char *)(crt->outqBuf + crt->outqWriter),
-                CRT_OUTQ_LEN - crt->outqWriter,
-                "\x1b["
-            );
-            crt->outqWriter += write_uint32(
-                (char *)(crt->outqBuf + crt->outqWriter),
-                CRT_OUTQ_LEN - crt->outqWriter,
-                nextByte - BACKGROUND_COLOR_BASE + 40,
-                0
-            );
-            crt->outqWriter += write_string(
-                (char *)(crt->outqBuf + crt->outqWriter),
-                CRT_OUTQ_LEN - crt->outqWriter,
-                "m"
-            );
-            return;
-        }
-
         // Otherwise, merely move to the correct location, and output the
         // next byte.
         crt_moveTo_(crt, 1, crt->procCursorPos);
         crt_setCursor_(crt, 1, (crt->procCursorPos)+1);
         ++(crt->procCursorPos);
+        crt_setBC_(crt, crt->procBC);
+        crt_setFC_(crt, crt->procFC);
 
         // Enqueue this character
         // NOTE(sanjay): this is an unsafe write
@@ -244,6 +212,8 @@ void crt_advance_(CRTData *crt) {
 
 void crt_scrollCursorArea_(CRTData *crt) {
     crt_moveTo_(crt, 0, 0); // move to beginning of user line
+    crt_setBC_(crt, BC_BLACK);
+    crt_setFC_(crt, FC_WHITE);
 
     // clear entire line and scroll up one line
     crt->outqWriter += write_string(
@@ -371,6 +341,54 @@ void crt_pushUserByte(CRTData *crt, uint8_t c) {
     crt->lineBuf[crt->userCursorPos] = c;
     ++(crt->userCursorPos);
     ++(crt->lineBufLen);
+}
+
+void crt_setBC_(CRTData *crt, uint8_t bc) {
+    if (crt->screenBC == bc) {
+        return;
+    }
+
+    crt->screenBC = bc;
+    crt->outqWriter += write_string(
+        (char *)(crt->outqBuf + crt->outqWriter),
+        CRT_OUTQ_LEN - crt->outqWriter,
+        "\x1b["
+    );
+    crt->outqWriter += write_uint32(
+        (char *)(crt->outqBuf + crt->outqWriter),
+        CRT_OUTQ_LEN - crt->outqWriter,
+        bc - BACKGROUND_COLOR_BASE + 40,
+        0
+    );
+    crt->outqWriter += write_string(
+        (char *)(crt->outqBuf + crt->outqWriter),
+        CRT_OUTQ_LEN - crt->outqWriter,
+        "m"
+    );
+}
+
+void crt_setFC_(CRTData *crt, uint8_t fc) {
+    if (crt->screenFC == fc) {
+        return;
+    }
+
+    crt->screenFC = fc;
+    crt->outqWriter += write_string(
+        (char *)(crt->outqBuf + crt->outqWriter),
+        CRT_OUTQ_LEN - crt->outqWriter,
+        "\x1b["
+    );
+    crt->outqWriter += write_uint32(
+        (char *)(crt->outqBuf + crt->outqWriter),
+        CRT_OUTQ_LEN - crt->outqWriter,
+        fc - FOREGROUND_COLOR_BASE + 30,
+        0
+    );
+    crt->outqWriter += write_string(
+        (char *)(crt->outqBuf + crt->outqWriter),
+        CRT_OUTQ_LEN - crt->outqWriter,
+        "m"
+    );
 }
 
 uint8_t crt_hasFreeEnv(CRTData *crt) {

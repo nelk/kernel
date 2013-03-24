@@ -120,6 +120,15 @@ struct CRTData {
 
     uint8_t lastMismatchPos;
 
+    // Internal model of what color the screen is displaying
+    uint8_t screenBC;
+    uint8_t screenFC;
+
+    // What color the current process is outputting. This resets to black
+    // everytime we pop an envelope.
+    uint8_t procBC;
+    uint8_t procFC;
+
     // The position of the cursor on the screen
     // Format of screenCursorPos is as follows:
     // Highest order bit (i.e. (screenCursorPos >> 7)) stores whether its
