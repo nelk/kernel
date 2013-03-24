@@ -182,10 +182,7 @@ void crt_advance_(CRTData *crt) {
             // If they had content on this line, then scroll to the next line
             if (crt->procCursorPos > 0) {
                 crt_scrollCursorArea_(crt);
-                crt_moveTo_(crt, 1, 0); // procCursorPos is now 0
             }
-
-            return;
         }
 
         // If we are printing a newline, then just scroll this process area.
