@@ -217,13 +217,14 @@ size_t writePCBState(char *buf, size_t bufLen, ProcState state) {
 
 size_t writeProcessInfo(char *buf, size_t bufLen, PCB *pcb) {
     size_t i = 0;
-    i += write_ansi_escape(buf+i, bufLen-i, 41);
+    if (buf != NULL) {
+        buf[i++] = BC_RED;
+    }
     i += write_uint32(buf+i, bufLen-i, pcb->pid, 0);
     i += write_string(buf+i, bufLen-i, "$ Priority=");
     i += write_uint32(buf+i, bufLen-i, pcb->priority, 0);
     i += write_string(buf+i, bufLen-i, ", Status=");
     i += writePCBState(buf+i, bufLen-i, pcb->state);
-    i += write_ansi_escape(buf+i, bufLen-i, 0);
     i += write_string(buf+i, bufLen-i, "\n");
     return i;
 }
