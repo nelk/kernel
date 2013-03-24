@@ -223,7 +223,7 @@ void crt_moveTo_(CRTData *crt, uint8_t isProcLine, uint8_t pos) {
     crt->outqWriter += write_string(
         (char *)(crt->outqBuf + crt->outqWriter),
         CRT_OUTQ_LEN - crt->outqWriter,
-        "K"
+        "H"
     );
 
     // Then, we move it up a row if necessary
