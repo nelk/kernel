@@ -14,6 +14,12 @@ void crt_init(CRTData *crt) {
 
     crt->cursorOwner = PROC_ID_NONE;
 
+    crt->screenBC = BC_WHITE;
+    crt->screenFC = BC_BLACK;
+
+    crt_setBC_(crt, BC_BLACK);
+    crt_setFC_(crt, FC_WHITE);
+
     crt->outqWriter += write_string((char *)crt->outqBuf, CRT_OUTQ_LEN, "\x1b[2J");
 
     crt_setCursor_(crt, 1, 0); // force moveto_ to do something
