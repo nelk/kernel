@@ -41,7 +41,7 @@ struct MemInfo {
 
 // Process-control related types
 
-#define NUM_PROCS (13)
+#define NUM_PROCS (14)
 
 #define PROC_ID_KERNEL    (0x80)
 #define PROC_ID_ALLOCATOR (0x81)
@@ -50,15 +50,17 @@ struct MemInfo {
 #define UART_IN_BUF_SIZE (64)
 
 enum ProcState {
+		// TODO(nelk): prepend PS_ to these so we don't have a global 'NEW' defined here
     BLOCKED_MEMORY,
     BLOCKED_MESSAGE,
     NEW,
     READY,
     RUNNING,
+		UNUSED,
 };
 typedef enum ProcState ProcState;
 
-#define USER_PRIORITY_MASK ((uint32_t)0xff)
+#define USER_PRIORITY_MASK ((uint32_t)0xFF)
 #define KERN_PRIORITY_MASK (~(USER_PRIORITY_MASK))
 #define KERN_PRIORITY_SHIFT (8)
 #define MAX_PRIORITY (USER_PRIORITY_MASK)
@@ -77,6 +79,8 @@ struct PCB {
 
     struct Envelope *mqHead;
     struct Envelope *mqTail;
+    
+    struct Envelope *debugEnv;
 };
 
 typedef struct PQEntry PQEntry;
@@ -125,6 +129,7 @@ struct ProcInfo {
 
     // UART keyboard input data
     char inputBuf[UART_IN_BUF_SIZE];
+    uint8_t debugSem;
     volatile uint32_t readIndex; // Next read index
     volatile uint32_t writeIndex; // Next write index
     volatile uint32_t inputBufOverflow;

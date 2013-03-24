@@ -16,40 +16,48 @@ void k_zeroEnvelope(Envelope *envelope) {
 }
 
 int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, ProcId srcPid, ProcId dstPid) {
-    PCB *receivingProc = NULL;
+    PCB *dstPCB = NULL;
+		PCB *srcPCB = NULL;
+		uint8_t status = 0;
 
     k_zeroEnvelope(envelope);
 
-    // Check pid
-    if (dstPid >= NUM_PROCS || srcPid >= NUM_PROCS) {
-        return 1;
-    }
+		dstPCB = k_getPCB(procInfo, dstPid);
+		if (dstPCB == NULL) {
+				return EINVAL;
+		}
+		
+		srcPCB = k_getPCB(procInfo, srcPid);
+		if (srcPCB == NULL) {
+				return EINVAL;
+		}
+		
+		status = k_changeOwner(memInfo, (uint32_t)envelope, srcPid, PROC_ID_KERNEL);
+	
     // Set to new owner (and check if valid)
-    if (k_changeOwner(memInfo, (uint32_t)envelope, srcPid, PROC_ID_KERNEL) != 0) { // TODO (alex) - should we be using SUCCESS here? Maybe have global return codes like SUCCESS that's not just for memory?
-        return 2;
+    if (status != SUCCESS) { // TODO (alex) - should we be using SUCCESS here? Maybe have global return codes like SUCCESS that's not just for memory?
+        return status;
     }
-
-    receivingProc = &(procInfo->processes[dstPid]);
 
     // Add to message queue
     envelope->next = NULL;
-    if (receivingProc->mqTail == NULL) {
-        receivingProc->mqHead = envelope;
-        receivingProc->mqTail = envelope;
+    if (dstPCB->mqTail == NULL) {
+        dstPCB->mqHead = envelope;
+        dstPCB->mqTail = envelope;
     } else {
-        receivingProc->mqTail->next = envelope;
-        receivingProc->mqTail = envelope;
+        dstPCB->mqTail->next = envelope;
+        dstPCB->mqTail = envelope;
     }
 
     envelope->srcPid = srcPid;
     envelope->dstPid = dstPid;
 
     // Unblock receiver
-    if (receivingProc->state == BLOCKED_MESSAGE) {
-        receivingProc->state = READY;
-        pqAdd(&(procInfo->prq), receivingProc);
+    if (dstPCB->state == BLOCKED_MESSAGE) {
+        dstPCB->state = READY;
+        pqAdd(&(procInfo->prq), dstPCB);
         // Preempt if unblocked process has higher priority - note that receiver is not guaranteed to run
-        if (receivingProc->priority < procInfo->currentProcess->priority) {
+        if (dstPCB->priority < procInfo->currentProcess->priority) {
             return -1;
         }
     }
@@ -90,7 +98,6 @@ int8_t k_sendDelayedMessage(MessageInfo *messageInfo, ClockInfo *clockInfo, MemI
     if (dstPid >= NUM_PROCS || srcPid >= NUM_PROCS) {
         return 1;
     }
-    // TODO: (shale) validate memory, if necessary.
 
     envelope->sendTime = k_getTime(clockInfo) + delay;
 

@@ -1,5 +1,20 @@
 #include "helpers.h"
 
+size_t memset(uint8_t *buf, size_t bufLen, uint8_t val) {
+    size_t temp = bufLen;
+
+    if (buf == NULL) {
+        return bufLen;
+    }
+    
+    while(bufLen > 0) {
+        *(buf++) = val;
+        --bufLen;
+    }
+    
+    return temp;		
+}
+
 uint8_t is_numeric(char c) {
     return c >= '0' && c <= '9';
 }
@@ -102,3 +117,13 @@ size_t write_ansi_escape(char *buf, size_t bufLen, uint8_t num) {
     return idx;
 }
 
+void copy_envelope(Envelope *dst, Envelope *src) {
+    size_t idx = 0;
+    if (dst == NULL || src == NULL) {
+        return;
+    }
+    dst->messageType = src->messageType;
+    for (idx = 0; idx < MESSAGEDATA_SIZE_BYTES; ++idx) {
+        dst->messageData[idx] = src->messageData[idx];
+    }
+}
