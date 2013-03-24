@@ -176,6 +176,8 @@ void crt_advance_(CRTData *crt) {
         crt->outqBuf[(crt->outqWriter)++] = nextByte;
         return;
     }
+
+    crt_moveTo_(crt, 0, crt->userCursorPos);
 }
 
 void crt_scrollCursorArea_(CRTData *crt) {
@@ -229,7 +231,7 @@ void crt_moveTo_(CRTData *crt, uint8_t isProcLine, uint8_t pos) {
     );
 
     // Then, we move it up a row if necessary
-    if (((crt->screenCursorPos) >> 7) == 1) {
+    if (isProcLine == 1) {
         crt->outqWriter += write_string(
             (char *)(crt->outqBuf + crt->outqWriter),
             CRT_OUTQ_LEN - crt->outqWriter,
