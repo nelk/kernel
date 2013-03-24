@@ -262,20 +262,11 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
             if (kcdEnv == NULL) {
                 size_t i = 0;
                 size_t bufLen = MESSAGEDATA_SIZE_BYTES - 1;
-                i += write_ansi_escape(
-                    procInfo->currentEnv->messageData+i,
-                    bufLen-i,
-                    31
-                );
+                procInfo->currentEnv->messageData[i++] = FC_RED;
                 i += write_string(
                     procInfo->currentEnv->messageData+i,
                     bufLen-i,
                     "System is out of memory. Please try again later.\n"
-                );
-                i += write_ansi_escape(
-                    procInfo->currentEnv->messageData+i,
-                    bufLen-i,
-                    0
                 );
                 procInfo->currentEnv->messageData[i++] = '\0';
             }
@@ -308,11 +299,10 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
             buf = procInfo->currentEnv->messageData;
             bufLen = MESSAGEDATA_SIZE_BYTES-1; // -1 for null byte
 
-            i += write_ansi_escape(buf+i, bufLen-i, 41);
+            buf[i++] = BC_RED;
             i += write_string(buf+i, bufLen-i, "used mem = ");
             i += write_uint32(buf+i, bufLen-i, (memInfo->numSuccessfulAllocs-memInfo->numFreeCalls)*128, 2);
             i += write_string(buf+i, bufLen-i, " bytes");
-            i += write_ansi_escape(buf+i, bufLen-i, 0);
             i += write_string(buf+i, bufLen-i, "\n");
             buf[i++] = '\0';
 

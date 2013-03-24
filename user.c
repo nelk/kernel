@@ -410,7 +410,7 @@ void printTime(uint32_t currentTime, uint32_t offset) {
     clockTime /= MILLISECONDS_IN_SECOND;
 
     // Add ANSI colour code.
-    index += write_ansi_escape(buf+index, bufLen-index, 31 + (clockTime % 6));
+    buf[index++] = FC_RED + (clockTime % 6);
 
     // Print hours.
     field = clockTime / SECONDS_IN_HOUR;
@@ -429,9 +429,6 @@ void printTime(uint32_t currentTime, uint32_t offset) {
     // Print seconds.
     field = clockTime;
     index += write_uint32(buf+index, bufLen-index, field, 2);
-
-    // Add ANSI reset.
-    index += write_ansi_escape(buf+index, bufLen-index, 0);
 
     index += write_string(buf+index, bufLen-index, "\n");
     buf[index++] = '\0';
