@@ -164,7 +164,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
     process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
-		process->state = NEW;
+	process->state = NEW;
 
     // Stress Process C
     process = &(procInfo->processes[STRESS_C_PID]); // Push process function address onto stack
@@ -191,6 +191,8 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     // Init UART keyboard global input data
     procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
     procInfo->currentEnv->messageType = MT_KEYBOARD;
+
+    crt_init(&(procInfo->crtData));
 }
 
 
