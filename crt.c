@@ -54,7 +54,7 @@ void crt_advance_(CRTData *crt) {
 
         // clear from cursor to end of line
         crt->outqWriter += write_string(
-            crt->outqBuf + crt->outqWriter,
+            (char *)(crt->outqBuf + crt->outqWriter),
             CRT_OUTQ_LEN - crt->outqWriter,
             "\x1b[0K"
         );
@@ -181,7 +181,7 @@ void crt_scrollCursorArea_(CRTData *crt) {
 
     // clear entire line and scroll up one line
     crt->outqWriter += write_string(
-        crt->outqBuf + crt->outqWriter,
+        (char *)(crt->outqBuf + crt->outqWriter),
         CRT_OUTQ_LEN - crt->outqWriter,
         "\x1b[2K\x1b[1S"
     );
@@ -210,18 +210,18 @@ void crt_moveTo_(CRTData *crt, uint8_t isProcLine, uint8_t pos) {
 
     // First, we move it to the right column, at the bottom of the screen
     crt->outqWriter += write_string(
-        crt->outqBuf + crt->outqWriter,
+        (char *)(crt->outqBuf + crt->outqWriter),
         CRT_OUTQ_LEN - crt->outqWriter,
         "\x1b[10000;"
     );
     crt->outqWriter += write_uint32(
-        crt->outqBuf + crt->outqWriter,
+        (char *)(crt->outqBuf + crt->outqWriter),
         CRT_OUTQ_LEN - crt->outqWriter,
         pos+1,
         0
     );
     crt->outqWriter += write_string(
-        crt->outqBuf + crt->outqWriter,
+        (char *)(crt->outqBuf + crt->outqWriter),
         CRT_OUTQ_LEN - crt->outqWriter,
         "K"
     );
@@ -229,7 +229,7 @@ void crt_moveTo_(CRTData *crt, uint8_t isProcLine, uint8_t pos) {
     // Then, we move it up a row if necessary
     if (((crt->screenCursorPos) >> 7) == 1) {
         crt->outqWriter += write_string(
-            crt->outqBuf + crt->outqWriter,
+            (char *)(crt->outqBuf + crt->outqWriter),
             CRT_OUTQ_LEN - crt->outqWriter,
             "\x1b[1A"
         );
