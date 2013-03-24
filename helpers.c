@@ -16,7 +16,7 @@ size_t memset(uint8_t *buf, size_t bufLen, uint8_t val) {
 }
 
 uint8_t is_printable(uint8_t c) {
-    return c >= '!' && c <= '~';
+    return c >= ' ' && c <= '~';
 }
 
 uint8_t is_numeric(uint8_t c) {
