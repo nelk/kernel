@@ -167,7 +167,7 @@ void crt_advance_(CRTData *crt) {
             );
 
             // If they had content on this line, then scroll to the next line
-            if (crt->cursorPos > 0) {
+            if (crt->procCursorPos > 0) {
                 crt_scrollCursorArea_(crt);
                 crt_moveTo_(crt, 1, 0); // procCursorPos is now 0
             }
@@ -195,7 +195,7 @@ void crt_advance_(CRTData *crt) {
             crt->outqWriter += write_uint32(
                 (char *)(crt->outqBuf + crt->outqWriter),
                 CRT_OUTQ_LEN - crt->outqWriter,
-                nextByte - FOREGROUND_COLOR_BASE + 30
+                nextByte - FOREGROUND_COLOR_BASE + 30,
                 0
             );
             crt->outqWriter += write_string(
@@ -216,7 +216,7 @@ void crt_advance_(CRTData *crt) {
             crt->outqWriter += write_uint32(
                 (char *)(crt->outqBuf + crt->outqWriter),
                 CRT_OUTQ_LEN - crt->outqWriter,
-                nextByte - BACKGROUND_COLOR_BASE + 40
+                nextByte - BACKGROUND_COLOR_BASE + 40,
                 0
             );
             crt->outqWriter += write_string(
