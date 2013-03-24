@@ -7,7 +7,7 @@
 
 #include <LPC17xx.h>
 
-#include "coq.h"
+#include "crt.h"
 #include "helpers.h"
 #include "kernel_types.h"
 #include "rtx.h"
@@ -215,19 +215,23 @@ void crt_proc(void) {
         Envelope *nextMsg = NULL;
         uint8_t i = 0;
 
-        while (gProcInfo.coq.toFree != NULL) {
-            temp = gProcInfo.coq.toFree;
-            gProcInfo.coq.toFree = gProcInfo.coq.toFree->next;
+        while (crt_hasFreeEnv(&(gProcInfo.crtData))) {
+            temp = crt_getFreeEnv(&(gProcInfo.crtData));
             if (temp->messageType == MT_DEBUG && temp->srcPid == CRT_PID) {
-				// NOTE(sanjay): we DO NOT want to free this envelope, it's a preallocated buffer stored inside a process' PCB
+				// NOTE(sanjay): we DO NOT want to free this envelope, it's a
+                // preallocated buffer stored inside a process' PCB
                 --(gProcInfo.debugSem);
                 continue;
-            } else if (temp->srcPid == CRT_PID && temp->messageType == MT_KEYBOARD) {
-                // NOTE(sanjay): we DO NOT want to free this envelope, it's a preallocated buffer that echoes keyboard output
+            } else if (
+                temp->srcPid == CRT_PID &&
+                temp->messageType == MT_KEYBOARD
+            ) {
+                // NOTE(sanjay): we DO NOT want to free this envelope, it's a
+                // preallocated buffer that echoes keyboard output
 				gProcInfo.currentEnv = temp;
                 continue;
 			}
-            
+
             release_memory_block((void*)temp);
         }
 
@@ -239,7 +243,7 @@ void crt_proc(void) {
         if (nextMsg->srcPid == CRT_PID && nextMsg->messageType == MT_CRT_WAKEUP) {
 			gProcInfo.uartOutputEnv = nextMsg;
         } else {
-            pushEnvelope(&(gProcInfo.coq), nextMsg);
+            crt_pushProcEnv(&(gProcInfo.crtData), nextMsg);
         }
 
         if (!(uart->LSR & LSR_THRE)) {
@@ -248,10 +252,10 @@ void crt_proc(void) {
 
         for (
             i = 0;
-            i < UART_OUTPUT_BUFSIZE && hasData(&(gProcInfo.coq));
+            i < UART_OUTPUT_BUFSIZE && crt_hasOutByte(&(gProcInfo.crtData));
             i++
         ) {
-            uart->THR = getData(&(gProcInfo.coq));
+            uart->THR = crt_getOutByte(&(gProcInfo.crtData));
         }
     }
 }
@@ -306,7 +310,7 @@ void uart_keyboard_proc(void) {
             size_t i = 0;
             size_t bufLen = MESSAGEDATA_SIZE_BYTES - 1;
             i += write_ansi_escape(message->messageData+i, bufLen-i, 31);
-            i += write_string(message->messageData+i, bufLen-i, "No handler found for this command.\r\n");
+            i += write_string(message->messageData+i, bufLen-i, "No handler found for this command.\n");
             i += write_ansi_escape(message->messageData+i, bufLen-i, 0);
             message->messageData[i++] = '\0';
             message->messageType = MT_UNSET;

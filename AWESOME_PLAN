@@ -160,6 +160,7 @@ private Implementation:
                 outq.enqueue(nextByte);
                 cursorOwner = nextEnv->srcPid;
                 setcursor_(1, 1);
+                ++procCursorPos;
                 return;
             }
 
@@ -174,12 +175,12 @@ private Implementation:
                 continue;
             }
 
-            // Otherwise, merely move the currect location, and output the next
-            // byte.
+            // Otherwise, merely move to the correct location, and output the
+            // next byte.
             moveto_(1, procCursorPos);
+            setcursor_(1, procCursorPos+1);
             procCursorPos++;
             outq.enqueue(nextByte);
-            setcursor_(1, procCursorPos);
             return;
         }
     }
@@ -188,6 +189,8 @@ private Implementation:
         moveto_(0, 0); // move to beginning of user line
         outq.enqueue("\x1b[2K"); // clear entire line
         outq.enqueue("\x1b[1S"); // scroll up one
+        setcursor_(1, 0);
+        moveto_(0, 0);
 
         procCursorPos = 0;
         screenBufLen = 0; // This will cause the user line to be recopied.
@@ -261,4 +264,36 @@ private Implementation:
         lineBuf[userCursorPos] = c;
         ++userCursorPos;
         ++lineBufLen;
+    }
+
+
+releaseProcessor:
+    if (new_char == '\r') {
+        for (size_t i = 0; i < crtData.lineBufLen; ++i) {
+            procInfo->currentEnv->messageData[i] = crtData.lineBuf[i];
+        }
+        procInfo->currentEnv->messageData[crtData.lineBufLen] = '\n';
+        procInfo->currentEnv->messageData[crtData.lineBufLen+1] = '\0';
+
+        kcdEnv := try_acquire_memory_block();
+        if (kcdEnv == NULL) {
+            procInfo->currentEnv->messageData = "out of memory";
+        }
+
+        send_message(procInfo->currentEnv, CRT_PID);
+        procInfo->currentEnv = null;
+
+        if (kcdEnv != NULL) {
+            send_message(KCD_PID, procInfo->currentEnv);
+            kcdEnv = NULL;
+        }
+
+        // Tell crtData that the user has not typed anything
+        crtData.lineBufLen = 0;
+        continue;
+    } else if (new_char == '!') {
+        // do magic here
+    } else {
+        crtData.pushUserChar(new_char);
+        continue;
     }

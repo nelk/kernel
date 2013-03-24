@@ -3,7 +3,7 @@
 
 #include <LPC17xx.h>
 
-#include "coq.h"
+#include "crt.h"
 #include "helpers.h"
 #include "kernel_types.h"
 #include "mem.h"
@@ -46,7 +46,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
         process->mqHead = NULL;
         process->mqTail = NULL;
         process->debugEnv = NULL;
-        
+
         // TODO(nelk): Assert that these memory blocks are contiguous
         // Stack grows backwards, not forwards. We allocate three memory blocks.
         tempStack = k_acquireMemoryBlock(memInfo, PROC_ID_KERNEL);
@@ -180,14 +180,14 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     process->priority = (1 << KERN_PRIORITY_SHIFT) | 0;
     pqAdd(&(procInfo->prq), process);
     process->debugEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
-		process->state = NEW;
+	process->state = NEW;
 
     procInfo->currentProcess = NULL;
 
     // Init UART keyboard global output data
     procInfo->uartOutputEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
-		procInfo->uartOutputEnv->messageType = MT_CRT_WAKEUP;
-		
+	procInfo->uartOutputEnv->messageType = MT_CRT_WAKEUP;
+
     // Init UART keyboard global input data
     procInfo->currentEnv = (Envelope *)k_acquireMemoryBlock(memInfo, CRT_PID);
     procInfo->currentEnv->messageType = MT_KEYBOARD;
@@ -222,10 +222,9 @@ size_t writeProcessInfo(char *buf, size_t bufLen, PCB *pcb) {
     i += write_string(buf+i, bufLen-i, ", Status=");
     i += writePCBState(buf+i, bufLen-i, pcb->state);
     i += write_ansi_escape(buf+i, bufLen-i, 0);
-    i += write_string(buf+i, bufLen-i, "\r\n");
+    i += write_string(buf+i, bufLen-i, "\n");
     return i;
 }
-
 
 void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
     uint32_t localReader = procInfo->readIndex;
@@ -235,68 +234,68 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
         Envelope *kcdEnv = NULL;
         char new_char = procInfo->inputBuf[localReader];
         localReader = (localReader + 1) % UART_IN_BUF_SIZE;
+        CRTData *crt = &(procInfo->crtData);
 
         if (new_char == '\r') {
-            if (procInfo->inputBufOverflow) {
-                // Reuse current envelope
-                procInfo->currentEnvIndex = 0;
-                procInfo->inputBufOverflow = 0;
-                continue;
+            uint8_t i = 0;
+            // Copy from crtData to our output envelope.
+            for (i = 0; i < crt->lineBufLen; ++i) {
+                procInfo->currentEnv->messageData[i] = crt->lineBuf[i];
             }
 
-            // Append \r\n\0 to message.
-            procInfo->currentEnv->messageData[procInfo->currentEnvIndex++] = '\r';
-            procInfo->currentEnv->messageData[procInfo->currentEnvIndex++] = '\n';
-            procInfo->currentEnv->messageData[procInfo->currentEnvIndex++] = '\0';
+            // Append \n\0 to message.
+            procInfo->currentEnv->messageData[crt->lineBufLen] = '\n';
+            procInfo->currentEnv->messageData[(crt->lineBufLen)+1] = '\0';
 
-            procInfo->currentEnvIndex = 0;
-            
             // Try to allocate a new envelope to send to KCD.
             kcdEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
-                        
+
             procInfo->currentEnv->messageType = MT_KEYBOARD;
-            copy_envelope(kcdEnv, procInfo->currentEnv); // Will do nothing if kcdEnv is null
-            
+            // copy_envelope will do nothing if kcdEnv is null
+            copy_envelope(kcdEnv, procInfo->currentEnv);
+
             if (kcdEnv == NULL) {
                 size_t i = 0;
                 size_t bufLen = MESSAGEDATA_SIZE_BYTES - 1;
-                i += write_ansi_escape(procInfo->currentEnv->messageData+i, bufLen-i, 31);
-                i += write_string(
-                    procInfo->currentEnv->messageData+i, 
-                    bufLen-i, 
-                    "System is out of memory. Please try again later.\r\n"
+                i += write_ansi_escape(
+                    procInfo->currentEnv->messageData+i,
+                    bufLen-i,
+                    31
                 );
-                i += write_ansi_escape(procInfo->currentEnv->messageData+i, bufLen-i, 0);
+                i += write_string(
+                    procInfo->currentEnv->messageData+i,
+                    bufLen-i,
+                    "System is out of memory. Please try again later.\n"
+                );
+                i += write_ansi_escape(
+                    procInfo->currentEnv->messageData+i,
+                    bufLen-i,
+                    0
+                );
                 procInfo->currentEnv->messageData[i++] = '\0';
             }
-            
+
             k_sendMessage(memInfo, procInfo, procInfo->currentEnv, CRT_PID, CRT_PID);
             procInfo->currentEnv = NULL;
-            
+
             // If we're out of memory we will silently fail sending the message to KCD (it still shows on screen).
             if (kcdEnv != NULL) {
                 k_sendMessage(memInfo, procInfo, kcdEnv, KEYBOARD_PID, KEYBOARD_PID);
             }
-            
+
             kcdEnv = NULL;
             continue;
-        }
-
-        // Write new character into message
-        procInfo->currentEnv->messageData[procInfo->currentEnvIndex] = new_char;
-
-        // Debug Output.
-        if (procInfo->currentEnvIndex == 0 && new_char == SHOW_DEBUG_PROCESSES) {
-			uint8_t i = 0;
+        } else if (new_char == SHOW_DEBUG_PROCESSES) {
+            uint8_t i = 0;
             uint8_t bufLen = 0;
-			char *buf = NULL;
-					
+            char *buf = NULL;
+
             if (procInfo->debugSem > 0) {
                 continue;
             }
-            
+
             ++(procInfo->debugSem);
-            
+
             i = 0;
             buf = procInfo->currentEnv->messageData;
             bufLen = MESSAGEDATA_SIZE_BYTES-1; // -1 for null byte
@@ -306,9 +305,9 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
             i += write_uint32(buf+i, bufLen-i, (memInfo->numSuccessfulAllocs-memInfo->numFreeCalls)*128, 2);
             i += write_string(buf+i, bufLen-i, " bytes");
             i += write_ansi_escape(buf+i, bufLen-i, 0);
-            i += write_string(buf+i, bufLen-i, "\r\n");
+            i += write_string(buf+i, bufLen-i, "\n");
             buf[i++] = '\0';
-            
+
             procInfo->currentEnv->messageType = MT_KEYBOARD;
             k_sendMessage(memInfo, procInfo, procInfo->currentEnv, CRT_PID, CRT_PID);
             procInfo->currentEnv = NULL;
@@ -318,12 +317,12 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
                 Envelope *tempEnvelope = NULL;
                 uint32_t location = 0;
                 PCB *pcb = &(procInfo->processes[i]);
-                
+
                 // Check if this is an unused process slot
                 if (pcb->state == UNUSED || pcb->debugEnv == NULL) {
                     continue;
                 }
-                
+
                 ++(procInfo->debugSem);
 
                 tempEnvelope = pcb->debugEnv;
@@ -338,15 +337,11 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
                 tempEnvelope = NULL;
             }
             --(procInfo->debugSem);
-            
+            continue;
+        } else {
+            crt_pushUserByte(crt, new_char);
             continue;
         }
-        if (procInfo->currentEnvIndex >= MESSAGEDATA_SIZE_BYTES - 3) { // -3 for \r\n\0
-            procInfo->inputBufOverflow = 1;
-            continue;
-        }
-        // Increment index in message
-        ++(procInfo->currentEnvIndex);
     }
     procInfo->readIndex = localReader;
 }
@@ -376,7 +371,7 @@ void k_processUartOutput(ProcInfo *procInfo, MemInfo *memInfo) {
 
     // If CRT proc would be able to do something, but has nothing to send,
     // give up.
-    if (!hasData(&(procInfo->coq))) {
+    if (!crt_hasOutByte(&(procInfo->crtData))) {
         return;
     }
 
@@ -418,7 +413,7 @@ uint32_t k_releaseProcessor(ProcInfo *procInfo, MemInfo *memInfo, MessageInfo *m
         case YIELD:
         case CHANGED_PRIORITY:
         case MESSAGE_SENT:
-        case MEMORY_FREED:    
+        case MEMORY_FREED:
             srcQueue = &(procInfo->prq);
             dstQueue = &(procInfo->prq);
             targetState = READY;
