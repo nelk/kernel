@@ -166,7 +166,21 @@ void uart_receive_char_isr(ProcInfo *procInfo, char new_char) {
 }
 
 void uart_send_char_isr(ProcInfo *procInfo) {
-    // no-op
+    LPC_UART_TypeDef *uart = (LPC_UART_TypeDef *)LPC_UART0;
+    uint32_t localReader = procInfo->outReader;
+    uint32_t localWriter = procInfo->outWriter;
+    uint8_t sent = 0;
+
+    if (!(uart->LSR & LSR_THRE)) {
+        return;
+    }
+
+    while (localReader != localWriter && sent < UART_OUTPUT_BUFSIZE) {
+        uart->THR = procInfo->outputBuf[localReader];
+        localReader = (localReader+1) % OUTPUT_BUFSIZE;
+        sent++;
+    }
+    procInfo->outReader = localReader;
 }
 
 void c_UART0_IRQHandler(void) {
@@ -184,7 +198,10 @@ void c_UART0_IRQHandler(void) {
     } else if (IIR_IntId & IIR_THRE) {
         /* THRE Interrupt, transmit holding register empty*/
         // NOTE(sanjay): Make sure that this is contant time, we are in an ISR.
-        uart_send_char_isr(&gProcInfo);
+        if (gProcInfo.outLock == 0) {
+            uart_send_char_isr(&gProcInfo);
+        }
+
         LSR_Val = pUart->LSR;
     } else if (IIR_IntId & IIR_RLS) {
         LSR_Val = pUart->LSR;
@@ -209,11 +226,11 @@ Note: read RBR will clear the interrupt
 }
 
 void crt_proc(void) {
-    LPC_UART_TypeDef *uart = (LPC_UART_TypeDef *)LPC_UART0;
     Envelope *temp = NULL;
+		uint32_t localWriter = 0;
+    uint32_t localReader = 0;
     while (1) {
         Envelope *nextMsg = NULL;
-        uint8_t i = 0;
 
         while (crt_hasFreeEnv(&(gProcInfo.crtData))) {
             temp = crt_getFreeEnv(&(gProcInfo.crtData));
@@ -246,17 +263,20 @@ void crt_proc(void) {
             crt_pushProcEnv(&(gProcInfo.crtData), nextMsg);
         }
 
-        if (!(uart->LSR & LSR_THRE)) {
-            continue;
-        }
-
-        for (
-            i = 0;
-            i < UART_OUTPUT_BUFSIZE && crt_hasOutByte(&(gProcInfo.crtData));
-            i++
+        localWriter = gProcInfo.outWriter;
+        localReader = gProcInfo.outReader;
+        while (
+            ((localWriter + 1) % OUTPUT_BUFSIZE != localReader) &&
+            (crt_hasOutByte(&(gProcInfo.crtData)))
         ) {
-            uart->THR = crt_getOutByte(&(gProcInfo.crtData));
+            gProcInfo.outputBuf[localWriter] = crt_getOutByte(&(gProcInfo.crtData));
+            localWriter = (localWriter + 1) % OUTPUT_BUFSIZE;
         }
+        gProcInfo.outWriter = localWriter;
+
+        gProcInfo.outLock = 1;
+        uart_send_char_isr(&gProcInfo);
+        gProcInfo.outLock = 0;
     }
 }
 

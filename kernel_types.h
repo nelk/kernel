@@ -145,6 +145,7 @@ struct CRTData {
     uint8_t userCursorPos;
 };
 
+#define OUTPUT_BUFSIZE (512)
 
 typedef struct ProcInfo ProcInfo;
 struct ProcInfo {
@@ -160,6 +161,11 @@ struct ProcInfo {
 
     CRTData crtData;
     Envelope *uartOutputEnv;
+
+    uint8_t outputBuf[OUTPUT_BUFSIZE];
+    volatile size_t outReader;
+    volatile size_t outWriter;
+    volatile uint8_t outLock;
 
     // UART keyboard input data
     char inputBuf[UART_IN_BUF_SIZE];
