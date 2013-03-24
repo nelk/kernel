@@ -144,19 +144,13 @@ void crt_advance_(CRTData *crt) {
         if (nextEnv->srcPid != crt->cursorOwner && crt->procCursorPos > 0) {
             crt_scrollCursorArea_(crt);
             crt_moveTo_(crt, 1, 0); // procCursorPos is now 0
-
-            // Enqueue this character
-            // NOTE(sanjay): this is an unsafe write
-            crt->outqBuf[(crt->outqWriter)++] = nextByte;
-            crt->cursorOwner = nextEnv->srcPid;
             crt_setCursor_(crt, 1, 1);
-            ++(crt->procCursorPos);
-            return;
         }
 
         // If we are printing a newline, then just scroll this process area.
-        if (nextByte == '\n') {
+        if (nextByte == '\n' && crt->procCursorPos > 0) {
             crt_scrollCursorArea_(crt);
+            crt->cursorOwner = nextEnv->srcPid;
             return;
         }
 
@@ -167,6 +161,7 @@ void crt_advance_(CRTData *crt) {
 
         // Otherwise, merely move to the correct location, and output the
         // next byte.
+        crt->cursorOwner = nextEnv->srcPid;
         crt_moveTo_(crt, 1, crt->procCursorPos);
         crt_setCursor_(crt, 1, (crt->procCursorPos)+1);
         ++(crt->procCursorPos);
