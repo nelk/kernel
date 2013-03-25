@@ -1,0 +1,299 @@
+typedef struct CRTData CRTData;
+struct CRTData {
+    queue<uint8_t> outq;
+
+    int readIndex;
+    queue<Envelope*> envq;
+    queue<Envelope*> freeq;
+
+    // The position of the cursor on the screen
+    // Format of screenCursorPos is as follows:
+    // Highest order bit (i.e. (screenCursorPos >> 7)) stores whether its
+    // on the user line (0) or on the process line (1).
+    // The remaining 7 bits (i.e. screenCursorPos & 0x7f) stores where on that
+    // line the cursor is.
+    uint8_t screenCursorPos;
+
+    // The horizontal position of the cursor in the process line
+    uint8_t procCursorPos;
+
+    // The last process to print something
+    ProcId cursorOwner;
+
+    // The line buffer is our internal model of what the user has typed
+    uint8_t lineBuf[80];
+    uint8_t lineBufLen;
+
+    // The screen buffer is what is currently on the screen on the user line
+    uint8_t screenBuf[80]
+    uint8_t screenBufLen;
+
+    // This index answers the question "if the user typed a character, where in
+    // lineBuf would that character be inserted?"
+    uint8_t userCursorPos;
+};
+
+public API:
+    void init();
+
+    bool hasOutByte();
+    uint8_t getOutByte(); // out_proc dequeues here
+
+    void pushProcEnv(Envelope *env); // out_proc enqueues here
+    void pushUserByte(uint8_t c); // in_proc enqueues here
+
+    // Ignore these, they're for memory management
+    bool hasFreeEnv();
+    Envelope *getFreeEnv();
+
+private Implementation:
+    void init() {
+        outq.init();
+        envq.init();
+        freeq.init();
+        readIndex = 0;
+        outq.enqueue("\x1b[2J"); // clear screen
+
+        setcursor_(1, 0); // force moveto_ to do something
+        moveto_(0, 0); // move to user typing location
+
+        procCursorPos = 0;
+        cursorOwner = PROC_ID_NONE;
+
+        memset(lineBuf, 80, 0);
+        lineBufLen = 0;
+
+        memset(screenBuf, 80, 0);
+        screenBufLen = 0;
+
+        userCursorPos = 0;
+    }
+
+    bool hasOutByte() {
+        advance_();
+        return outq.size() > 0;
+    }
+
+    uint8_t getOutByte() {
+        advance_();
+        return outq.dequeue();
+    }
+
+    void advance_() {
+        // If we already have pending work, then no need to advance
+        if(outq.size() > 0) {
+            return;
+        }
+
+        // If the screen is showing more than our internal model, then we
+        // need to clear the latter part of the screen.
+        if (screenBufLen > lineBufLen) {
+            moveto_(0, lineBufLen);
+            outq.enqueue("\x1b[0K"); // clear from cursor to end of line
+            screenBufLen = lineBufLen;
+            return;
+        }
+
+        // Otherwise, we know that the screen is showing less than or equal to
+        // our internal model. We try to find the first mismatch.
+
+        uint8_t mismatchPos = 0;
+        while (mismatchPos < screenBufLen && mismatchPos < lineBufLen) {
+            if (screenBuf[mismatchPos] != lineBuf[mismatchPos]) {
+                break;
+            }
+            mismatchPos++;
+        }
+
+        // If the mismatch is before what our screen is showing, then we go to
+        // that position, and output some characters (note that this will
+        // simply overwrite any characters that may be on the screen right now)
+        if (mismatchPos < screenBufLen) {
+            moveto_(0, mismatchPos);
+            outq.enqueue(lineBuf[mismatchPos]);
+            screenBuf[mismatchPos] = lineBuf[mispatchPos];
+            setcursor_(0, mismatchPos+1);
+            return;
+        }
+
+        // If there is no mismatch, but we are showing less than our internal
+        // model, then show the next character in our internal model.
+        if (mismatchPos == screenBufLen && screenBufLen < lineBufLen) {
+            moveto_(0, mismatchPos);
+            outq.enqueue(lineBuf[mismatchPos]);
+            screenBufLen++;
+            screenBuf[mismatchPos] = lineBuf[mismatchPos];
+            setcursor_(0, mismatchPos+1);
+            return;
+        }
+
+        // We now know that screenBufLen == lineBufLen == mismatchPos
+        // so screen data on the user line exactly matches our internal model.
+        // We now move on to process output.
+
+        while (envq.size() != 0) {
+            Envelope *nextEnv = envq.peek();
+
+            // If we see a null byte in our current envelope, or we've fallen
+            // off the end of this envelope, give up on this envelope.
+            if (readIndex >= 96 || nextEnv->messageData[readIndex] == '\0') {
+                envq.dequeue();
+                freeq.enqueue(nextEnv);
+                continue;
+            }
+
+            uint8_t nextByte = nextEnv->messageData[readIndex];
+            readIndex++;
+
+            // The only special character we support for now is \n, any other
+            // special characters are simply skipped.
+            if (!is_printable(nextByte) && nextByte != '\n') {
+                continue;
+            }
+
+            // If we just switched to a new cursorOwner and we have some content
+            // on the process line, then scroll the process area up, move to
+            // the beginning of the process line, and output this byte.
+            if (nextEnv->srcPid != cursorOwner && procCursorPos > 0) {
+                scrollProcessArea_();
+                moveto_(1, 0); // procCursorPos is now 0
+                outq.enqueue(nextByte);
+                cursorOwner = nextEnv->srcPid;
+                setcursor_(1, 1);
+                ++procCursorPos;
+                return;
+            }
+
+            // If we are printing a newline, then just scroll this process area.
+            if (nextByte == '\n') {
+                scrollProcessArea_();
+                return;
+            }
+
+            // If the process has output more than 80 characters, truncate.
+            if (procCursorPos >= 80) {
+                continue;
+            }
+
+            // Otherwise, merely move to the correct location, and output the
+            // next byte.
+            moveto_(1, procCursorPos);
+            setcursor_(1, procCursorPos+1);
+            procCursorPos++;
+            outq.enqueue(nextByte);
+            return;
+        }
+    }
+
+    void scrollProcessArea_() {
+        moveto_(0, 0); // move to beginning of user line
+        outq.enqueue("\x1b[2K"); // clear entire line
+        outq.enqueue("\x1b[1S"); // scroll up one
+        setcursor_(1, 0);
+        moveto_(0, 0);
+
+        procCursorPos = 0;
+        screenBufLen = 0; // This will cause the user line to be recopied.
+    }
+
+    // Desired is in the same format as screenCursorPos, see above
+    void moveto_(uint8_t isProcLine, uint8_t pos) {
+        uint8_t desired = (isProcLine << 7) | (pos & 0x7f);
+
+        if (screenCursorPos == desired) {
+            return;
+        }
+
+        // This moves it to the right column, at the bottom of the screen
+        outq.enqueue(sprintf("\x1b[10000;%dK", (desired & 0x7f)+1));
+
+        // Move it up a row if necessary
+        if (((screenCursorPos) >> 7) == 1) {
+            outq.enqueue("\x1b[1A");
+        }
+
+        screenCursorPos = desired;
+    }
+
+    void setcursor_(uint8_t isProcLine, uint8_t pos) {
+        screenCursorPos = (isProcLine << 7) | (pos & 0x7f);
+    }
+
+    void pushProcEnv(Envelope *env) {
+        envq.enqueue(env);
+    }
+
+    void pushUserChar(uint8_t c) {
+        // First, handle backspaces
+        if (c == '\b') {
+            // If the line is empty, or user is at beginning of string, give up
+            if (lineBufLen == 0 || userCursorPos == 0) {
+                return;
+            }
+
+            --lineBufLen;
+            --userCursorPos;
+            for (uint8_t i = userCursorPos; i < lineBufLen; ++i) {
+                lineBuf[i] = lineBuf[i+1];
+            }
+            return;
+        }
+
+        // TODO(sanjay): all the rest of our code works allowing userCursorPos
+        // to range from 0 to lineBufLen, but as it stands, userCursorPos can
+        // only be equal to lineBufLen. We should handle the keycodes for
+        // moving left and right, to allow the cursor to move into the middle
+        // of lines.
+
+        if (!is_printable(c)) {
+            return;
+        }
+
+        if (lineBufLen >= 80) {
+            return;
+        }
+
+        // First, if we're not at the end, make space by shifting everything
+        // down
+        if (userCursorPos < lineBufLen) {
+            for (uint8_t i = lineBufLen; i > userCursorPos; --i) {
+                lineBuf[i] = lineBuf[i-1];
+            }
+        }
+
+        lineBuf[userCursorPos] = c;
+        ++userCursorPos;
+        ++lineBufLen;
+    }
+
+
+releaseProcessor:
+    if (new_char == '\r') {
+        for (size_t i = 0; i < crtData.lineBufLen; ++i) {
+            procInfo->currentEnv->messageData[i] = crtData.lineBuf[i];
+        }
+        procInfo->currentEnv->messageData[crtData.lineBufLen] = '\n';
+        procInfo->currentEnv->messageData[crtData.lineBufLen+1] = '\0';
+
+        kcdEnv := try_acquire_memory_block();
+        if (kcdEnv == NULL) {
+            procInfo->currentEnv->messageData = "out of memory";
+        }
+
+        send_message(procInfo->currentEnv, CRT_PID);
+        procInfo->currentEnv = null;
+
+        if (kcdEnv != NULL) {
+            send_message(KCD_PID, procInfo->currentEnv);
+            kcdEnv = NULL;
+        }
+
+        // Tell crtData that the user has not typed anything
+        crtData.lineBufLen = 0;
+        continue;
+    } else if (new_char == '!') {
+        // do magic here
+    } else {
+        crtData.pushUserChar(new_char);
+        continue;
+    }

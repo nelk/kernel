@@ -547,9 +547,14 @@
               <FilePath>.\message_pq.h</FilePath>
             </File>
             <File>
-              <FileName>coq.c</FileName>
+              <FileName>crt.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\coq.c</FilePath>
+              <FilePath>.\crt.c</FilePath>
+            </File>
+            <File>
+              <FileName>crt.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\crt.h</FilePath>
             </File>
           </Files>
         </Group>
