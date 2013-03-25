@@ -60,12 +60,12 @@ int8_t bridge_releaseMemoryBlock(void *blk) {
     firstBlocked->state = READY;
     pqRemove(&(gProcInfo.memq), 0);
     pqAdd(&(gProcInfo.prq), firstBlocked);
-    
+
     // If it has a higher priority than us, call releaseProcessor to give it a chance to run.
     if (firstBlocked->priority < gProcInfo.currentProcess->priority) {
         k_releaseProcessor(&gProcInfo, &gMemInfo, &gMessageInfo, &gClockInfo, MEMORY_FREED);
     }
-    
+
     return SUCCESS;
 }
 
@@ -73,7 +73,6 @@ int8_t bridge_sendMessage(uint8_t pid, Envelope *envelope) {
     int8_t releaseProcessor = k_sendMessage(&gMemInfo, &gProcInfo, envelope, gProcInfo.currentProcess->pid, pid);
     if (releaseProcessor == -1) {   // TODO: Replace with enums.
         k_releaseProcessor(&gProcInfo, &gMemInfo, &gMessageInfo, &gClockInfo, MESSAGE_SENT);
-        // TODO(nelk): if this is -1, we still return the same thing. Do we mean to return success?
     }
     return releaseProcessor;
 }
