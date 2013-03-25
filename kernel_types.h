@@ -50,13 +50,12 @@ struct MemInfo {
 #define UART_IN_BUF_SIZE (64)
 
 enum ProcState {
-		// TODO(nelk): prepend PS_ to these so we don't have a global 'NEW' defined here
-    BLOCKED_MEMORY,
-    BLOCKED_MESSAGE,
-    NEW,
-    READY,
-    RUNNING,
-		UNUSED,
+    PS_BLOCKED_MEMORY,
+    PS_BLOCKED_MESSAGE,
+    PS_NEW,
+    PS_READY,
+    PS_RUNNING,
+    PS_UNUSED,
 };
 typedef enum ProcState ProcState;
 
