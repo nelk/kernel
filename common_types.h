@@ -73,7 +73,6 @@ enum BackgroundColor {
 // to distinguish it from regular integers.
 typedef uint8_t ProcId;
 
-// TODO(alex) - move Envelope to user-facing header (user_message.h) or aggregate user-facing types header.
 typedef struct Envelope Envelope;
 struct Envelope {
     Envelope *next;
