@@ -26,16 +26,17 @@ int8_t k_sendMessage(MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, P
 		if (dstPCB == NULL) {
 				return EINVAL;
 		}
-		
+
 		srcPCB = k_getPCB(procInfo, srcPid);
 		if (srcPCB == NULL) {
 				return EINVAL;
 		}
-		
+
 		status = k_changeOwner(memInfo, (uint32_t)envelope, srcPid, PROC_ID_KERNEL);
-	
+
     // Set to new owner (and check if valid)
-    if (status != SUCCESS) { // TODO (alex) - should we be using SUCCESS here? Maybe have global return codes like SUCCESS that's not just for memory?
+    // TODO (alex) - Maybe have global return codes like SUCCESS that's not just for memory?
+    if (status != SUCCESS) {
         return status;
     }
 
@@ -93,16 +94,20 @@ Envelope *k_receiveMessage(MessageInfo *messageInfo, MemInfo *memInfo, ProcInfo 
 }
 
 int8_t k_sendDelayedMessage(MessageInfo *messageInfo, ClockInfo *clockInfo, MemInfo *memInfo, ProcInfo *procInfo, Envelope *envelope, ProcId srcPid, ProcId dstPid, uint32_t delay) {
+    uint8_t status = 0;
+
     k_zeroEnvelope(envelope);
     // Check pid - the src is from the bridge, but why not...
-    if (dstPid >= NUM_PROCS || srcPid >= NUM_PROCS) {
-        return 1;
+    if (k_getPCB(procInfo, srcPid) == NULL || k_getPCB(procInfo, dstPid) == NULL) {
+        return EINVAL;
+    }
+
+    status = k_changeOwner(memInfo, (uint32_t)envelope, srcPid, PROC_ID_KERNEL);
+    if (status != SUCCESS) {
+        return status;
     }
 
     envelope->sendTime = k_getTime(clockInfo) + delay;
-
-    // TODO(sanjay): this seems to do no sanity checking of anything...
-
     envelope->srcPid = srcPid;
     envelope->dstPid = dstPid;
 
@@ -127,6 +132,7 @@ void k_processDelayedMessages(MessageInfo *messageInfo, ProcInfo *procInfo, MemI
         }
 
         mpqRemove(messageQueue, 0);
+        k_changeOwner(memInfo, (uint32_t)message, PROC_ID_KERNEL, message->srcPid);
         k_sendMessage(memInfo, procInfo, message, message->srcPid, message->dstPid);
     }
 }

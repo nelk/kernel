@@ -6,16 +6,20 @@ size_t memset(uint8_t *buf, size_t bufLen, uint8_t val) {
     if (buf == NULL) {
         return bufLen;
     }
-    
+
     while(bufLen > 0) {
         *(buf++) = val;
         --bufLen;
     }
-    
-    return temp;		
+
+    return temp;
 }
 
-uint8_t is_numeric(char c) {
+uint8_t is_printable(uint8_t c) {
+    return c >= ' ' && c <= '~';
+}
+
+uint8_t is_numeric(uint8_t c) {
     return c >= '0' && c <= '9';
 }
 

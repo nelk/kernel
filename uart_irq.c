@@ -7,7 +7,7 @@
 
 #include <LPC17xx.h>
 
-#include "coq.h"
+#include "crt.h"
 #include "helpers.h"
 #include "kernel_types.h"
 #include "rtx.h"
@@ -166,7 +166,21 @@ void uart_receive_char_isr(ProcInfo *procInfo, char new_char) {
 }
 
 void uart_send_char_isr(ProcInfo *procInfo) {
-    // no-op
+    LPC_UART_TypeDef *uart = (LPC_UART_TypeDef *)LPC_UART0;
+    uint32_t localReader = procInfo->outReader;
+    uint32_t localWriter = procInfo->outWriter;
+    uint8_t sent = 0;
+
+    if (!(uart->LSR & LSR_THRE)) {
+        return;
+    }
+
+    while (localReader != localWriter && sent < UART_OUTPUT_BUFSIZE) {
+        uart->THR = procInfo->outputBuf[localReader];
+        localReader = (localReader+1) % OUTPUT_BUFSIZE;
+        sent++;
+    }
+    procInfo->outReader = localReader;
 }
 
 void c_UART0_IRQHandler(void) {
@@ -184,7 +198,10 @@ void c_UART0_IRQHandler(void) {
     } else if (IIR_IntId & IIR_THRE) {
         /* THRE Interrupt, transmit holding register empty*/
         // NOTE(sanjay): Make sure that this is contant time, we are in an ISR.
-        uart_send_char_isr(&gProcInfo);
+        if (gProcInfo.outLock == 0) {
+            uart_send_char_isr(&gProcInfo);
+        }
+
         LSR_Val = pUart->LSR;
     } else if (IIR_IntId & IIR_RLS) {
         LSR_Val = pUart->LSR;
@@ -209,25 +226,29 @@ Note: read RBR will clear the interrupt
 }
 
 void crt_proc(void) {
-    LPC_UART_TypeDef *uart = (LPC_UART_TypeDef *)LPC_UART0;
     Envelope *temp = NULL;
+		uint32_t localWriter = 0;
+    uint32_t localReader = 0;
     while (1) {
         Envelope *nextMsg = NULL;
-        uint8_t i = 0;
 
-        while (gProcInfo.coq.toFree != NULL) {
-            temp = gProcInfo.coq.toFree;
-            gProcInfo.coq.toFree = gProcInfo.coq.toFree->next;
+        while (crt_hasFreeEnv(&(gProcInfo.crtData))) {
+            temp = crt_getFreeEnv(&(gProcInfo.crtData));
             if (temp->messageType == MT_DEBUG && temp->srcPid == CRT_PID) {
-				// NOTE(sanjay): we DO NOT want to free this envelope, it's a preallocated buffer stored inside a process' PCB
+				// NOTE(sanjay): we DO NOT want to free this envelope, it's a
+                // preallocated buffer stored inside a process' PCB
                 --(gProcInfo.debugSem);
                 continue;
-            } else if (temp->srcPid == CRT_PID && temp->messageType == MT_KEYBOARD) {
-                // NOTE(sanjay): we DO NOT want to free this envelope, it's a preallocated buffer that echoes keyboard output
+            } else if (
+                temp->srcPid == CRT_PID &&
+                temp->messageType == MT_KEYBOARD
+            ) {
+                // NOTE(sanjay): we DO NOT want to free this envelope, it's a
+                // preallocated buffer that echoes keyboard output
 				gProcInfo.currentEnv = temp;
                 continue;
 			}
-            
+
             release_memory_block((void*)temp);
         }
 
@@ -239,20 +260,23 @@ void crt_proc(void) {
         if (nextMsg->srcPid == CRT_PID && nextMsg->messageType == MT_CRT_WAKEUP) {
 			gProcInfo.uartOutputEnv = nextMsg;
         } else {
-            pushEnvelope(&(gProcInfo.coq), nextMsg);
+            crt_pushProcEnv(&(gProcInfo.crtData), nextMsg);
         }
 
-        if (!(uart->LSR & LSR_THRE)) {
-            continue;
-        }
-
-        for (
-            i = 0;
-            i < UART_OUTPUT_BUFSIZE && hasData(&(gProcInfo.coq));
-            i++
+        localWriter = gProcInfo.outWriter;
+        localReader = gProcInfo.outReader;
+        while (
+            ((localWriter + 1) % OUTPUT_BUFSIZE != localReader) &&
+            (crt_hasOutByte(&(gProcInfo.crtData)))
         ) {
-            uart->THR = getData(&(gProcInfo.coq));
+            gProcInfo.outputBuf[localWriter] = crt_getOutByte(&(gProcInfo.crtData));
+            localWriter = (localWriter + 1) % OUTPUT_BUFSIZE;
         }
+        gProcInfo.outWriter = localWriter;
+
+        gProcInfo.outLock = 1;
+        uart_send_char_isr(&gProcInfo);
+        gProcInfo.outLock = 0;
     }
 }
 
@@ -305,9 +329,8 @@ void uart_keyboard_proc(void) {
         if (reject) {
             size_t i = 0;
             size_t bufLen = MESSAGEDATA_SIZE_BYTES - 1;
-            i += write_ansi_escape(message->messageData+i, bufLen-i, 31);
-            i += write_string(message->messageData+i, bufLen-i, "No handler found for this command.\r\n");
-            i += write_ansi_escape(message->messageData+i, bufLen-i, 0);
+            message->messageData[i++] = FC_RED;
+            i += write_string(message->messageData+i, bufLen-i, "No handler found for this command.\n");
             message->messageData[i++] = '\0';
             message->messageType = MT_UNSET;
             send_message(CRT_PID, message);
