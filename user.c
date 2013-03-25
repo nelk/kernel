@@ -482,6 +482,7 @@ void printSetErrorMessage(Envelope *envelope) {
     uint8_t index = 0;
     char *messageData = envelope->messageData;
 
+    messageData[index++] = FC_RED;
     index += write_string(messageData + index, MESSAGEDATA_SIZE_BYTES - 1, "Please provide a proper process ID and priority.\n");
     messageData[index++] = '\0';
     send_message(CRT_PID, envelope);
