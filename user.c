@@ -8,24 +8,8 @@
 // User Land
 
 void sleep(uint32_t ms, Envelope **listEnv, Envelope *sleepEnv) {
-#if 0
     uint32_t currentTime = get_time();
     uint32_t targetTime = currentTime + ms;
-
-    while (sleepEnv == NULL && currentTime < targetTime) {
-        release_processor();
-        sleepEnv = (Envelope *)try_request_memory_block();
-        currentTime = get_time();
-    }
-
-    if (currentTime >= targetTime) {
-        release_memory_block((void *)sleepEnv); // Won't release if null.
-        return;
-    }
-#else
-    uint32_t currentTime = get_time();
-    uint32_t targetTime = currentTime + ms;
-#endif
     sleepEnv->messageType = MT_SLEEP;
     delayed_send(pid(), sleepEnv, targetTime - currentTime);
     sleepEnv = NULL;
