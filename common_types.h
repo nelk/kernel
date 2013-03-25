@@ -36,6 +36,8 @@ enum MessageType {
     MT_COUNT_REPORT,
     MT_SLEEP,
     MT_DEBUG,
+    MT_KEYBOARD,
+		MT_CRT_WAKEUP,
 };
 
 // ProcId is used to store pids and is typedef'd

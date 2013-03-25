@@ -218,10 +218,15 @@ void crt_proc(void) {
         while (gProcInfo.coq.toFree != NULL) {
             temp = gProcInfo.coq.toFree;
             gProcInfo.coq.toFree = gProcInfo.coq.toFree->next;
-            if (temp->messageType == MT_DEBUG && temp->srcPid == KEYBOARD_PID) {
-                send_message(KEYBOARD_PID, temp);
+            if (temp->messageType == MT_DEBUG && temp->srcPid == CRT_PID) {
+				// NOTE(sanjay): we DO NOT want to free this envelope, it's a preallocated buffer stored inside a process' PCB
+                --(gProcInfo.debugSem);
                 continue;
-            }
+            } else if (temp->srcPid == CRT_PID && temp->messageType == MT_KEYBOARD) {
+                // NOTE(sanjay): we DO NOT want to free this envelope, it's a preallocated buffer that echoes keyboard output
+				gProcInfo.currentEnv = temp;
+                continue;
+			}
             
             release_memory_block((void*)temp);
         }
@@ -231,10 +236,10 @@ void crt_proc(void) {
             continue;
         }
 
-        if (nextMsg->srcPid != CRT_PID) {
-            pushEnvelope(&(gProcInfo.coq), nextMsg);
+        if (nextMsg->srcPid == CRT_PID && nextMsg->messageType == MT_CRT_WAKEUP) {
+			gProcInfo.uartOutputEnv = nextMsg;
         } else {
-            gProcInfo.uartOutputEnv = nextMsg;
+            pushEnvelope(&(gProcInfo.coq), nextMsg);
         }
 
         if (!(uart->LSR & LSR_THRE)) {
@@ -260,42 +265,8 @@ char toLowerAndIsLetter(char c) {
     return '\0';
 }
 
-size_t writePCBState(char *buf, size_t bufLen, ProcState state) {
-    switch (state) {
-        case BLOCKED_MEMORY:
-            return write_string(buf, bufLen, "Blocked on memory");
-        case BLOCKED_MESSAGE:
-            return write_string(buf, bufLen, "Blocked on message");
-        case NEW:
-            return write_string(buf, bufLen, "New");
-        case READY:
-            return write_string(buf, bufLen, "Ready");
-        case RUNNING:
-            return write_string(buf, bufLen, "Running");
-        default:
-            break;
-    }
-
-    return write_string(buf, bufLen, "???");
-}
-
-size_t writeProcessInfo(char *buf, size_t bufLen, PCB *pcb) {
-    size_t i = 0;
-    i += write_ansi_escape(buf+i, bufLen-i, 41);
-    i += write_uint32(buf+i, bufLen-i, pcb->pid, 0);
-    i += write_string(buf+i, bufLen-i, "$ Priority=");
-    i += write_uint32(buf+i, bufLen-i, pcb->priority, 0);
-    i += write_string(buf+i, bufLen-i, ", Status=");
-    i += writePCBState(buf+i, bufLen-i, pcb->state);
-    i += write_ansi_escape(buf+i, bufLen-i, 0);
-    i += write_string(buf+i, bufLen-i, "\r\n");
-    return i;
-}
-
 void uart_keyboard_proc(void) {
     Envelope *message = NULL;
-    Envelope *messageCopy = NULL;
-    uint32_t idx = 0;
     ProcId registry['z' - 'a' + 1] = {0};
     ProcId destPid = 0;
     char c = '\0';
@@ -307,71 +278,18 @@ void uart_keyboard_proc(void) {
             continue;
         }
 
-        // If the message is not "from ourself", that means we should
-        // register this character with the associated pid
-        if (message->messageType == MT_DEBUG && message->srcPid == CRT_PID) {
-            // NOTE(sanjay): we DO NOT want to free this envelope, it's a preallocated buffer stored inside a process' PCB
-            --(gProcInfo.debugSem);
-            continue;
-        } else if (message->srcPid != KEYBOARD_PID) {
+        if (message->srcPid != KEYBOARD_PID) {
             c = toLowerAndIsLetter(message->messageData[0]);
             if ('a' <= c && c <= 'z') {
                 registry[c - 'a'] = message->srcPid;
             }
 
-            release_memory_block(message);
+            release_memory_block((void *)message);
             message = NULL;
-            continue;
-        } else if (message->messageData[0] == SHOW_DEBUG_PROCESSES) {
-            Envelope *tempEnvelope = NULL;
-            uint8_t i = 0;
-            uint8_t bufLen = 0;
-
-            bufLen = MESSAGEDATA_SIZE_BYTES-1; // -1 for null byte
-
-            i += write_ansi_escape(message->messageData+i, bufLen-i, 41);
-            i += write_string(message->messageData+i, bufLen-i, "used mem = ");
-            i += write_uint32(
-                message->messageData+i,
-                bufLen-i,
-                (gMemInfo.numSuccessfulAllocs-gMemInfo.numFreeCalls)*128,
-                2
-            );
-            i += write_string(message->messageData+i, bufLen-i, " bytes");
-            i += write_ansi_escape(message->messageData+i, bufLen-i, 0);
-            i += write_string(message->messageData+i, bufLen-i, "\r\n");
-            message->messageData[i++] = '\0';
-            send_message(CRT_PID, message);
-            message = NULL;
-
-            for (i = 0; i < NUM_PROCS; i++) {
-                uint32_t location = 0;
-                PCB *pcb = &(gProcInfo.processes[i]);
-                
-                // Check if this is an unused process slot
-                if (*(pcb->startLoc) == 0 || pcb->debugEnv == NULL) {
-                    continue;
-                }
-                
-                ++(gProcInfo.debugSem);
-
-                tempEnvelope = pcb->debugEnv;
-                location += writeProcessInfo(
-                    tempEnvelope->messageData,
-                    MESSAGEDATA_SIZE_BYTES - 1, // -1 for null byte
-                    pcb
-                );
-                tempEnvelope->messageData[location++] = '\0';
-                tempEnvelope->messageType = MT_DEBUG;
-                send_message(CRT_PID, tempEnvelope);
-                tempEnvelope = NULL;
-            }
-            --(gProcInfo.debugSem);
             continue;
         }
 
-        // If it is "from ourself", then we send a message to the
-        // registered processes.
+        // If it is "from ourself", then we send a message to the registered processes.
         c = message->messageData[0];
         reject = 1;
         if (c == '%') {
@@ -385,29 +303,19 @@ void uart_keyboard_proc(void) {
         }
 
         if (reject) {
-            // Set copy for crt proc this message (since original is not being sent anywhere)
-            messageCopy = message;
+            size_t i = 0;
+            size_t bufLen = MESSAGEDATA_SIZE_BYTES - 1;
+            i += write_ansi_escape(message->messageData+i, bufLen-i, 31);
+            i += write_string(message->messageData+i, bufLen-i, "No handler found for this command.\r\n");
+            i += write_ansi_escape(message->messageData+i, bufLen-i, 0);
+            message->messageData[i++] = '\0';
+            message->messageType = MT_UNSET;
+            send_message(CRT_PID, message);
             message = NULL;
         } else {
-            // Create copy to send to crt proc
-            messageCopy = (Envelope *)request_memory_block();
-            messageCopy->srcPid = message->srcPid;
-            messageCopy->dstPid = message->dstPid;
-            messageCopy->messageType = message->messageType;
-            messageCopy->sendTime = message->sendTime;
-            for (idx = 0; idx < MESSAGEDATA_SIZE_BYTES; ++idx) {
-                messageCopy->messageData[idx] = message->messageData[idx];
-            }
-
             // Send the message to the proc that registered with this character
             send_message(destPid, message);
             message = NULL;
-        }
-
-        // Send copy of message to CRT proc
-        if (messageCopy != NULL) {
-            send_message(CRT_PID, messageCopy);
-            messageCopy = NULL;
         }
     }
 }
