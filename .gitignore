@@ -41,6 +41,4 @@
 *.iex
 kernel.htm
 kernel.map
-
-# TODO: verify
 *.lnp
