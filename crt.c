@@ -22,8 +22,11 @@ void crt_init(CRTData *crt) {
 
     crt->outqWriter += write_string((char *)crt->outqBuf, CRT_OUTQ_LEN, "\x1b[2J");
 
+    crt->lineBufLen += write_string((char *)crt->lineBuf, CRT_LINE_LIMIT, ">>");
+    crt->userCursorPos = crt->lineBufLen;
+    
     crt_setCursor_(crt, 1, 0); // force moveto_ to do something
-    crt_moveTo_(crt, 0, 0); // move to user typing location
+    crt_moveTo_(crt, 0, crt->userCursorPos); // move to user typing location
 }
 
 uint8_t crt_hasOutByte(CRTData *crt) {
@@ -192,7 +195,7 @@ void crt_advance_(CRTData *crt) {
         }
 
         // If the process has output more than 80 characters, truncate.
-        if (crt->procCursorPos >= 80) {
+        if (crt->procCursorPos >= CRT_LINE_LIMIT) {
             continue;
         }
 
@@ -304,7 +307,7 @@ void crt_pushUserByte(CRTData *crt, uint8_t c) {
         uint8_t i = 0;
 
         // If the line is empty, or user is at beginning of string, give up
-        if (crt->lineBufLen == 0 || crt->userCursorPos == 0) {
+        if (crt->lineBufLen <= PROMPT_LEN || crt->userCursorPos <= PROMPT_LEN) {
             return;
         }
 
@@ -329,7 +332,7 @@ void crt_pushUserByte(CRTData *crt, uint8_t c) {
         return;
     }
 
-    if (crt->lineBufLen >= 80) {
+    if (crt->lineBufLen >= CRT_LINE_LIMIT) {
         return;
     }
 

@@ -105,6 +105,8 @@ struct PQ {
 
 #define CRT_OUTQ_LEN (80)
 #define CRT_LINE_LIMIT (80)
+#define PROMPT_LEN (2)
+// prompt = ">>"
 
 typedef struct CRTData CRTData;
 struct CRTData {

@@ -244,13 +244,13 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
         if (new_char == '\r') {
             uint8_t i = 0;
             // Copy from crtData to our output envelope.
-            for (i = 0; i < crt->lineBufLen; ++i) {
-                procInfo->currentEnv->messageData[i] = crt->lineBuf[i];
+            for (i = PROMPT_LEN; i < crt->lineBufLen; ++i) {
+                procInfo->currentEnv->messageData[i-PROMPT_LEN] = crt->lineBuf[i];
             }
 
             // Append \n\0 to message.
-            procInfo->currentEnv->messageData[crt->lineBufLen] = '\n';
-            procInfo->currentEnv->messageData[(crt->lineBufLen)+1] = '\0';
+            procInfo->currentEnv->messageData[(crt->lineBufLen)-PROMPT_LEN] = '\n';
+            procInfo->currentEnv->messageData[(crt->lineBufLen)-PROMPT_LEN+1] = '\0';
 
             // Try to allocate a new envelope to send to KCD.
             kcdEnv = (Envelope *)k_acquireMemoryBlock(memInfo, KEYBOARD_PID);
@@ -279,8 +279,8 @@ void k_processUartInput(ProcInfo *procInfo, MemInfo *memInfo) {
                 k_sendMessage(memInfo, procInfo, kcdEnv, KEYBOARD_PID, KEYBOARD_PID);
             }
 
-            crt->lineBufLen = 0;
-            crt->userCursorPos = 0;
+            crt->lineBufLen = PROMPT_LEN;
+            crt->userCursorPos = PROMPT_LEN;
             crt->lastMismatchPos = 0;
             kcdEnv = NULL;
             continue;
