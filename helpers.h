@@ -5,7 +5,7 @@
 
 uint8_t is_printable(uint8_t c);
 
-size_t memset(uint8_t *buf, size_t bufLen, uint8_t val);
+size_t write_mem(uint8_t *buf, size_t bufLen, uint8_t val);
 
 size_t read_uint32(char *buf, size_t bufLen, uint32_t *out);
 size_t write_ansi_escape(char *buf, size_t bufLen, uint8_t num);

@@ -10,7 +10,7 @@ void crt_setBC_(CRTData *crt, uint8_t);
 void crt_setFC_(CRTData *crt, uint8_t);
 
 void crt_init(CRTData *crt) {
-    memset((uint8_t *)crt, sizeof(CRTData), 0);
+    write_mem((uint8_t *)crt, sizeof(CRTData), 0);
 
     crt->cursorOwner = PROC_ID_NONE;
 
@@ -24,7 +24,7 @@ void crt_init(CRTData *crt) {
 
     crt->lineBufLen += write_string((char *)crt->lineBuf, CRT_LINE_LIMIT, ">>");
     crt->userCursorPos = crt->lineBufLen;
-    
+
     crt_setCursor_(crt, 1, 0); // force moveto_ to do something
     crt_moveTo_(crt, 0, crt->userCursorPos); // move to user typing location
 }
