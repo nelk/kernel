@@ -23,7 +23,10 @@ clean:
 
 report: report.pdf
 
-report.pdf: ${REPORT_SRC}
+${REPORT_TARG}: ${REPORT_SRC}
+	# ensure we don't use the partially completed build of a previous
+	# compile
+	rm -rf ${REPORT_OUTDIR};
 	mkdir -p ${REPORT_OUTDIR};
 	${LC} -output-directory ${REPORT_OUTDIR} ${REPORT_SRC};
 	${LC} -output-directory ${REPORT_OUTDIR} ${REPORT_SRC};
