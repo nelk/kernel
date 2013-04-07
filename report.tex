@@ -118,9 +118,15 @@
     blocked process with the highest priority is unblocked. Processes that are
     blocked on a message remain blocked until they are sent a message.
 
-    A process can be preempted when it frees memory or sends a message. If the
-    process that it unblocks has a higher priority, then the currently running
-    process is preempted.
+    Priorities are implemented using an 8-bit unsigned integer. A lower number
+    represents a higher priority. The top bit is reserved for identifying
+    whether the priority is of kernel or user level. A kernel-level priority has
+    a leading 0 and a user priority has a leading 1, forcing all kernel-level
+    priorities to be higher than user-level ones. The last 7 bits represent all
+    of the priority levels possible in the system (priorities up to $2^7 - 1$
+    for each priority level). A process can be preempted when it frees memory or
+    sends a message. If the process that it unblocks has a higher priority, then
+    the currently running process is preempted.
 
     The ready queues are priority queues implemented using heaps. The decision
     was made to use a priority queue for all ready/blocked processes instead of
