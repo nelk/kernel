@@ -591,12 +591,12 @@
 
 \section{Measurements}
     
-    The measured average runtime of k\_sendMessage was $1.09 \mu s$, and the average 
-    runtime of k\_receiveMessage was $0.722 \mu s$. This is reasonable because both 
+    The measured average runtime of k\_sendMessage was $1.09 \: \mu s$, and the average 
+    runtime of k\_receiveMessage was $0.722 \: \mu s$. This is reasonable because both 
     of these operations take $O(1)$. The measurements did not change much with the 
     different trials, except in the case of trial 4, where the Memory Muncher process 
     did not run. In this case, k\_receiveMessage decreased its average runtime to 
-    $0.667 \mu s$. This is because when profiling average runtimes, the amount of 
+    $0.667 \: \mu s$. This is because when profiling average runtimes, the amount of 
     time the processes is blocked on receiving a message is included in the average runtime 
     of k\_receiveMessage. This agrees with the observation that when the Memory Muncher 
     process was not allowed to run, the average runtime of k\_releaseProcessor improved 
