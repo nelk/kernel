@@ -146,7 +146,7 @@
 
         \Comment{These variables are set depending on the release reason}
         \State define targetState, \Comment{The state to give the currently running process}
-            \State \indent srcQueue, \Comment{The queue to schedule the next process 
+            \State \indent srcQueue, \Comment{The queue to schedule the next process
             from}
             \State \indent dstQueue \Comment{The queue to insert the current process into}
 
@@ -629,7 +629,7 @@
     We added a bridge layer in order to allow our user processes to access the
     kernel-level functions safely.  These bridging functions allow us to pass
     global data structures into the kernel functions, as well as do additional
-    validation or work that should only be done when a user process calls the
+    validation or work that only needs to be done when a user process calls the
     function as opposed to when it is called from within kernel space.
 
     Examples of this where additional functionality was added are listed below.
@@ -645,7 +645,7 @@
             memory, then the highest priority process should receive the
             released memory block.  The highest priority blocked process is
             placed back into the ready queue, and we preempt the current process
-            if it's of higher priority.
+            if the blocked process is of higher priority.
         \item [sendMessage] The sending process is preempted if the message sent
             unblocks a process of higher priority.  This is done here so we
             guarantee that we only call k\_releaseProcessor if it was a user
@@ -676,7 +676,7 @@
     number of processes in the queue that the process whose priority is being
     changed resides in.  All other operations in the function are constant time.
 
-        \begin{algorithm}
+    \begin{algorithm}
         \caption{Kernel set process priority pseudocode}
         \label{code:set_process_priority}
         \begin{algorithmic}[1]
