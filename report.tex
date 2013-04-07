@@ -288,6 +288,12 @@
     The pseudocode for that function is included in Algorithm
     \ref{code:read_uint_32}.
 
+    As a user process, we require memory in order to send a message to it (as
+    the user), so we will be unable to send commands to it (as well as other
+    user processes) in a situation where we are out of memory.  Therefore, we
+    are unable to use this process to stop a misbehaving process that is holding
+    and not releasing memory if we are already out of memory.
+
     \begin{algorithm}
         \caption{Set priority command process pseudocode}
         \label{code:user_set_priority}
