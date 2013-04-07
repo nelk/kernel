@@ -451,7 +451,9 @@
             \State envelope.srcPid = srcPid
             \State envelope.dstPid = dstPid
 
-            \State \Return error code if srcPid or dstPid is invalid
+            \If{srcPid or dstPid is invalid}
+                \State \Return error code
+            \EndIf
             \State dstPCB $\gets$ PCB of process with pid dstPid
             \State srcPCB $\gets$ PCB of process with pid srcPid
 
@@ -503,7 +505,9 @@
     \begin{algorithmic}[1]
         \Function{k\_sendDelayedMessage}{envelope, srcPid, dstPid, delay}
             \State Initialize reserved kernel fields of envelope to a zeroed state
-            \State \Return error code if srcPid or dstPid is invalid
+            \If{srcPid or dstPid is invalid}
+                \State \Return error code
+            \EndIf
             \If{srcPid owns memory block envelope}
                 \State Set owner of envelope to kernel
             \Else
@@ -550,6 +554,36 @@
     \end{algorithm}
 
 \section{Running Time Analysis}
+
+    The runtime of k\_sendMessage (assuming process is not preempted) is $O(1)$
+    because all operations take constant time. Adding a message to the receiving
+    process's message queue  takes constant time because it is simply a linked-
+    list. The runtime of k\_receiveMessage (assuming there is a message to
+    receive)  is also $O(1)$ because it only looks at the message at the head of
+    the queue.
+
+    The runtime of k\_sendDelayedMessage is bounded by the time it takes to add
+    a  message to the kernel delayed message queue. This is a priority queue
+    implemented  as a heap, so it takes $O(\log n)$ time for insertion. This is
+    a good runtime  for sending a delayed message, considering that delayed
+    messages are not necessarily delivered in the order they are sent. A heap
+    efficiently allows retrieval of the earliest message without having to sort
+    all of the messages.
+
+    The runtime of k\_processDelayedMessages depends upon how many delayed
+    messages  need to be delivered at the same time. Each message that needs to
+    be delivered  is removed from the kernel delayed message queue, which is
+    implemented  with a heap. This makes  the runtime $(m \log n)$, where $m$ is
+    the number of messages that need to be sent immediately, and $n$ is the
+    number of delayed messages currently waiting in the system. This runtime is
+    reasonable because it is very unlikely that a large number of messages need
+    to be delivered at exactly the same time. It is possible to improve this
+    runtime by using a skip list. This would allow binary searching for the last
+    message in the queue that needs to be sent, and then linearly removing and
+    delivering all messages  from the head of the list to the found message.
+    This optimization would result  in worst-case $O(\log n + m)$ time. This
+    optimization wasn't done because the  small likelihood of m being large
+    didn't justify a much more complex implementation.
 
 \section{Measurements}
 
