@@ -77,10 +77,10 @@
     blocked on a message remain blocked until they are sent a message.
 
     A process can be preempted when it frees memory or sends a message. If the
-    process that it unblocks has a higher priority than it, then the currently
-    running process is preempted.
+    process that it unblocks has a higher priority, then the currently running
+    process is preempted.
 
-    The ready queues are priority queues implemented with a heaps. The decision
+    The ready queues are priority queues implemented using heaps. The decision
     was made to use a priority queue for all ready/blocked processes instead of
     a queue for each priority level because it allowed the system to support an
     arbitrary number of priorities without having the release\_processor runtime
@@ -113,10 +113,10 @@
     \end{algorithm}
 
     See Algorithm \ref{code:release_processor} for a pseudocode implementation
-    for the kernel\-level function k\_releaseProcessor. This function is called
+    for the kernel-level function k\_releaseProcessor. This function is called
     any time the current process should be preempted and a new process should be
     scheduled. The function takes a parameter that specifies what the reason is
-    for the context\-switch. The release reason can be one of the following: a
+    for the context switch. The release reason can be one of the following: a
     voluntary yield, a process priority change, memory was freed, the system is
     out of memory, a message was sent, or a message was received. The scheduling
     behavior can be different for some of these reasons.
@@ -162,11 +162,19 @@
             \EndIf
         \EndIf
 
-        \If{srcQueue $\ne$ NULL \and srcQueue.size > 0}
+        \If{srcQueue $\ne$ NULL and srcQueue.size $>$ 0}
             \State nextProc $\gets$ \Call{srcQueue.pop}{}
         \Else
             \State nextProc $\gets$ the null process
         \EndIf
+
+    \algstore{releaseProcessor}
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \begin{algorithmic}[1]
+    \algrestore{releaseProcessor}
 
         \If{currentProcess $\ne$ NULL}
             \Comment{Save old process info}
@@ -192,12 +200,12 @@
 
     The runtime for k\_initProcesses is $O(n\log n)$, where n is the number of
     processes in the system. This is because each processes is inserted into the
-    process\-ready queue, which is implemented as a heap and therefore taking
-    $O(\log n)$ to insert an element. This function could be trivially modified to
-    achieve a runtime of $O(n)$ time, by putting all of the heap elements in an
-    array first, and then heapifying it afterwards, but since there is a small,
-    fixed number of processes in the system this small optimization wasn't
-    completed since this function only runs once at system startup.
+    process-ready queue, which is implemented as a heap and therefore taking
+    $O(\log n)$ to insert an element. This function could be trivially modified
+    to achieve a runtime of $O(n)$ time, by putting all of the heap elements in
+    an array first, and then heapifying it afterwards. Since there is a
+    small, fixed number of processes in the system this small optimization
+    wasn't completed since this function only runs once at system startup.
 
     The runtime for k\_releaseProcessor, with the assumption that the UART and
     delayed message processing at the beginning will typically take $O(1)$ time,
