@@ -271,9 +271,148 @@
 
 \part{User-level Processes}
 
-\chapter{Proc 1}
+\chapter{Set Priority Command Process}
 
-\chapter{Proc 2}
+\section{Description}
+    This process is responsible for allowing the user to change process
+    priorities through terminal commands.  It is registered to the \%C command,
+    and will attempt to set a new priority level to the given process ID.
+    Validation is done on the input parameters to ensure that they are actually
+    valid inputs before calling set\_process\_priority(pid, priority).  The
+    set\_process\_priority process itself satisfies the requirements that the
+    change be immediate and that the target process could be located in the
+    ready or blocked resource queue.
+
+    See Algorithm \ref{code:user_set_priority} for a pseudocode implementation
+    of this user process.  Note that this process, among others, makes use of
+    a custom implementation of a read\_uint32 helper function that we created.
+    The pseudocode for that function is included in Algorithm
+    \ref{code:read_uint_32}.
+
+    \begin{algorithm}
+        \caption{Set priority command process pseudocode}
+        \label{code:user_set_priority}
+        \begin{algorithmic}[1]
+
+            \State $envelope \gets NULL$
+            \Comment{Envelope for message passing}\\
+
+            \Function{processSetMessage}{$message$}
+                \State $index \gets 2$
+                \Comment {Index of current position}
+                \State $numLength \gets 0$
+                \Comment {Length of parameters}
+                \State $pid \gets 0$
+                \State $priority \gets 0$\\
+
+                \If {$message \lbrack index \rbrack \ne space$}
+                    \State \Return $EINVAL$
+                \EndIf\\
+
+                \State $numLength, pid \gets \Call {read\_uint32}{message +
+                    index}$\\
+
+                \If {$numLength = 0$}
+                    \State \Return $EINVAL$
+                \EndIf\\
+
+                \State $index \gets index + numLength$\\
+
+                \If {$message \lbrack index \rbrack \ne space$}
+                    \State \Return $EINVAL$
+                \EndIf\\
+
+                \State $numLength, priority \gets \Call{read\_uint32}{message +
+                    index}$\\
+
+                \If {$numLength = 0 \mid\mid priority > 255$}
+                    \State \Return $EINVAL$
+                \EndIf\\
+
+                \State \Return \Call {set\_process\_priority}{$pid, priority$}
+            \EndFunction\\
+
+            \algstore{userSetPrioritySplit}
+        \end{algorithmic}
+    \end{algorithm}
+
+    \begin{algorithm}
+        \begin{algorithmic}[1]
+            \algrestore{userSetPrioritySplit}
+            \Function{setPriorityProcess}{}
+                \State $envelope \gets \Call {request\_memory\_block}{}$
+                \State \Call {init\_registration\_envelope}{$envelope, c$}
+                \State \Call {send\_message}{$KEYBOARD\_PID, envelope$}\\
+
+                \While{1}
+                    \State $envelope \gets \Call {receive\_message}{NULL}$\\
+
+                    \If {$envelope \rightarrow srcPid \ne KEYBOARD\_PID$}
+                        \State \Call {release\_memory\_block}{$envelope$}
+                        \State $continue$
+                    \EndIf\\
+
+                    \If {$envelope\ message\ isn't\ prefixed\ with\ \%C$}
+                        \State \Call {release\_memory\_block}{$envelope$}
+                        \State $continue$
+                    \EndIf\\
+
+                    \State $status \gets \Call {processSetMessage}{envelope
+                        \rightarrow message}$\\
+
+                    \If {$status = EINVAL$}
+                        \Comment {Print error message upon failure to validate}
+                        \State \Call {printSetErrorMessage}{$envelope$}
+                    \Else
+                        \State \Call {release\_memory\_block}{$envelope$}
+                    \EndIf
+                \EndWhile
+            \EndFunction
+        \end{algorithmic}
+    \end{algorithm}
+
+    \begin{algorithm}
+        \caption{Read uint32 from char array pseudocode}
+        \label{code:read_uint_32}
+        \begin{algorithmic}[1]
+
+            \Function{read\_uint32}{$buf, bufLen, out$}
+                \Comment {buf is a char pointer}
+                \State $number \gets 0$
+                \Comment {The integer result}
+                \State $read \gets 0$
+                \Comment {Number of characters read}\\
+
+                \If {$buf = NULL$}
+                    \State \Return $0$
+                    \Comment {Return if there's nothing to read}
+                \EndIf\\
+
+                \While {$read < bufLen$}
+                    \If {\Call {$\neg is\_numeric$}{$buf$}}
+                        \State \textbf{break}
+                    \EndIf\\
+
+                    \State $number \gets number \times 10$
+                    \State $number \gets number + \Call {to\_int}{buf}$
+                    \State $read \gets read + 1$
+                    \State $buf \gets buf + 1$
+                \EndWhile\\
+
+                \If {$out \ne NULL$}
+                    \State $out \gets number$
+                \EndIf\\
+
+                \State \Return $read$
+            \EndFunction
+        \end{algorithmic}
+    \end{algorithm}
+
+\chapter{24-Hour Wall Clock Display Process}
+
+\chapter{Stress Processes A, B, and C}
+
+\chapter{User-Level Test Processes}
 
 \part{Lessons Learned}
 % They call this the lessons learned summary.
