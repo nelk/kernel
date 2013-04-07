@@ -159,10 +159,11 @@
     metadata per block ranging from some non-zero amount of metadata to half the
     block size worth of metadata.
 
+% TODO(sanjay): fix line-limit before committing
     For the sake of description, let us call the number of metadata fields that
     fit inside a block $k$. That is to say, one block can hold the metadata for
     $k$ blocks. The metadata layer discriminates between two types of blocks,
-    data blocks and arena header blocks. The metadata layer requires a function
+    data blocks and arena header blocks. The metadata layer implements a function
     that takes a block and returns its associated arena header block. For our
     purposes, this function acts as the identity function when passed an arena
     header block. These definitions lead to the notion that an arena header
