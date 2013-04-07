@@ -1,11 +1,13 @@
 CC = clang
 CFLAGS = -Wall -Wextra -m32 -MMD -g -std=c99 -Qunused-arguments -pedantic
 
+SOURCES = ${shell find . -name "*.c"}
 TEST_SOURCES = ${shell find . -name "*_test.c"}
-SOURCES = ${TEST_SOURCES:_test.c=.c} ${TEST_SOURCES}
 EXECS = ${TEST_SOURCES:.c=.out}
 DEPENDS = ${SOURCES:.c=.d}
 OBJECTS = ${SOURCES:.c=.o}
+COMMON_OBJECTS = helpers.o
+
 
 REPORT_SRC = report.tex
 REPORT_OUTDIR = report_out
@@ -15,7 +17,7 @@ LC = pdflatex
 all: test
 test: ${EXECS}
 
-%_test.out: %_test.o %.o
+%_test.out: %_test.o %.o ${COMMON_OBJECTS}
 	${CC} ${CFLAGS} $^ -o $@
 
 clean:

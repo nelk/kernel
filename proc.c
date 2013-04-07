@@ -33,7 +33,7 @@ void k_initProcesses(ProcInfo *procInfo, MemInfo *memInfo) {
     uint32_t *stack = NULL;
     uint8_t pidOffset = 0;
 
-    memset((uint8_t *)procInfo, sizeof(ProcInfo), 0);
+    write_mem((uint8_t *)procInfo, sizeof(ProcInfo), 0);
 
     pqInit(&(procInfo->prq), procInfo->procQueue, NUM_PROCS, &rqStoreIndexFunc);
     pqInit(&(procInfo->memq), procInfo->memQueue, NUM_PROCS, &memqStoreIndexFunc);
