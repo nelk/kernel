@@ -625,6 +625,92 @@
 
 \section{Bridge Layer}
 
+\subsection{Description}
+    We added a bridge layer in order to allow our user processes to access the
+    kernel-level functions safely.  These bridging functions allow us to pass
+    global data structures into the kernel functions, as well as do additional
+    validation or work that only needs to be done when a user process calls the
+    function as opposed to when it is called from within kernel space.
+
+    Examples of this where additional functionality was added are listed below.
+
+    \begin{description}
+        \item [acquireMemoryBlock] We want this to be a blocking call when
+            the system is out of memory, so we loop in the bridge function.  We
+            alternate between calling the k\_acquireMemoryBlock function (which
+            will return an error code if there is no memory left) and calling
+            k\_releaseProcessor until the user process successfully obtains a
+            block.
+        \item [releaseMemoryBlock] If there are processes that are blocked on
+            memory, then the highest priority process should receive the
+            released memory block.  The highest priority blocked process is
+            placed back into the ready queue, and we preempt the current process
+            if the blocked process is of higher priority.
+        \item [sendMessage] The sending process is preempted if the message sent
+            unblocks a process of higher priority.  This is done here so we
+            guarantee that we only call k\_releaseProcessor if it was a user
+            process of lower priority that made the sendMessage call.
+        \item [receiveMessage] The output parameter is set here, if available.
+    \end{description}
+
+\section{Get/Set Priority}
+
+\subsection{Description}
+    These functions return and set priorities of processes, respectively.
+    Validation is done to ensure that only proper process IDs and priorities are
+    passed in.  k\_setProcessPriority will preempt the currently running process
+    if it is of lower priority.
+
+    k\_get\_process\_priority simply verifies if the passed process ID is valid
+    and returns the priority of that process, or -1 otherwise.  As
+    k\_set\_process\_priority is more complicated, its pseudocode has been
+    included under Algorithm \ref{code:set_process_priority}.
+
+    There are two helper functions used: setMaskPriority and pqChangedPriority.
+    setMaskPriority sets the new priority to retain the old priority's leading
+    bits, while setting its last 7 bits to the desired priority.
+    pqChangedPriority modifies the given process' priority in the queue and
+    rebalances the backing heap to keep it in sorted order.
+
+    Overall, this function takes at most $O(\log(n))$ time where $n$ is the
+    number of processes in the queue that the process whose priority is being
+    changed resides in.  All other operations in the function are constant time.
+
+    \begin{algorithm}
+        \caption{Kernel set process priority pseudocode}
+        \label{code:set_process_priority}
+        \begin{algorithmic}[1]
+
+            \Function{k\_setProcessPriority}{$pid, priority$}
+                \State $modifiedProcess \gets \Call {k\_getPCB}{pid}$\\
+                \Comment {Returns NULL if pid is invalid}
+
+                \If {$modifiedProcess = NULL \mid\mid modifiedProcess = nullProcess$}
+                    \State \Return {$EINVAL$}
+                \EndIf\\
+
+                \State \Call {setMaskPriority}{$modifiedProcess, oldPriority,
+                    newPriority$}
+                \Comment {Set the priority to the masked new priority}\\
+
+                \State \Call {pqChangedPriority}{$readyQueue, memoryQueue,
+                    modifiedProcess$}
+                \Comment {Change priority state in the queues, safe to call if
+                    the process isn't in the queue}\\
+
+                \If {$we\ improved\ our\ own\ priority\ or\ top\ process\ has\
+                    same\ or\ worse\ priority$}
+                    \State \Return {$SUCCESS$}
+                    \Comment {Don't preempt ourselves}
+                \EndIf\\
+
+                \State \Call {k\_releaseProcessor}{$CHANGED\_PRIORITY$}\\
+
+                \State \Return {$SUCCESS$}
+            \EndFunction
+        \end{algorithmic}
+    \end{algorithm}
+
 \part{User-level Processes}
 
 \chapter{Set Priority Command Process}
