@@ -442,7 +442,20 @@ void k_processUartInput() {
         \path [->,very thick,line] (sendChar) -- (uart);
     \end{tikzpicture}
 
-    In order to
+    We decided to implement a larger feature set than required from the
+    application specification in order to make our interface feel like a real
+    command line. Our features include a text input bar that stays at the bottom
+    while users type, coloured text, backspace support, and a few other
+    enhancements.
+
+    To achieve this, we save the buffered keyboard input into an envelope
+    that belongs to a ``CRTData'' object. Whenever the buffer is cleared by a
+    user pressing the ``enter button'', we move the cursor upwards, and write
+    the content of the buffer in the cleared space. By shifting the cursor's
+    position, we are able to maintain the currently buffered user text at the
+    bottom of the screen, allowing the user to see their text as they enter it.
+    Implementing deletion only required parsing a special character in a similar
+    way to a hotkey.
 
 \chapter{Misc}
 % Make sure to include pseudocode and testing, if appropriate.
