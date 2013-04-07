@@ -88,9 +88,9 @@
 
 \tableofcontents
 \listofalgorithms
+\listoffigures
 
 % NOTE(sanjay): uncomment these if we add any figures or tables
-% \listoffigures
 % \listoftables
 
 
@@ -320,8 +320,8 @@
     Keyboard input triggers the UART0\_IRQHandler assembly interrupt. This
     passes the input to the c\_UART0\_IRQHandler method that puts the events
     in a buffer. Whenever release\_processor is called, messages in the
-    buffer are sent to the keyboard decoder process so it can decode the new
-    events. It processes the input buffer. In the case that input is a hot-key,
+    buffer are sent to the keyboard decoder method to decode the new
+    events in the buffer. In the case that input is a hot-key,
     it immediately executes the relevant execution path. In the case that input
     is a complete command, a process that has registered for that command will
     receive a message containing the command. If no processes have been
@@ -333,30 +333,31 @@
 
     \begin{figure}
         \centering
-
+        \label{figure:inputDiagram}
+        \caption{Flow of Input Data to User Processes}
         \begin{tikzpicture}[node distance = 3cm,
-                            auto,label={figure:inputDiagram}]
+                            auto]
             % Place nodes
             \node [block] (kbd) {keyboard};
             \node [cloud, above of=kbd] (user) {user};
-            \node [block, right of=kbd] (uart) {uart on PC};
-            \node [block, right of=uart] (uart_h) {IRQHandler};
-            % TODO: fix this graph. It's broken.
-            \node [block, right of=uart_h] (buffer) {buffer};
-            \node [cloud, below left of=buffer] (release) {release processor};
-            \node [block, below right of=release] (kcd) {keyboard decoder};
-            \node [block, left of=kcd] (user_proc) {user processes};
+            \node [block, right of=kbd] (uart_h) {IRQHandler};
+            \node [cloud, above right of=uart_h] (buffer) {buffer};
+            \node [block, right of=uart_h] (kcd) {keyboard decoder};
+            \node [block, below of=kcd] (release) {release processor};
+            \node [cloud, right of=kcd] (message) {message};
+            \node [block, right of=message] (keyboard_proc) {keyboard process};
+            \node [block, below of=keyboard_proc] (user_proc) {user processes};
             % Draw edges
             \path [->,very thick,line,dashed] (user) -- (kbd);
-            \path [->,very thick,line] (kbd) -- (uart);
-            \path [->,very thick,line] (uart) -- (uart_h);
-            \path [->,very thick,line] (uart_h) -- (buffer);
-            \path [->,very thick,line,dashed] (buffer) -- (release);
-            \path [->,very thick,line,dashed] (release) -- (kcd);
-            \path [->,very thick,line] (buffer) -- (kcd);
-            \path [->,very thick,line] (kcd) -- (user_proc);
+            \path [->,very thick,line] (kbd) -- (uart_h);
+            \path [->,very thick,line,dashed] (uart_h) -- (buffer);
+            \path [->,very thick,line] (release) -- (kcd);
+            \path [very thick,line] (kcd) -- (message);
+            \path [->,very thick,line] (message) -- (keyboard_proc);
+            \path [->,very thick,line,dashed] (buffer) -- (kcd);
+            \path [->,very thick,line] (release) -- (kcd);
+            \path [->,very thick,line] (keyboard_proc) -- (user_proc);
         \end{tikzpicture}
-        \caption{Flow of Input Data to User Processes}
     \end{figure}
 
 % TODO: Format this. It's ugly.
@@ -435,7 +436,6 @@
             \node [block, right of=handler] (sendChar) {sendCharIsr};
             \node [block, right of=sendChar] (uart) {UART};
             % Draw edges
-            \path [very thick,line] (user_proc) -- (message);
             \path [very thick,line] (user_proc) -- (message);
             \path [->,very thick,line] (message) -- (crtProc);
             \path [->,very thick,line] (crtProc) -- (sendChar);
