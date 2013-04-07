@@ -410,9 +410,8 @@
     utilization rate of $99.22\%$.
 
 \section{Measurements}
-    We profiled the performance of the memory allocator using the Keil IDE's
-    built-in profiling tools. We found that on average the memory allocator
-    would take $787.2 ns$ to return a fully zeroed memory block. This was
+    We found that on average the memory allocator
+    would take $787.2 \: ns$ to return a fully zeroed memory block. This was
     determined by taking the average of 5 trials, where each trial did a few
     hundred calls to the allocation routine. The raw data from the trials can
     be found in Appendix \ref{appendix:raw_data}.
@@ -621,7 +620,8 @@
     process was not allowed to run, the average runtime of k\_releaseProcessor improved 
     because there was enough memory to send messages more often than when the Memory 
     Muncher was running. In the other cases the runtimes did not change significantly, 
-    which corresponds with a $O(1)$ runtime of these functions.
+    which corresponds with a $O(1)$ runtime of these functions. The raw data can 
+    be viewed in Appendix \ref{appendix:raw_data}.
 
 \chapter{I/O}
 % Make sure to include pseudocode and testing, if appropriate.
@@ -1376,10 +1376,20 @@
 % what you did do well, both technically and organizationally, and what you
 % would do differently if you were to do it again
 
-\chapter{Appendix A - Measurements}
+\appendix
+\chapter{Raw Measurement Data}
+\label{appendix:raw_data}
 
+We profiled the performance of the memory allocator using the Keil IDE's built-
+in profiling tools.  There were 5 trials completed with different total runtimes
+and different sets of  processes active. The Trial Information table shows the
+runtime  of the system for each trial and notes about how the trial deviated
+from the normal  setup of the system (which defaults to having all processes on,
+without the clock  or the stress processes started). The next table shows the
+total and average runtimes  of the measured functions for each trial.
 
 \section{Trial Information}
+
 \begin{tabular}{l | l | l}
     Trial&Total Runtime&Notes \\
     \hline
