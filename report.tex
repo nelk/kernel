@@ -131,29 +131,6 @@
     Pseudocode for process initialization is listed in Algorithm
     \ref{code:proc_init}.
 
-    \begin{algorithm}
-        \caption{Process Initialization Pseudocode}
-        \label{code:proc_init}
-        \begin{algorithmic}[1]
-        \Function{k\_initProcesses}{}
-            \State Initialize process-ready queue
-            \State Initialize blocked-on-memory queue
-
-            \For{each process p, index i}
-                \State p.pid $\gets$ i
-                \State p.stack $\gets$ \Call{acquireMemoryBlock}{$ $} three times + memory block size \Comment{Use three memory blocks for each process stack and place stack pointer at end of third one}
-                \State push initial required values onto stack
-                \State set p.startLocation to appropriate process function location
-                \Comment{Reserve a debug envelope for each process to be able to display a debug message even if there is no free memory in the system}
-                \State p.debugEnvelope $\gets$ acquireMemoryBlock()
-                \State p.state $\gets$ new
-                \State add p to the process-ready queue
-            \EndFor \\
-            \State Initialize CRT proc
-        \EndFunction
-        \end{algorithmic}
-    \end{algorithm}
-
     See Algorithm \ref{code:release_processor} for a pseudocode implementation
     for the kernel-level function k\_releaseProcessor. This function is called
     any time the current process should be preempted and a new process should be
@@ -162,81 +139,6 @@
     voluntary yield, a process priority change, memory was freed, the system is
     out of memory, a message was sent, or a message is being received. The scheduling
     behavior can be different for some of these reasons.
-
-\begin{algorithm}
-    \caption{Release Processor Pseudocode}
-    \label{code:release_processor}
-    \begin{algorithmic}[1]
-    \Function{k\_releaseProcessor}{releaseReason}
-        \Comment{First we process the changed states of a few interrupt-driven systems here to avoid ISRs modifying kernel state while they are interrupting kernel methods}
-        \State \Call{k\_processUartOutput}{$ $}
-        \State \Call{k\_processUartInput}{$ $}
-        \State \Call{k\_processDelayedMessages}{$ $}
-
-        \Comment{These variables are set depending on the release reason}
-        \State define targetState, \Comment{The state to give the currently running process}
-            \State \indent srcQueue, \Comment{The queue to schedule the next process
-            from}
-            \State \indent dstQueue \Comment{The queue to insert the current process into}
-
-        \If{releaseReason = out of memory}
-            \State srcQueue $\gets$ process-ready queue
-            \State dstQueue $\gets$ blocked-on-memory queue
-            \State targetState $\gets$ blocked on memory
-        \ElsIf{releaseReason = message was received}
-            \If{the current process's mail queue is empty}
-                \State srcQueue $\gets$ process-ready queue
-                \State dstQueue $\gets$ NULL \Comment{Don't place in any queue}
-                \State targetState $\gets$ blocked on message
-            \Else
-                \State srcQueue $\gets$ process-ready queue
-                \State dstQueue $\gets$ process-ready queue
-                \State targetState $\gets$ ready
-            \EndIf
-        \Else
-            \State srcQueue $\gets$ process-ready queue
-            \State dstQueue $\gets$ process-ready queue
-            \State targetState $\gets$ ready
-
-            \If{currentProcess is the null process}
-                \Comment{Keep the null process out of the ready queue - handle it separately}
-                \State dstQueue $\gets$ NULL
-            \EndIf
-        \EndIf
-
-        \If{srcQueue $\ne$ NULL and srcQueue.size $>$ 0}
-            \State nextProc $\gets$ \Call{srcQueue.pop}{$ $}
-        \Else
-            \State nextProc $\gets$ the null process
-        \EndIf
-
-    \algstore{releaseProcessor}
-    \end{algorithmic}
-\end{algorithm}
-
-\begin{algorithm}
-    \begin{algorithmic}[1]
-    \algrestore{releaseProcessor}
-
-        \If{currentProcess $\ne$ NULL}
-            \Comment{Save old process info}
-            \State currentProcess.stack $\gets$ \Call{getStackPointer}{$ $}
-            \State currentProcess.state $\gets$ targetState
-            \If{dstQueue $\ne$ NULL}
-                \State \Call{dstQueue.add}{currentProcess}
-            \EndIf
-        \EndIf
-
-        \State oldState $\gets$ nextProc.state
-        \State nextProc.state $\gets$ running
-        \State currentProcess $\gets$ nextProc
-        \State \Call{setStackPointer}{nextProc.stack}
-        \If{oldState = new}
-            \State \Call{\_\_rte}{$ $} \Comment{If first time, pop the exception stack frame}
-        \EndIf
-    \EndFunction
-    \end{algorithmic}
-\end{algorithm}
 
 \section{Running Time Analysis}
 
@@ -290,59 +192,6 @@
     comparisons between structs without caring about garbage in the struct's
     padding. We deemed this convenience worth the slight performance overhead.
 
-    \begin{algorithm}
-        \caption{Block layer pseudocode}
-        \label{code:mem_block}
-        \begin{algorithmic}[1]
-
-            \State $blockSize \gets 2^7$
-            \Comment{Blocksize in bytes (configurable)}
-
-            \State $startAddr \gets 0$
-            \Comment{Start address of pool (inclusive)}
-
-            \State $endAddr \gets 2^{16}$
-            \Comment{End address of pool (exclusive)}
-
-            \State $nextAddr \gets startAddr$
-            \Comment{Next available address in pool}
-
-            \State $freeList \gets \{\}$
-            \Comment{List of freed blocks}\\
-
-            \Function{alloc\_block}{$ $}
-                \If {$|freeList| > 0$} \Comment{Check free-list}
-                    \State $blk \gets freeList[0]$
-                    \State $freeList = freeList - \{blk\}$
-                    \State \Call{zero}{$blk$}
-                    \State \Return $blk$
-                \EndIf\\
-
-                \If {$nextAddr + blockSize >= endAddr$}
-                    \Comment{Out-of-memory}
-                    \State \Return $-1$
-                \EndIf\\
-
-                \State $blk \gets nextAddr$
-                \State $nextAddr \gets nextAddr + blockSize$
-                \State \Call{zero}{$blk$}
-                \State \Return $blk$
-            \EndFunction\\
-            \Function{free\_block}{$blk$}
-                \If {$blk < startAddr \vee nextAddr <= blk \vee endAddr <= blk$}
-                    \State \Return \Comment{Outside valid range}
-                \EndIf\\
-
-                \If {$blk - startAddr \not\equiv 0 \bmod{blockSize}$}
-                    \State \Return \Comment{Unaligned}
-                \EndIf\\
-
-                \State $freeList = freeList \cup \{blk\}$
-            \EndFunction
-        \end{algorithmic}
-    \end{algorithm}
-
-
 \subsection{Metadata Layer}
     The metadata layer builds atop the block layer, and adds the ability for the
     allocator to store metadata about blocks. Since it is built upon the block
@@ -376,55 +225,6 @@
     the metadata for each process fits inside 1 byte. Indeed, we stored the
     owner pid of each block as the only metadata, and the bitwidth of the pid
     type in our system was 8.
-
-    \begin{algorithm}
-        \caption{Metadata layer pseudocode}
-        \label{code:mem_meta}
-        \begin{algorithmic}[1]
-
-            \State $k \gets 2^7$
-            \Comment{Blocks per arena (configurable)}
-
-            \State $arenaSize \gets k * blockSize$
-            \Comment{Arena size (in bytes)}
-
-            \Function{request\_memory\_block}{$pid$}
-                \State $header \gets -1$
-                \State $blk \gets -1$ \\
-
-                \State $blk \gets \Call{alloc\_block}{ }$
-                \If {$blk = -1$}
-                    \State \Return $-1$
-                \EndIf\\
-
-                \State $header \gets \Call{get\_header}{blk}$
-                \If {$blk = header$}
-                    \State $blk \gets \Call{alloc\_block}{ }$
-                \EndIf\\
-
-                \If {$blk = -1$}
-                    \State \Return $-1$
-                \EndIf\\
-
-                \State \Call{set\_owner}{$header, blk, pid$}
-                \State \Return $blk$
-            \EndFunction\\
-            \Function{free\_memory\_block}{$blk, pid$}
-                \State $header \gets \Call{get\_header}{blk}$
-                \If {$header = -1$}
-                    \State \Return $-1$
-                \EndIf\\
-
-                \If {$ \neg \Call{is\_owner}{header, blk, pid}$}
-                    \State \Return $-1$
-                \EndIf\\
-
-                \State \Call{set\_owner}{$header, blk, 0$}
-                \State \Call{free\_block}{$blk$}
-            \EndFunction
-        \end{algorithmic}
-    \end{algorithm}
-
 
 \section{Theoretical Analysis}
     Both layers were carefully designed to be $O(1)$ for all operations. This
@@ -493,117 +293,6 @@
     Algorithm \ref{code:receive_message} for receive\_message, and
     \ref{code:send_delayed_message} for send\_delayed\_message.
 
-    \begin{algorithm}
-    \caption{Send Message}
-    \label{code:send_message}
-    \begin{algorithmic}[1]
-        \Function{k\_sendMessage}{envelope, srcPid, dstPid}
-            \State Initialize reserved kernel fields of envelope to a zeroed state
-            \State envelope.srcPid = srcPid
-            \State envelope.dstPid = dstPid
-
-            \If{srcPid or dstPid is invalid}
-                \State \Return error code
-            \EndIf
-            \State dstPCB $\gets$ PCB of process with pid dstPid
-            \State srcPCB $\gets$ PCB of process with pid srcPid
-
-            \If{srcPid owns memory block envelope}
-                \State Set owner of envelope to dstPid
-            \Else
-                \State \Return error code
-            \EndIf
-
-            \State Add envelope to dstPCB's message queue
-
-            \If{dstPCB.state = blocked on message} \Comment{Unblock receiver}
-                \State dstPCB.state $\gets$ ready
-                \State Add dstPCB to process-ready queue
-                \If{dstPCB.priority $<$ currentProcess.priority}
-                    \State \Call{k\_releaseProcessor}{$ $} \Comment{Preempt if unblocked process has higher priority}
-                \EndIf
-            \EndIf
-        \EndFunction
-    \end{algorithmic}
-    \end{algorithm}
-
-    \begin{algorithm}
-    \caption{Receive Message}
-    \label{code:receive_message}
-    \begin{algorithmic}[1]
-        \Function{k\_receiveMessage}{}
-            \State message $\gets$ \Call{currentProc.messageQueue.top}{$ $}
-            \While{message = NULL} \Comment{Loop until message exists}
-                \State \Call{k\_releaseProcessor}{message being received} \Comment{Blocks 
-                this process}
-                \State message $\gets$ \Call{currentProc.messageQueue.top}{$ $}
-            \EndWhile
-
-            \State \Call{currentProc.messageQueue.pop}{$ $}
-
-            \State message.next $\gets$ NULL
-            \Comment{Clear next pointer so user doesn't have next message}
-
-            \State Set owner of message to dstPid
-            \State \Return message
-        \EndFunction
-    \end{algorithmic}
-    \end{algorithm}
-
-    \begin{algorithm}
-    \caption{Send Delayed Message}
-    \label{code:send_delayed_message}
-    \begin{algorithmic}[1]
-        \Function{k\_sendDelayedMessage}{envelope, srcPid, dstPid, delay}
-            \State Initialize reserved kernel fields of envelope to a zeroed state
-            \If{srcPid or dstPid is invalid}
-                \State \Return error code
-            \EndIf
-            \If{srcPid owns memory block envelope}
-                \State Set owner of envelope to kernel
-            \Else
-                \State \Return error code
-            \EndIf
-
-            \State envelope.sendTime $\gets$ \Call{k\_getTime}{$ $} + delay
-            \Comment{Set the time the envelope will be delivered}
-            \State envelope.srcPid $\gets$ srcPid
-            \State envelope.dstPid $\gets$ dstPid
-
-            \State Add envelope to kernel delayed message queue
-        \EndFunction
-    \end{algorithmic}
-    \end{algorithm}
-
-    \begin{algorithm}
-    \caption{Process Delayed Messages}
-    \label{code:process_delayed_messages}
-    \begin{algorithmic}[1]
-        \Function{k\_processDelayedMessages}{}
-            \State messageQueue $\gets$ kernel delayed message queue
-            \State currentTime $\gets$ \Call{k\_getTime}{$ $}
-
-            \If{messageQueue is empty}
-                \State \Return
-            \EndIf
-
-            \Loop
-                \State message $\gets$ \Call{messageQueue.top}{$ $}
-
-                \If{message = NULL or message.sendTime $>$ currentTime}
-                    \State \Return
-                    \Comment{Loop until there are no more messages to deliver}
-                \EndIf
-
-                \State \Call{messageQueue.pop}{$ $}
-                \State Set owner of message to message.srcPid
-                \Comment{Set to srcPid so that we can use k\_sendMessage}
-                \State \Call{k\_sendMessage}{message, message.srcPid, message.dstPid}
-            \EndLoop
-        \EndFunction
-    \end{algorithmic}
-    \end{algorithm}
-
 \section{Running Time Analysis}
 
     The runtime of k\_sendMessage (assuming process is not preempted) is $O(1)$
@@ -637,19 +326,19 @@
     didn't justify a much more complex implementation.
 
 \section{Measurements}
-    
-    The measured average runtime of k\_sendMessage was $1.09 \: \mu s$, and the average 
-    runtime of k\_receiveMessage was $0.722 \: \mu s$. This is reasonable because both 
-    of these operations take $O(1)$. The measurements did not change much with the 
-    different trials, except in the case of trial 4, where the Memory Muncher process 
-    did not run. In this case, k\_receiveMessage decreased its average runtime to 
-    $0.667 \: \mu s$. This is because when profiling average runtimes, the amount of 
-    time the processes is blocked on receiving a message is included in the average runtime 
-    of k\_receiveMessage. This agrees with the observation that when the Memory Muncher 
-    process was not allowed to run, the average runtime of k\_releaseProcessor improved 
-    because there was enough memory to send messages more often than when the Memory 
-    Muncher was running. In the other cases the runtimes did not change significantly, 
-    which corresponds with a $O(1)$ runtime of these functions. The raw data can 
+
+    The measured average runtime of k\_sendMessage was $1.09 \: \mu s$, and the average
+    runtime of k\_receiveMessage was $0.722 \: \mu s$. This is reasonable because both
+    of these operations take $O(1)$. The measurements did not change much with the
+    different trials, except in the case of trial 4, where the Memory Muncher process
+    did not run. In this case, k\_receiveMessage decreased its average runtime to
+    $0.667 \: \mu s$. This is because when profiling average runtimes, the amount of
+    time the processes is blocked on receiving a message is included in the average runtime
+    of k\_receiveMessage. This agrees with the observation that when the Memory Muncher
+    process was not allowed to run, the average runtime of k\_releaseProcessor improved
+    because there was enough memory to send messages more often than when the Memory
+    Muncher was running. In the other cases the runtimes did not change significantly,
+    which corresponds with a $O(1)$ runtime of these functions. The raw data can
     be viewed in Appendix \ref{appendix:raw_data}.
 
 \chapter{I/O}
@@ -714,51 +403,6 @@
         \end{tikzpicture}
     \end{figure}
 
-    \begin{algorithm}
-        \caption{Uart Input Pseudocode}
-        \label{code:uart_input}
-        \begin{algorithmic}[1]
-            \Function{\_\_asm UART0\_IRQHandler}{}
-                \State \ldots
-                \State BL c\_UART0\_IRQHandler
-                \State \ldots
-            \EndFunction
-            \Function{c\_UART0\_IRQHandler}{}
-                \State \ldots
-                \State mark message as seen
-                \State uart\_receive\_char\_isr(newChar);
-                \State \ldots
-            \EndFunction
-            \Function{uart\_receive\_char\_isr}{newChar}
-                \If{(writeIndex + 1) \% bufferSize == readIndex}
-                    \State bufferOverflow = true
-                    \State \Return
-                \EndIf
-                \State buffer[writeIndex] = newChar;
-                \State writeIndex = (writeIndex + 1) % bufferSize
-            \EndFunction
-            \Function{releaseProcessor}{}
-                \State \ldots
-                \State processUartInput();
-                \State \ldots
-            \EndFunction
-            \Function{processUartInput}{}
-                \State \ldots
-                \While{buffer has more}
-                    \State char newChar = buffer[readIndex];
-                    \State readIndex = (readIndex + 1) % bufferSize;
-                    \If {newChar is a newline}
-                        \State send a message to keyboard that a newline has occurred
-                        \State continue;
-                    \ElsIf{newChar is SHOW\_DEBUG\_PROCESSES}
-                        \State print debug information, send it to the CRT proc
-                        \State continue;
-                    \EndIf
-                \EndWhile
-                \State \ldots
-            \EndFunction
-        \end{algorithmic}
-    \end{algorithm}
 \section{Output}
 \subsection{Basic Output}
     At a basic level, user processes send messages to the CRT process, which
@@ -821,37 +465,6 @@
     % ^Please verify this. I'm not entirely sure about how the two interact,
     % they're pretty coupled.
 
-
-    \begin{algorithm}
-        \caption{Uart Output Pseudocode}
-        \label{code:uart_output}
-        \begin{algorithmic}[1]
-            \Function{CRT\_proc}{}
-                \Loop
-                    \State nextMessage = receive\_message(NULL)
-                    \State pushEnvelope(nextMessage)
-                    \While(crt\_hasData \&\& ((writeIndex + 1) % OUTPUT\_BUFSIZE != readIndex))
-                        \State outputBuffer[writeIndex] = crt\_getData()
-                        \State writeIndex = (writeIndex + 1) % OUTPUT\_BUFSIZE;
-                    \EndWhile
-                    \State uart\_send\_char\_isr(outputBuffer)
-                \EndLoop
-            \EndFunction
-            \Function{CRT\_advance}{}
-                \State Print the text bar. Remove characters that are not matching.
-
-                \State Process output
-                \While{hasQueuedEnvelopes}
-                    \State Print next queued envelope until a null byte occurrs.
-                \EndWhile
-
-                \State move the cursor to the user position
-            \EndFunction
-        \end{algorithmic}
-    \end{algorithm}
-
-
-
 \chapter{Misc}
 % Make sure to include pseudocode and testing, if appropriate.
 
@@ -908,41 +521,6 @@
     number of processes in the queue that the process whose priority is being
     changed resides in.  All other operations in the function are constant time.
 
-    \begin{algorithm}
-        \caption{Kernel set process priority pseudocode}
-        \label{code:set_process_priority}
-        \begin{algorithmic}[1]
-
-            \Function{k\_setProcessPriority}{$pid, priority$}
-                \State $modifiedProcess \gets \Call {k\_getPCB}{pid}$\\
-                \Comment {Returns NULL if pid is invalid}
-
-                \If {$modifiedProcess = NULL \mid\mid modifiedProcess = nullProcess$}
-                    \State \Return {$EINVAL$}
-                \EndIf\\
-
-                \State \Call {setMaskPriority}{$modifiedProcess, oldPriority,
-                    newPriority$}
-                \Comment {Set the priority to the masked new priority}\\
-
-                \State \Call {pqChangedPriority}{$readyQueue, memoryQueue,
-                    modifiedProcess$}
-                \Comment {Change priority state in the queues, safe to call if
-                    the process isn't in the queue}\\
-
-                \If {$we\ improved\ our\ own\ priority\ or\ top\ process\ has\
-                    same\ or\ worse\ priority$}
-                    \State \Return {$SUCCESS$}
-                    \Comment {Don't preempt ourselves}
-                \EndIf\\
-
-                \State \Call {k\_releaseProcessor}{$CHANGED\_PRIORITY$}\\
-
-                \State \Return {$SUCCESS$}
-            \EndFunction
-        \end{algorithmic}
-    \end{algorithm}
-
 \part{User-level Processes}
 
 \chapter{Set Priority Command Process}
@@ -972,80 +550,6 @@
     are unable to use this process to stop a misbehaving process that is holding
     and not releasing memory if we are already out of memory.
 
-    \begin{algorithm}
-        \caption{Set priority command process pseudocode}
-        \label{code:user_set_priority}
-        \begin{algorithmic}[1]
-            \Function {setPriorityProcess}{}
-                \State $envelope \gets \Call {request\_memory\_block}{}$
-                \State \Call {init\_registration\_envelope}{$envelope, c$}
-                \State \Call {send\_message}{$KEYBOARD\_PID, envelope$}\\
-
-                \Loop
-                    \State $envelope \gets \Call {receive\_message}{NULL}$\\
-
-                    \If {$envelope \rightarrow srcPid \ne KEYBOARD\_PID$}
-                        \State \Call {release\_memory\_block}{$envelope$}
-                        \State $continue$
-                    \EndIf\\
-
-                    \If {$envelope\ message\ isn't\ prefixed\ with\ \%C$}
-                        \State \Call {release\_memory\_block}{$envelope$}
-                        \State $continue$
-                    \EndIf\\
-
-                    \State $status \gets \Call {processSetMessage}{envelope
-                        \rightarrow message}$
-                    \Comment {This will also call set\_process\_priority if the
-                        contents pass validation}
-
-                    \If {$status = EINVAL$}
-                        \Comment {Print error message upon failure to validate}
-                        \State \Call {printSetErrorMessage}{$envelope$}
-                    \Else
-                        \State \Call {release\_memory\_block}{$envelope$}
-                    \EndIf
-                \EndLoop
-            \EndFunction
-        \end{algorithmic}
-    \end{algorithm}
-
-    \begin{algorithm}
-        \caption{Read uint32 from char array pseudocode}
-        \label{code:read_uint32}
-        \begin{algorithmic}[1]
-            \Function {read\_uint32}{$buf, out$}
-                \Comment {buf is a char pointer}
-                \State $number \gets 0$
-                \Comment {The integer result}
-                \State $read \gets 0$
-                \Comment {Number of characters read}\\
-
-                \If {$buf = NULL$}
-                    \State \Return $0$
-                    \Comment {Return if there's nothing to read}
-                \EndIf\\
-
-                \While {$read < \Call{len}{buf}$}
-                    \If {\Call {$\neg$is\_numeric}{$buf \lbrack 0 \rbrack$}}
-                        \State \textbf{break}
-                    \EndIf\\
-
-                    \State $number \gets number \times 10$
-                    \State $number \gets number + \Call {to\_int}{buf \lbrack 0 \rbrack}$
-                    \State $read \gets read + 1$
-                    \State $buf \gets buf + 1$
-                \EndWhile\\
-
-                \If {$out \ne NULL$}
-                    \State $out \lbrack 0 \rbrack \gets number$
-                \EndIf\\
-
-                \State \Return $read$
-            \EndFunction
-        \end{algorithmic}
-    \end{algorithm}
-
 \chapter{24-Hour Wall Clock Display Process}
 
 \section{Description}
@@ -1068,181 +572,6 @@
     write\_string.  In addition, a user API call get\_time is also used.  This
     simply obtains the current system counter, which is incremented every
     millisecond by the timer ISR.
-
-    \begin{algorithm}
-        \caption{Wall clock process pseudocode}
-        \label{code:user_clock}
-        \begin{algorithmic}[1]
-            \State $receivedEnvelope \gets NULL$
-            \Comment {Envelope for message passing}
-            \State $selfEnvelope \gets \Call {request\_memory\_block}{}$
-            \Comment {Cached envelope for self delayed messages}
-            \State $cmdType \gets TERMINATE$
-            \Comment {Action to take}
-            \State $currentTime \gets 0$
-            \Comment {Cached current time}
-            \State $offset \gets 0$
-            \Comment {Offset for calculating time}
-            \State $isRunning \gets 0$
-            \Comment {Boolean value for running state}\\
-
-            \Function {parseClockMessage}{}
-                \State $status \gets 0$
-                \State $envelope \gets receivedEnvelope$\\
-
-                \If {$envelope \rightarrow srcPid = CLOCK\_PID$}
-                    \Comment {Received wake up, don't release memory}
-                    \If {$isRunning$}
-                        \Comment {If not terminated, print time}
-                        \State $cmdType \gets PRINT\_TIME$
-                    \EndIf
-                    \State \Return
-                \ElsIf {$envelope \rightarrow srcPid \ne KEYBOARD\_PID}$
-                    \Comment {Ignore unwanted message}
-                    \State \Call {release\_memory\_block}{$envelope$}
-                    \State \Return
-                \EndIf\\
-
-                \If {$envelope \rightarrow message \lbrack 2 \rbrack = $`R'}
-                    \State $cmdType \gets RESET\_TIME$
-                \ElsIf {$envelope \rightarrow message \lbrack 2 \rbrack = $`T'}
-                    \State $cmdType \gets TERMINATE$
-                \ElsIf {$envelope \rightarrow message \lbrack 2 \rbrack = $`S'}
-                    \State $cmdType \gets SET\_TIME$
-                \Else
-                    \State \Return
-                \EndIf\\
-
-                \If {$cmdType = RESET\_TIME$}
-                    \State $offset \gets -1 \times currentTime$
-        \algstore{wallClockProcess}
-        \end{algorithmic}
-    \end{algorithm}
-
-    \begin{algorithm}
-        \begin{algorithmic}[1]
-        \algrestore{wallClockProcess}
-                    \If {$isRunning = 0$}
-                        \Comment {Start clock if necessary}
-                        \State $cmdType \gets PRINT\_TIME$
-                    \EndIf
-                \ElsIf {$cmdType = SET\_TIME$}
-                    \State $status, offset \gets \Call {parseTime}{envelope}$
-                        \Comment {Sets offset if validation is passed}
-                    \If {$status = SUCCESS \&\& isRunning = 0$}
-                        \Comment {Start clock if necessary}
-                        \State $cmdType \gets PRINT\_TIME$
-                    \EndIf
-                \ElsIf {$cmdType = TERMINATE$}
-                    \State $isRunning \gets 0$
-                \EndIf\\
-
-                \State \Call {release\_memory\_block}{$envelope$}
-            \EndFunction\\
-
-            \Function {clockProcess}{}
-                \State $envelope \gets \Call {request\_memory\_block}{}$
-                \State \Call {init\_registration\_envelope}{$envelope, w$}
-                \State \Call {send\_message}{$KEYBOARD\_PID, envelope$}\\
-
-                \Loop
-                    \State $receivedEnvelope \gets \Call {receive\_message}{}$
-                    \State $currentTime \gets \Call {get\_time}{}$\\
-
-                    \State \Call {parseClockMessage}{}\\
-
-                    \If {$cmdType = PRINT\_TIME$}
-                        \Comment {Print the time in HH:MM:SS using the
-                            calculated offset, and wake self in 1 second}
-                        \State \Call {printTime}{$currentTime, offset$}
-                        \State $isRunning \gets 1$
-                        \State \Call {delayed\_send}{$CLOCK\_PID, selfEnvelope,
-                            1000$}
-                    \EndIf
-                \EndLoop
-            \EndFunction
-        \end{algorithmic}
-    \end{algorithm}
-
-    \begin{algorithm}
-        \caption{Write uint32 to char array pseudocode}
-        \label{code:write_uint32}
-        \begin{algorithmic}[1]
-
-            \Function{write\_uint32}{$buf, number, minDigits$}
-                \Comment {buf is a char pointer}
-                \State $tempNumber \gets number$
-                \State $numDigits \gets 0$
-                \Comment {Number of digits available}\\
-
-                \While {$tempNumber > 0$}
-                    \State $numDigits \gets numDigits + 1$
-                    \State $tempNumber \gets tempNumber / 10$
-                \EndWhile\\
-
-                \If {$minDigits < 1$}
-                    \State $minDigits \gets 1$
-                \EndIf\\
-
-                \If {$numDigits < minDigits$}
-                    \State $numDigits \gets minDigits$
-                \EndIf\\
-
-                \If {$numDigits > \Call {len}{buf}$}
-                    \State $numDigits \gets \Call {len}{buf}$
-                \EndIf\\
-
-                \State $tempNumber \gets numDigits$\\
-
-                \While {$numDigits > 0$}
-                    \If {$buf \ne NULL$}
-                        \State $buf \lbrack numDigits - 1 \rbrack \gets \Call
-                            {to\_char}{number \% 10}$
-                    \EndIf\\
-
-                    \State $number \gets number / 10$
-                    \State $numDigits \gets numDigits - 1$
-                \EndWhile\\
-
-                \State \Return $tempNumber$
-                \Comment {Returns number of digits read}
-            \EndFunction
-        \end{algorithmic}
-    \end{algorithm}
-
-    \begin{algorithm}
-        \caption{Write string to char array pseudocode}
-        \label{code:write_string}
-        \begin{algorithmic}[1]
-
-            \Function{write\_string}{$buf, message$}
-                \Comment {buf is a char pointer}
-                \State $written \gets 0$
-                \Comment {Number of characters written}
-                \State $bufLen \gets \Call {len}{buf}$\\
-
-                \If {$msg = NULL$}
-                    \State \Return $0$
-                    \Comment {Return if there's nothing to write}
-                \EndIf\\
-
-                \While {$msg \lbrack 0 \rbrack \ne NULL\_CHAR \&\&
-                    bufLen > 0$}
-                    \If {$buf \ne NULL$}
-                        \State $buf \lbrack 0 \rbrack \gets msg \lbrack 0
-                            \rbrack$
-                        \State $buf \gets buf + 1$
-                    \EndIf\\
-
-                    \State $msg \gets msg + 1$
-                    \State $bufLen \gets bufLen - 1$
-                    \State $written \gets written + 1$
-                \EndWhile\\
-
-                \State \Return $written$
-            \EndFunction
-        \end{algorithmic}
-    \end{algorithm}
 
 \chapter{Stress Processes A, B, and C}
 
@@ -1290,53 +619,6 @@
     pseudocode in order to include our additional functionality.  We also make a
     user call to pid(), which is a function returning the process ID of the
     currently running process.
-
-    \begin{algorithm}
-        \caption{Sleep function pseudocode}
-        \label{code:sleep}
-        \begin{algorithmic}[1]
-            \Function {sleep}{$ms, listEnv, sleepEnv$}
-                \Comment {listEnv is a double pointer to Envelope to be used as
-                    an additional message queue, while sleepEnv is a pointer to
-                    a preallocated Envelope to be used for sending the delayed
-                    message}
-                \State $currentTime \gets \Call {get\_time}{}$
-                \State $targetTime \gets currentTime + ms$
-                \State $sleepEnv \rightarrow messageType \gets MT\_SLEEP$
-                \State \textproc {delayed\_send}(\Call {pid}{}$, sleepEnv,
-                    targetTime - currentTime$)\\
-
-                \If {$listEnv \ne NULL$}
-                    \Comment {Advance to back of passed queue if available}
-                    \While {$listEnv \lbrack 0 \rbrack \ne NULL$}
-                        \State $listEnv \gets \Call {addrOf}{listEnv \lbrack 0
-                            \rbrack \rightarrow next}$
-                    \EndWhile
-                \EndIf\\
-
-                \Loop
-                    \State $env \gets \Call {receive\_message}{}$\\
-
-                    \If {$env \rightarrow messageType = MT\_SLEEP$}
-                        \Comment {If it's the sleep message, then we can wake
-                            up}
-                        \State \Return
-                    \ElsIf {$listEnv \ne NULL$}
-                        \Comment {Push onto queue if available}
-                        \State $env \rightarrow next \gets NULL$
-                        \State $listEnv \lbrack 0 \rbrack \gets env$
-                        \State $listEnv \gets \Call {addrOf}{env \rightarrow
-                            next}$
-                    \Else
-                        \Comment {Send it to ourselves on a delay to process
-                            later otherwise}
-                        \State \textproc {delayed\_send}(\Call {pid}{}$, env,
-                            ms$)
-                    \EndIf
-                \EndLoop
-            \EndFunction
-        \end{algorithmic}
-    \end{algorithm}
 
 \chapter{User-Level Test Processes}
 
@@ -1454,7 +736,7 @@
     the required portions of the project (memory, messages, I/O, etc.) while
     ensuring high performance on a stable API.
 
-    
+
 \appendix
 \chapter{Raw Measurement Data}
 \label{appendix:raw_data}
@@ -1500,5 +782,718 @@ total and average runtimes  of the measured functions for each trial.
     k\_acquireMemoryBlock&5&329.90&447&0.738 \\
 \end{tabular}
 
+\begin{algorithm}
+    \caption{Process Initialization Pseudocode}
+    \label{code:proc_init}
+    \begin{algorithmic}[1]
+    \Function{k\_initProcesses}{}
+        \State Initialize process-ready queue
+        \State Initialize blocked-on-memory queue
+
+        \For{each process p, index i}
+            \State p.pid $\gets$ i
+            \State p.stack $\gets$ \Call{acquireMemoryBlock}{$ $} three times + memory block size \Comment{Use three memory blocks for each process stack and place stack pointer at end of third one}
+            \State push initial required values onto stack
+            \State set p.startLocation to appropriate process function location
+            \Comment{Reserve a debug envelope for each process to be able to display a debug message even if there is no free memory in the system}
+            \State p.debugEnvelope $\gets$ acquireMemoryBlock()
+            \State p.state $\gets$ new
+            \State add p to the process-ready queue
+        \EndFor \\
+        \State Initialize CRT proc
+    \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \caption{Release Processor Pseudocode}
+    \label{code:release_processor}
+    \begin{algorithmic}[1]
+    \Function{k\_releaseProcessor}{releaseReason}
+        \Comment{First we process the changed states of a few interrupt-driven systems here to avoid ISRs modifying kernel state while they are interrupting kernel methods}
+        \State \Call{k\_processUartOutput}{$ $}
+        \State \Call{k\_processUartInput}{$ $}
+        \State \Call{k\_processDelayedMessages}{$ $}
+
+        \Comment{These variables are set depending on the release reason}
+        \State define targetState, \Comment{The state to give the currently running process}
+            \State \indent srcQueue, \Comment{The queue to schedule the next process
+            from}
+            \State \indent dstQueue \Comment{The queue to insert the current process into}
+
+        \If{releaseReason = out of memory}
+            \State srcQueue $\gets$ process-ready queue
+            \State dstQueue $\gets$ blocked-on-memory queue
+            \State targetState $\gets$ blocked on memory
+        \ElsIf{releaseReason = message was received}
+            \If{the current process's mail queue is empty}
+                \State srcQueue $\gets$ process-ready queue
+                \State dstQueue $\gets$ NULL \Comment{Don't place in any queue}
+                \State targetState $\gets$ blocked on message
+            \Else
+                \State srcQueue $\gets$ process-ready queue
+                \State dstQueue $\gets$ process-ready queue
+                \State targetState $\gets$ ready
+            \EndIf
+        \Else
+            \State srcQueue $\gets$ process-ready queue
+            \State dstQueue $\gets$ process-ready queue
+            \State targetState $\gets$ ready
+
+            \If{currentProcess is the null process}
+                \Comment{Keep the null process out of the ready queue - handle it separately}
+                \State dstQueue $\gets$ NULL
+            \EndIf
+        \EndIf
+
+        \If{srcQueue $\ne$ NULL and srcQueue.size $>$ 0}
+            \State nextProc $\gets$ \Call{srcQueue.pop}{$ $}
+        \Else
+            \State nextProc $\gets$ the null process
+        \EndIf
+
+    \algstore{releaseProcessor}
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \begin{algorithmic}[1]
+    \algrestore{releaseProcessor}
+
+        \If{currentProcess $\ne$ NULL}
+            \Comment{Save old process info}
+            \State currentProcess.stack $\gets$ \Call{getStackPointer}{$ $}
+            \State currentProcess.state $\gets$ targetState
+            \If{dstQueue $\ne$ NULL}
+                \State \Call{dstQueue.add}{currentProcess}
+            \EndIf
+        \EndIf
+
+        \State oldState $\gets$ nextProc.state
+        \State nextProc.state $\gets$ running
+        \State currentProcess $\gets$ nextProc
+        \State \Call{setStackPointer}{nextProc.stack}
+        \If{oldState = new}
+            \State \Call{\_\_rte}{$ $} \Comment{If first time, pop the exception stack frame}
+        \EndIf
+    \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \caption{Block layer pseudocode}
+    \label{code:mem_block}
+    \begin{algorithmic}[1]
+
+        \State $blockSize \gets 2^7$
+        \Comment{Blocksize in bytes (configurable)}
+
+        \State $startAddr \gets 0$
+        \Comment{Start address of pool (inclusive)}
+
+        \State $endAddr \gets 2^{16}$
+        \Comment{End address of pool (exclusive)}
+
+        \State $nextAddr \gets startAddr$
+        \Comment{Next available address in pool}
+
+        \State $freeList \gets \{\}$
+        \Comment{List of freed blocks}\\
+
+        \Function{alloc\_block}{$ $}
+            \If {$|freeList| > 0$} \Comment{Check free-list}
+                \State $blk \gets freeList[0]$
+                \State $freeList = freeList - \{blk\}$
+                \State \Call{zero}{$blk$}
+                \State \Return $blk$
+            \EndIf\\
+
+            \If {$nextAddr + blockSize >= endAddr$}
+                \Comment{Out-of-memory}
+                \State \Return $-1$
+            \EndIf\\
+
+            \State $blk \gets nextAddr$
+            \State $nextAddr \gets nextAddr + blockSize$
+            \State \Call{zero}{$blk$}
+            \State \Return $blk$
+        \EndFunction\\
+        \Function{free\_block}{$blk$}
+            \If {$blk < startAddr \vee nextAddr <= blk \vee endAddr <= blk$}
+                \State \Return \Comment{Outside valid range}
+            \EndIf\\
+
+            \If {$blk - startAddr \not\equiv 0 \bmod{blockSize}$}
+                \State \Return \Comment{Unaligned}
+            \EndIf\\
+
+            \State $freeList = freeList \cup \{blk\}$
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \caption{Metadata layer pseudocode}
+    \label{code:mem_meta}
+    \begin{algorithmic}[1]
+
+        \State $k \gets 2^7$
+        \Comment{Blocks per arena (configurable)}
+
+        \State $arenaSize \gets k * blockSize$
+        \Comment{Arena size (in bytes)}
+
+        \Function{request\_memory\_block}{$pid$}
+            \State $header \gets -1$
+            \State $blk \gets -1$ \\
+
+            \State $blk \gets \Call{alloc\_block}{ }$
+            \If {$blk = -1$}
+                \State \Return $-1$
+            \EndIf\\
+
+            \State $header \gets \Call{get\_header}{blk}$
+            \If {$blk = header$}
+                \State $blk \gets \Call{alloc\_block}{ }$
+            \EndIf\\
+
+            \If {$blk = -1$}
+                \State \Return $-1$
+            \EndIf\\
+
+            \State \Call{set\_owner}{$header, blk, pid$}
+            \State \Return $blk$
+        \EndFunction\\
+        \Function{free\_memory\_block}{$blk, pid$}
+            \State $header \gets \Call{get\_header}{blk}$
+            \If {$header = -1$}
+                \State \Return $-1$
+            \EndIf\\
+
+            \If {$ \neg \Call{is\_owner}{header, blk, pid}$}
+                \State \Return $-1$
+            \EndIf\\
+
+            \State \Call{set\_owner}{$header, blk, 0$}
+            \State \Call{free\_block}{$blk$}
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \caption{Send Message}
+    \label{code:send_message}
+    \begin{algorithmic}[1]
+        \Function{k\_sendMessage}{envelope, srcPid, dstPid}
+            \State Initialize reserved kernel fields of envelope to a zeroed state
+            \State envelope.srcPid = srcPid
+            \State envelope.dstPid = dstPid
+
+            \If{srcPid or dstPid is invalid}
+                \State \Return error code
+            \EndIf
+            \State dstPCB $\gets$ PCB of process with pid dstPid
+            \State srcPCB $\gets$ PCB of process with pid srcPid
+
+            \If{srcPid owns memory block envelope}
+                \State Set owner of envelope to dstPid
+            \Else
+                \State \Return error code
+            \EndIf
+
+            \State Add envelope to dstPCB's message queue
+
+            \If{dstPCB.state = blocked on message} \Comment{Unblock receiver}
+                \State dstPCB.state $\gets$ ready
+                \State Add dstPCB to process-ready queue
+                \If{dstPCB.priority $<$ currentProcess.priority}
+                    \State \Call{k\_releaseProcessor}{$ $} \Comment{Preempt if unblocked process has higher priority}
+                \EndIf
+            \EndIf
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \caption{Receive Message}
+    \label{code:receive_message}
+    \begin{algorithmic}[1]
+        \Function{k\_receiveMessage}{}
+            \State message $\gets$ \Call{currentProc.messageQueue.top}{$ $}
+            \While{message = NULL} \Comment{Loop until message exists}
+                \State \Call{k\_releaseProcessor}{message being received} \Comment{Blocks
+                this process}
+                \State message $\gets$ \Call{currentProc.messageQueue.top}{$ $}
+            \EndWhile
+
+            \State \Call{currentProc.messageQueue.pop}{$ $}
+
+            \State message.next $\gets$ NULL
+            \Comment{Clear next pointer so user doesn't have next message}
+
+            \State Set owner of message to dstPid
+            \State \Return message
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \caption{Send Delayed Message}
+    \label{code:send_delayed_message}
+    \begin{algorithmic}[1]
+        \Function{k\_sendDelayedMessage}{envelope, srcPid, dstPid, delay}
+            \State Initialize reserved kernel fields of envelope to a zeroed state
+            \If{srcPid or dstPid is invalid}
+                \State \Return error code
+            \EndIf
+            \If{srcPid owns memory block envelope}
+                \State Set owner of envelope to kernel
+            \Else
+                \State \Return error code
+            \EndIf
+
+            \State envelope.sendTime $\gets$ \Call{k\_getTime}{$ $} + delay
+            \Comment{Set the time the envelope will be delivered}
+            \State envelope.srcPid $\gets$ srcPid
+            \State envelope.dstPid $\gets$ dstPid
+
+            \State Add envelope to kernel delayed message queue
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \caption{Process Delayed Messages}
+    \label{code:process_delayed_messages}
+    \begin{algorithmic}[1]
+        \Function{k\_processDelayedMessages}{}
+            \State messageQueue $\gets$ kernel delayed message queue
+            \State currentTime $\gets$ \Call{k\_getTime}{$ $}
+
+            \If{messageQueue is empty}
+                \State \Return
+            \EndIf
+
+            \Loop
+                \State message $\gets$ \Call{messageQueue.top}{$ $}
+
+                \If{message = NULL or message.sendTime $>$ currentTime}
+                    \State \Return
+                    \Comment{Loop until there are no more messages to deliver}
+                \EndIf
+
+                \State \Call{messageQueue.pop}{$ $}
+                \State Set owner of message to message.srcPid
+                \Comment{Set to srcPid so that we can use k\_sendMessage}
+                \State \Call{k\_sendMessage}{message, message.srcPid, message.dstPid}
+            \EndLoop
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \caption{Uart Input Pseudocode}
+    \label{code:uart_input}
+    \begin{algorithmic}[1]
+        \Function{\_\_asm UART0\_IRQHandler}{}
+            \State \ldots
+            \State BL c\_UART0\_IRQHandler
+            \State \ldots
+        \EndFunction
+        \Function{c\_UART0\_IRQHandler}{}
+            \State \ldots
+            \State mark message as seen
+            \State uart\_receive\_char\_isr(newChar);
+            \State \ldots
+        \EndFunction
+        \Function{uart\_receive\_char\_isr}{newChar}
+            \If{(writeIndex + 1) \% bufferSize == readIndex}
+                \State bufferOverflow = true
+                \State \Return
+            \EndIf
+            \State buffer[writeIndex] = newChar;
+            \State writeIndex = (writeIndex + 1) % bufferSize
+        \EndFunction
+        \Function{releaseProcessor}{}
+            \State \ldots
+            \State processUartInput();
+            \State \ldots
+        \EndFunction
+        \Function{processUartInput}{}
+            \State \ldots
+            \While{buffer has more}
+                \State char newChar = buffer[readIndex];
+                \State readIndex = (readIndex + 1) % bufferSize;
+                \If {newChar is a newline}
+                    \State send a message to keyboard that a newline has occurred
+                    \State continue;
+                \ElsIf{newChar is SHOW\_DEBUG\_PROCESSES}
+                    \State print debug information, send it to the CRT proc
+                    \State continue;
+                \EndIf
+            \EndWhile
+            \State \ldots
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \caption{Uart Output Pseudocode}
+    \label{code:uart_output}
+    \begin{algorithmic}[1]
+        \Function{CRT\_proc}{}
+            \Loop
+                \State nextMessage = receive\_message(NULL)
+                \State pushEnvelope(nextMessage)
+                \While(crt\_hasData \&\& ((writeIndex + 1) % OUTPUT\_BUFSIZE != readIndex))
+                    \State outputBuffer[writeIndex] = crt\_getData()
+                    \State writeIndex = (writeIndex + 1) % OUTPUT\_BUFSIZE;
+                \EndWhile
+                \State uart\_send\_char\_isr(outputBuffer)
+            \EndLoop
+        \EndFunction
+        \Function{CRT\_advance}{}
+            \State Print the text bar. Remove characters that are not matching.
+
+            \State Process output
+            \While{hasQueuedEnvelopes}
+                \State Print next queued envelope until a null byte occurrs.
+            \EndWhile
+
+            \State move the cursor to the user position
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \caption{Kernel set process priority pseudocode}
+    \label{code:set_process_priority}
+    \begin{algorithmic}[1]
+
+        \Function{k\_setProcessPriority}{$pid, priority$}
+            \State $modifiedProcess \gets \Call {k\_getPCB}{pid}$\\
+            \Comment {Returns NULL if pid is invalid}
+
+            \If {$modifiedProcess = NULL \mid\mid modifiedProcess = nullProcess$}
+                \State \Return {$EINVAL$}
+            \EndIf\\
+
+            \State \Call {setMaskPriority}{$modifiedProcess, oldPriority,
+                newPriority$}
+            \Comment {Set the priority to the masked new priority}\\
+
+            \State \Call {pqChangedPriority}{$readyQueue, memoryQueue,
+                modifiedProcess$}
+            \Comment {Change priority state in the queues, safe to call if
+                the process isn't in the queue}\\
+
+            \If {$we\ improved\ our\ own\ priority\ or\ top\ process\ has\
+                same\ or\ worse\ priority$}
+                \State \Return {$SUCCESS$}
+                \Comment {Don't preempt ourselves}
+            \EndIf\\
+
+            \State \Call {k\_releaseProcessor}{$CHANGED\_PRIORITY$}\\
+
+            \State \Return {$SUCCESS$}
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \caption{Set priority command process pseudocode}
+    \label{code:user_set_priority}
+    \begin{algorithmic}[1]
+        \Function {setPriorityProcess}{}
+            \State $envelope \gets \Call {request\_memory\_block}{}$
+            \State \Call {init\_registration\_envelope}{$envelope, c$}
+            \State \Call {send\_message}{$KEYBOARD\_PID, envelope$}\\
+
+            \Loop
+                \State $envelope \gets \Call {receive\_message}{NULL}$\\
+
+                \If {$envelope \rightarrow srcPid \ne KEYBOARD\_PID$}
+                    \State \Call {release\_memory\_block}{$envelope$}
+                    \State $continue$
+                \EndIf\\
+
+                \If {$envelope\ message\ isn't\ prefixed\ with\ \%C$}
+                    \State \Call {release\_memory\_block}{$envelope$}
+                    \State $continue$
+                \EndIf\\
+
+                \State $status \gets \Call {processSetMessage}{envelope
+                    \rightarrow message}$
+                \Comment {This will also call set\_process\_priority if the
+                    contents pass validation}
+
+                \If {$status = EINVAL$}
+                    \Comment {Print error message upon failure to validate}
+                    \State \Call {printSetErrorMessage}{$envelope$}
+                \Else
+                    \State \Call {release\_memory\_block}{$envelope$}
+                \EndIf
+            \EndLoop
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \caption{Read uint32 from char array pseudocode}
+    \label{code:read_uint32}
+    \begin{algorithmic}[1]
+        \Function {read\_uint32}{$buf, out$}
+            \Comment {buf is a char pointer}
+            \State $number \gets 0$
+            \Comment {The integer result}
+            \State $read \gets 0$
+            \Comment {Number of characters read}\\
+
+            \If {$buf = NULL$}
+                \State \Return $0$
+                \Comment {Return if there's nothing to read}
+            \EndIf\\
+
+            \While {$read < \Call{len}{buf}$}
+                \If {\Call {$\neg$is\_numeric}{$buf \lbrack 0 \rbrack$}}
+                    \State \textbf{break}
+                \EndIf\\
+
+                \State $number \gets number \times 10$
+                \State $number \gets number + \Call {to\_int}{buf \lbrack 0 \rbrack}$
+                \State $read \gets read + 1$
+                \State $buf \gets buf + 1$
+            \EndWhile\\
+
+            \If {$out \ne NULL$}
+                \State $out \lbrack 0 \rbrack \gets number$
+            \EndIf\\
+
+            \State \Return $read$
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \caption{Wall clock process pseudocode}
+    \label{code:user_clock}
+    \begin{algorithmic}[1]
+        \State $receivedEnvelope \gets NULL$
+        \Comment {Envelope for message passing}
+        \State $selfEnvelope \gets \Call {request\_memory\_block}{}$
+        \Comment {Cached envelope for self delayed messages}
+        \State $cmdType \gets TERMINATE$
+        \Comment {Action to take}
+        \State $currentTime \gets 0$
+        \Comment {Cached current time}
+        \State $offset \gets 0$
+        \Comment {Offset for calculating time}
+        \State $isRunning \gets 0$
+        \Comment {Boolean value for running state}\\
+
+        \Function {parseClockMessage}{}
+            \State $status \gets 0$
+            \State $envelope \gets receivedEnvelope$\\
+
+            \If {$envelope \rightarrow srcPid = CLOCK\_PID$}
+                \Comment {Received wake up, don't release memory}
+                \If {$isRunning$}
+                    \Comment {If not terminated, print time}
+                    \State $cmdType \gets PRINT\_TIME$
+                \EndIf
+                \State \Return
+            \ElsIf {$envelope \rightarrow srcPid \ne KEYBOARD\_PID}$
+                \Comment {Ignore unwanted message}
+                \State \Call {release\_memory\_block}{$envelope$}
+                \State \Return
+            \EndIf\\
+
+            \If {$envelope \rightarrow message \lbrack 2 \rbrack = $`R'}
+                \State $cmdType \gets RESET\_TIME$
+            \ElsIf {$envelope \rightarrow message \lbrack 2 \rbrack = $`T'}
+                \State $cmdType \gets TERMINATE$
+            \ElsIf {$envelope \rightarrow message \lbrack 2 \rbrack = $`S'}
+                \State $cmdType \gets SET\_TIME$
+            \Else
+                \State \Return
+            \EndIf\\
+
+            \If {$cmdType = RESET\_TIME$}
+                \State $offset \gets -1 \times currentTime$
+    \algstore{wallClockProcess}
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \begin{algorithmic}[1]
+    \algrestore{wallClockProcess}
+                \If {$isRunning = 0$}
+                    \Comment {Start clock if necessary}
+                    \State $cmdType \gets PRINT\_TIME$
+                \EndIf
+            \ElsIf {$cmdType = SET\_TIME$}
+                \State $status, offset \gets \Call {parseTime}{envelope}$
+                    \Comment {Sets offset if validation is passed}
+                \If {$status = SUCCESS \&\& isRunning = 0$}
+                    \Comment {Start clock if necessary}
+                    \State $cmdType \gets PRINT\_TIME$
+                \EndIf
+            \ElsIf {$cmdType = TERMINATE$}
+                \State $isRunning \gets 0$
+            \EndIf\\
+
+            \State \Call {release\_memory\_block}{$envelope$}
+        \EndFunction\\
+
+        \Function {clockProcess}{}
+            \State $envelope \gets \Call {request\_memory\_block}{}$
+            \State \Call {init\_registration\_envelope}{$envelope, w$}
+            \State \Call {send\_message}{$KEYBOARD\_PID, envelope$}\\
+
+            \Loop
+                \State $receivedEnvelope \gets \Call {receive\_message}{}$
+                \State $currentTime \gets \Call {get\_time}{}$\\
+
+                \State \Call {parseClockMessage}{}\\
+
+                \If {$cmdType = PRINT\_TIME$}
+                    \Comment {Print the time in HH:MM:SS using the
+                        calculated offset, and wake self in 1 second}
+                    \State \Call {printTime}{$currentTime, offset$}
+                    \State $isRunning \gets 1$
+                    \State \Call {delayed\_send}{$CLOCK\_PID, selfEnvelope,
+                        1000$}
+                \EndIf
+            \EndLoop
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \caption{Write uint32 to char array pseudocode}
+    \label{code:write_uint32}
+    \begin{algorithmic}[1]
+
+        \Function{write\_uint32}{$buf, number, minDigits$}
+            \Comment {buf is a char pointer}
+            \State $tempNumber \gets number$
+            \State $numDigits \gets 0$
+            \Comment {Number of digits available}\\
+
+            \While {$tempNumber > 0$}
+                \State $numDigits \gets numDigits + 1$
+                \State $tempNumber \gets tempNumber / 10$
+            \EndWhile\\
+
+            \If {$minDigits < 1$}
+                \State $minDigits \gets 1$
+            \EndIf\\
+
+            \If {$numDigits < minDigits$}
+                \State $numDigits \gets minDigits$
+            \EndIf\\
+
+            \If {$numDigits > \Call {len}{buf}$}
+                \State $numDigits \gets \Call {len}{buf}$
+            \EndIf\\
+
+            \State $tempNumber \gets numDigits$\\
+
+            \While {$numDigits > 0$}
+                \If {$buf \ne NULL$}
+                    \State $buf \lbrack numDigits - 1 \rbrack \gets \Call
+                        {to\_char}{number \% 10}$
+                \EndIf\\
+
+                \State $number \gets number / 10$
+                \State $numDigits \gets numDigits - 1$
+            \EndWhile\\
+
+            \State \Return $tempNumber$
+            \Comment {Returns number of digits read}
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \caption{Write string to char array pseudocode}
+    \label{code:write_string}
+    \begin{algorithmic}[1]
+
+        \Function{write\_string}{$buf, message$}
+            \Comment {buf is a char pointer}
+            \State $written \gets 0$
+            \Comment {Number of characters written}
+            \State $bufLen \gets \Call {len}{buf}$\\
+
+            \If {$msg = NULL$}
+                \State \Return $0$
+                \Comment {Return if there's nothing to write}
+            \EndIf\\
+
+            \While {$msg \lbrack 0 \rbrack \ne NULL\_CHAR \&\&
+                bufLen > 0$}
+                \If {$buf \ne NULL$}
+                    \State $buf \lbrack 0 \rbrack \gets msg \lbrack 0
+                        \rbrack$
+                    \State $buf \gets buf + 1$
+                \EndIf\\
+
+                \State $msg \gets msg + 1$
+                \State $bufLen \gets bufLen - 1$
+                \State $written \gets written + 1$
+            \EndWhile\\
+
+            \State \Return $written$
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \caption{Sleep function pseudocode}
+    \label{code:sleep}
+    \begin{algorithmic}[1]
+        \Function {sleep}{$ms, listEnv, sleepEnv$}
+            \Comment {listEnv is a double pointer to Envelope to be used as
+                an additional message queue, while sleepEnv is a pointer to
+                a preallocated Envelope to be used for sending the delayed
+                message}
+            \State $currentTime \gets \Call {get\_time}{}$
+            \State $targetTime \gets currentTime + ms$
+            \State $sleepEnv \rightarrow messageType \gets MT\_SLEEP$
+            \State \textproc {delayed\_send}(\Call {pid}{}$, sleepEnv,
+                targetTime - currentTime$)\\
+
+            \If {$listEnv \ne NULL$}
+                \Comment {Advance to back of passed queue if available}
+                \While {$listEnv \lbrack 0 \rbrack \ne NULL$}
+                    \State $listEnv \gets \Call {addrOf}{listEnv \lbrack 0
+                        \rbrack \rightarrow next}$
+                \EndWhile
+            \EndIf\\
+
+            \Loop
+                \State $env \gets \Call {receive\_message}{}$\\
+
+                \If {$env \rightarrow messageType = MT\_SLEEP$}
+                    \Comment {If it's the sleep message, then we can wake
+                        up}
+                    \State \Return
+                \ElsIf {$listEnv \ne NULL$}
+                    \Comment {Push onto queue if available}
+                    \State $env \rightarrow next \gets NULL$
+                    \State $listEnv \lbrack 0 \rbrack \gets env$
+                    \State $listEnv \gets \Call {addrOf}{env \rightarrow
+                        next}$
+                \Else
+                    \Comment {Send it to ourselves on a delay to process
+                        later otherwise}
+                    \State \textproc {delayed\_send}(\Call {pid}{}$, env,
+                        ms$)
+                \EndIf
+            \EndLoop
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm}
 
 \end{document}
