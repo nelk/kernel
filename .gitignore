@@ -48,3 +48,4 @@ kernel.map
 *.loa
 *.log
 *.toc
+*.lof

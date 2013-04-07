@@ -60,10 +60,10 @@ private Implementation:
         procCursorPos = 0;
         cursorOwner = PROC_ID_NONE;
 
-        memset(lineBuf, 80, 0);
+        write_mem(lineBuf, 80, 0);
         lineBufLen = 0;
 
-        memset(screenBuf, 80, 0);
+        write_mem(screenBuf, 80, 0);
         screenBufLen = 0;
 
         userCursorPos = 0;
