@@ -5,7 +5,6 @@
     algorithm,      % For algorithm environment
     algpseudocode,  % For pseudocode
     hyperref,       % For PDF bookmarks
-    listings,       % For code/etc.
     tikz,           % For state diagrams
 }
 
@@ -20,34 +19,6 @@
 \tikzstyle{line} = [draw]
 \tikzstyle{cloud} = [draw, rectangle, node distance=3cm,
     minimum height=2em]
-
-% Listings for pseudocode (TODO: remove before merge)
-\definecolor{dkgreen}{rgb}{0,0.6,0}
-\definecolor{gray}{rgb}{0.5,0.5,0.5}
-\definecolor{mauve}{rgb}{0.58,0,0.82}
-% http://stackoverflow.com/questions/3175105/how-to-insert-code-into-a-latex-doc
-\lstset{
-    aboveskip=3mm,
-    basicstyle={\small\ttfamily},
-    belowskip=3mm,
-    breakatwhitespace=true
-    breaklines=true,
-    breaklines=true,
-    columns=flexible,
-    commentstyle=\color{dkgreen},
-    frame=tb,
-    keywordstyle=\color{blue},
-    language=c,
-    mathescape,
-    numbers=left,
-    numbersep=5pt,
-    numberstyle=\small,
-    numberstyle=\tiny\color{gray},
-    showstringspaces=false,
-    stringstyle=\color{mauve},
-    tabsize=3,
-}
-
 
 % PDF bookmarks setup (keep sorted)
 \hypersetup{
