@@ -72,12 +72,12 @@
     called the `block layer', and is responsible for allocating and deallocating
     blocks at a low level. The second is called the `metadata layer'; this layer
     builds upon the work done by the block layer, and adds the ability to store
-    metadata about blocks. We will describe both of these layers independantly.
+    metadata about blocks. We will describe both of these layers independently.
 
 \subsection{Block Layer}
     The block layer has a conceptually simple role. It is responsible for
-    managing a pool of contiguous memory. Given a start memory address
-    (inclusive), an end memory address (exclusive), and a block size, the block
+    managing a pool of contiguous memory. Given a start memory address, an
+    end memory address, and a block size, the block
     layer must provide two pieces of functionality. It must support allocating
     a block from the pool, and it must support freeing a block back into the
     pool. One design constraint is that it must prefer reusing a previously
@@ -86,7 +86,7 @@
     become clear when discussing the metadata layer.
 
     See Algorithm \ref{code:mem_block} for a pseudocode implementation of this
-    layer. Note that this layer return an error-code when it runs out of
+    layer. Note that this layer returns an error code when it runs out of
     memory. Further, this layer does some rudimentary sanity checking but
     doesn't handle some obvious error conditions. For example, this layer allows
     blocks to be inserted into the free list twice (assuming a trivial linked
@@ -159,24 +159,23 @@
     metadata per block ranging from some non-zero amount of metadata to half the
     block size worth of metadata.
 
-    For the sake of description, let us call the amount of metadata fields that
+    For the sake of description, let us call the number of metadata fields that
     fit inside a block $k$. That is to say, one block can hold the metadata for
     $k$ blocks. The metadata layer discriminates between two types of blocks,
-    data blocks and arena header blocks. The metadata layer requires a function
-    that takes a block and returns its associated arena header block. For our
-    purposes, this function acts as the identity function when passed an arena
-    header block. These definitions lead to the notion that an arena header
-    block is responsible for storing the metadata of itself, as well as the
-    following $k-1$ blocks. The metadata layer is responsible for serving the
-    user-facing API.
+    data blocks and arena header blocks. The metadata layer implements a
+    function that takes a block and returns its associated arena header block.
+    For our purposes, this function acts as the identity function when passed
+    an arena header block. These definitions lead to the notion that an arena
+    header block is responsible for storing the metadata of itself, as well as
+    the following $k-1$ blocks. The metadata layer is responsible for serving
+    the user-facing API.
 
     See Algorithm \ref{code:mem_meta} for a pseudocode implementation of this
     layer. Note that this layer can also access the variables defined by the
-    block layer (they can be found in Algorithm \ref{code:mem_block}). Note that
-    we have elided the code of several trivial helper functions. For example, we
-    did not specify the body of the `get\_header' function. We felt that the
-    implementation is trivial and obvious (i.e. some simple modular arithmetic)
-    enough to not waste the readers time with such minutue.
+    block layer (they can be found in Algorithm \ref{code:mem_block}). Also note that we have elided the code of several trivial helper functions. For
+    example, we did not specify the body of the `get\_header' function. Since
+    the implementation of this function was some simple modular arithmetic, we
+    did not feel it was worth wasting the reader's time with such minutiae.
 
     While the metadata layer is parameterized on $k$, for our actual
     implementation, we chose $k$ to be equal to our block size; this implies
