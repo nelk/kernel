@@ -291,7 +291,8 @@
             if it's of higher priority.
         \item [sendMessage] The sending process is preempted if the message sent
             unblocks a process of higher priority.  This is done here so we
-            guarantee that we call k\_releaseProcessor when we're in user land.
+            guarantee that we only call k\_releaseProcessor if it was a user
+            process of lower priority that made the sendMessage call.
         \item [receiveMessage] The output parameter is set here, if available.
     \end{description}
 
