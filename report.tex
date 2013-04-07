@@ -76,8 +76,8 @@
 
 \subsection{Block Layer}
     The block layer has a conceptually simple role. It is responsible for
-    managing a pool of contiguous memory. Given a start memory address
-    (inclusive), an end memory address (exclusive), and a block size, the block
+    managing a pool of contiguous memory. Given a start memory address, an
+    end memory address, and a block size, the block
     layer must provide two pieces of functionality. It must support allocating
     a block from the pool, and it must support freeing a block back into the
     pool. One design constraint is that it must prefer reusing a previously
