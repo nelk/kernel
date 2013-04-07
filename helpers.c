@@ -1,6 +1,6 @@
 #include "helpers.h"
 
-size_t memset(uint8_t *buf, size_t bufLen, uint8_t val) {
+size_t write_mem(uint8_t *buf, size_t bufLen, uint8_t val) {
     size_t temp = bufLen;
 
     if (buf == NULL) {
