@@ -317,9 +317,9 @@
 \section{Input}
 \label{sec:Input}
     In this assignment, the primary input device is keyboard input.
-    Keyboard input triggers the ``UART0\_IRQHandler'' assembly interrupt. This
-    passes the input to the ``c\_UART0\_IRQHandler'' method that puts the events
-    in a buffer. Whenever ``release\_processor'' is called, messages in the
+    Keyboard input triggers the UART0\_IRQHandler assembly interrupt. This
+    passes the input to the c\_UART0\_IRQHandler method that puts the events
+    in a buffer. Whenever release\_processor is called, messages in the
     buffer are sent to the keyboard decoder process so it can decode the new
     events. It processes the input buffer. In the case that input is a hot-key,
     it immediately executes the relevant execution path. In the case that input
@@ -341,8 +341,8 @@
             \node [cloud, above of=kbd] (user) {user};
             \node [block, right of=kbd] (uart) {uart on PC};
             \node [block, right of=uart] (uart_h) {IRQHandler};
-            \node [block, right of=uart_h] (buffer) {buffer};
             % TODO: fix this graph. It's broken.
+            \node [block, right of=uart_h] (buffer) {buffer};
             \node [cloud, below left of=buffer] (release) {release processor};
             \node [block, below right of=release] (kcd) {keyboard decoder};
             \node [block, left of=kcd] (user_proc) {user processes};
@@ -413,9 +413,9 @@
 \section{Output}
 \subsection{Basic Output}
     At a basic level, user processes send messages to the CRT process, which
-    buffers it into a stream. The method ``uart\_send\_char\_isr'' consumes the
+    buffers it into a stream. The method uart\_send\_char\_isr consumes the
     buffer and sends it through UART to the putty on the PC. Additionally, the
-    same ``UART0\_IRQHandler'' used in Section~\ref{sec:Input} triggers ``uart\_send\_char\_isr''
+    same UART0\_IRQHandler used in Section~\ref{sec:Input} triggers uart\_send\_char\_isr
     when the uart has notified us it is able to send more bytes. Diagram \ref{diagram:output} is a pictorial representation of a
     procedure that agrees with this description. In the next subsection
     \ref{sec:outputEnhancements}, we will explain how we exceeded the
@@ -456,8 +456,8 @@
     text, backspace support, and a few other enhancements.
 
     To achieve this, we've moved the buffered keyboard input into an envelope
-    belonging to a ``CRTData'' object. Whenever the buffer is cleared by a
-    user pressing the ``enter button'', we move the cursor upwards, and write
+    belonging to a CRTData object. Whenever the buffer is cleared by a
+    user pressing the enter key, we move the cursor upwards, and write
     the content of the buffer in the cleared space. Similarly, if a process
     requests to print, we move the cursor upwards, and write the content of the
     message into the cleared space. By shifting the cursor's position, we are
@@ -506,7 +506,7 @@ void crt_advance_(CRTData *crt) {
     // If the screen is showing more than our internal model, then we
     // need to clear the latter part of the screen.
     if (crt->screenBufLen > crt->lineBufLen) {
-        // Clear from the cursor to the end of line using a ``magical'' putty character:
+        // Clear from the cursor to the end of line using a special putty character:
         crt->outqBuf += "\x1b[0K";
         crt->screenBufLen = crt->lineBufLen;
         return;
