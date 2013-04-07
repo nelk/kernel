@@ -2,7 +2,9 @@
 
 % Packages (keep sorted)
 \usepackage{
-    hyperref, % For PDF bookmarks
+    algorithm,      % For algorithm environment
+    algpseudocode,  % For pseudocode
+    hyperref,       % For PDF bookmarks
     listings,
 }
 
@@ -46,6 +48,7 @@
 \end{abstract}
 
 \tableofcontents
+\listofalgorithms
 
 % NOTE(sanjay): uncomment these if we add any figures or tables
 % \listoffigures
@@ -190,10 +193,184 @@ a queue per priority level.
 % Make sure to include pseudocode and testing, if appropriate.
 
 \section{Description}
+    The memory allocator was designed with two orthogonal layers. The first is
+    called the `block layer', and is responsible for allocating and deallocating
+    blocks at a low level. The second is called the `metadata layer'; this layer
+    builds upon the work done by the block layer, and adds the ability to store
+    metadata about blocks. We will describe both of these layers independently.
 
-\section{Running Time Analysis}
+\subsection{Block Layer}
+    The block layer has a conceptually simple role. It is responsible for
+    managing a pool of contiguous memory. Given a start memory address, an
+    end memory address, and a block size, the block
+    layer must provide two pieces of functionality. It must support allocating
+    a block from the pool, and it must support freeing a block back into the
+    pool. One design constraint is that it must prefer reusing a previously
+    allocated block that has been freed, rather than handing out a block that
+    has never been allocated before. The reason for this constraint will
+    become clear when discussing the metadata layer.
+
+    See Algorithm \ref{code:mem_block} for a pseudocode implementation of this
+    layer. Note that this layer returns an error code when it runs out of
+    memory. Further, this layer does some rudimentary sanity checking but
+    doesn't handle some obvious error conditions. For example, this layer allows
+    blocks to be inserted into the free list twice (assuming a trivial linked
+    list implementation). This is not an error; it is the responsibility of
+    the metadata layer to never allow this to happen. Finally, it is important
+    to point out that this layer automatically zeroes memory. This is slightly
+    detrimental to performance, but allows user processes to use binary
+    comparisons between structs without caring about garbage in the struct's
+    padding. We deemed this convenience worth the slight performance overhead.
+
+    \begin{algorithm}
+        \caption{Block layer pseudocode}
+        \label{code:mem_block}
+        \begin{algorithmic}[1]
+
+            \State $blockSize \gets 2^7$
+            \Comment{Blocksize in bytes (configurable)}
+
+            \State $startAddr \gets 0$
+            \Comment{Start address of pool (inclusive)}
+
+            \State $endAddr \gets 2^{16}$
+            \Comment{End address of pool (exclusive)}
+
+            \State $nextAddr \gets startAddr$
+            \Comment{Next available address in pool}
+
+            \State $freeList \gets \{\}$
+            \Comment{List of freed blocks}\\
+
+            \Function{alloc\_block}{$ $}
+                \If {$|freeList| > 0$} \Comment{Check free-list}
+                    \State $blk \gets freeList[0]$
+                    \State $freeList = freeList - \{blk\}$
+                    \State \Call{zero}{$blk$}
+                    \State \Return $blk$
+                \EndIf\\
+
+                \If {$nextAddr + blockSize >= endAddr$}
+                    \Comment{Out-of-memory}
+                    \State \Return $-1$
+                \EndIf\\
+
+                \State $blk \gets nextAddr$
+                \State $nextAddr \gets nextAddr + blockSize$
+                \State \Call{zero}{$blk$}
+                \State \Return $blk$
+            \EndFunction\\
+            \Function{free\_block}{$blk$}
+                \If {$blk < startAddr \vee nextAddr <= blk \vee endAddr <= blk$}
+                    \State \Return \Comment{Outside valid range}
+                \EndIf\\
+
+                \If {$blk - startAddr \not\equiv 0 \bmod{blockSize}$}
+                    \State \Return \Comment{Unaligned}
+                \EndIf\\
+
+                \State $freeList = freeList \cup \{blk\}$
+            \EndFunction
+        \end{algorithmic}
+    \end{algorithm}
+
+
+\subsection{Metadata Layer}
+    The metadata layer builds atop the block layer, and adds the ability for the
+    allocator to store metadata about blocks. Since it is built upon the block
+    layer, it must fit its metadata storage in blocks. To avoid a costly setup
+    phase, the metadata layer uses a lazy, arena-based storage scheme. The
+    general version of the metadata layer supports an arbitrary amount of
+    metadata per block ranging from some non-zero amount of metadata to half the
+    block size worth of metadata.
+
+    For the sake of description, let us call the number of metadata fields that
+    fit inside a block $k$. That is to say, one block can hold the metadata for
+    $k$ blocks. The metadata layer discriminates between two types of blocks,
+    data blocks and arena header blocks. The metadata layer implements a
+    function that takes a block and returns its associated arena header block.
+    For our purposes, this function acts as the identity function when passed
+    an arena header block. These definitions lead to the notion that an arena
+    header block is responsible for storing the metadata of itself, as well as
+    the following $k-1$ blocks. The metadata layer is responsible for serving
+    the user-facing API.
+
+    See Algorithm \ref{code:mem_meta} for a pseudocode implementation of this
+    layer. Note that this layer can also access the variables defined by the
+    block layer (they can be found in Algorithm \ref{code:mem_block}). Also note that we have elided the code of several trivial helper functions. For
+    example, we did not specify the body of the `get\_header' function. Since
+    the implementation of this function was some simple modular arithmetic, we
+    did not feel it was worth wasting the reader's time with such minutiae.
+
+    While the metadata layer is parameterized on $k$, for our actual
+    implementation, we chose $k$ to be equal to our block size; this implies
+    the metadata for each process fits inside 1 byte. Indeed, we stored the
+    owner pid of each block as the only metadata, and the bitwidth of the pid
+    type in our system was 8.
+
+    \begin{algorithm}
+        \caption{Metadata layer pseudocode}
+        \label{code:mem_meta}
+        \begin{algorithmic}[1]
+
+            \State $k \gets 2^7$
+            \Comment{Blocks per arena (configurable)}
+
+            \State $arenaSize \gets k * blockSize$
+            \Comment{Arena size (in bytes)}
+
+            \Function{request\_memory\_block}{$pid$}
+                \State $header \gets -1$
+                \State $blk \gets -1$ \\
+
+                \State $blk \gets \Call{alloc\_block}{ }$
+                \If {$blk = -1$}
+                    \State \Return $-1$
+                \EndIf\\
+
+                \State $header \gets \Call{get\_header}{blk}$
+                \If {$blk = header$}
+                    \State $blk \gets \Call{alloc\_block}{ }$
+                \EndIf\\
+
+                \If {$blk = -1$}
+                    \State \Return $-1$
+                \EndIf\\
+
+                \State \Call{set\_owner}{$header, blk, pid$}
+                \State \Return $blk$
+            \EndFunction\\
+            \Function{free\_memory\_block}{$blk, pid$}
+                \State $header \gets \Call{get\_header}{blk}$
+                \If {$header = -1$}
+                    \State \Return $-1$
+                \EndIf\\
+
+                \If {$ \neg \Call{is\_owner}{header, blk, pid}$}
+                    \State \Return $-1$
+                \EndIf\\
+
+                \State \Call{set\_owner}{$header, blk, 0$}
+                \State \Call{free\_block}{$blk$}
+            \EndFunction
+        \end{algorithmic}
+    \end{algorithm}
+
+
+\section{Theoretical Analysis}
+    Both layers were carefully designed to be $O(1)$ for all operations. This
+    should be trivial by inspection, as all the functions do a tiny amount of
+    arithmetic, and considering we used a linked-list as the implementation of
+    the free list.
+
+    A slightly more interesting analysis is the space overhead of our metadata
+    scheme. The metadata layer uses $\frac{k-1}{k}$ blocks for storing user
+    data; this yields a storage overhead of $\frac{1}{k}$. For our
+    implementation, we picked $k=2^7$, yielding an overhead of $0.78\%$, or a
+    utilization rate of $99.22\%$.
 
 \section{Measurements}
+    % TODO(sanjay): do some measurements
 
 \chapter{Message Passing}
 % Make sure to include pseudocode and testing, if appropriate.
