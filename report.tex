@@ -360,57 +360,51 @@
         \end{tikzpicture}
     \end{figure}
 
-% TODO: Format this. It's ugly.
-    \begin{figure}
-        \centering
-        \begin{lstlisting}[label=code:uart_input,caption={Input Pseudocode}]
-        ------------------------------------------------------
-        crt.c:
-        ------------------------------------------------------
-        __asm void UART0_IRQHandler() {
-            ...
-            BL c_UART0_IRQHandler
-            ...
-        }
-        void c_UART0_IRQHandler {
-            ...
-            mark message as seen
-            uart_receive_char_isr(newChar);
-            ...
-        }
-        void uart_receive_char_isr(newChar) {
-            if ((writeIndex + 1) % bufferSize == readIndex) {
-                bufferOverflow = true
-                return;
-            }
-            buffer[writeIndex] = newChar;
-            writeIndex = (writeIndex + 1) % bufferSize
-        }
-        ------------------------------------------------------
-        proc.c:
-        ------------------------------------------------------
-        uint32_t releaseProcessor() {
-            ...
-            processUartInput();
-            ...
-        }
-        void processUartInput() {
-            ...
-            while (buffer has more) {
-                char new_char = buffer[readIndex];
-                readIndex = (readIndex + 1) % bufferSize;
-                if (new_char is a newline) {
-                    send a message to keyboard that a newline has occurred
-                    continue;
-                } else if (new_char == SHOW_DEBUG_PROCESSES) {
-                    print debug information, send it to the CRT proc
-                    continue;
-                }
-            }
-            ...
-        }
-        \end{lstlisting}
-    \end{figure}
+    \begin{algorithm}
+        \caption{Uart Input Pseudocode}
+        \label{code:uart_input}
+        \begin{algorithmic}[1]
+            \Function{\_\_asm UART0\_IRQHandler}{}
+                \State \ldots
+                \State BL c\_UART0\_IRQHandler
+                \State \ldots
+            \EndFunction
+            \Function{c\_UART0\_IRQHandler}{}
+                \State \ldots
+                \State mark message as seen
+                \State uart\_receive\_char\_isr(newChar);
+                \State \ldots
+            \EndFunction
+            \Function{uart\_receive\_char\_isr}{newChar}
+                \If{(writeIndex + 1) \% bufferSize == readIndex}
+                    \State bufferOverflow = true
+                    \State \Return
+                \EndIf
+                \State buffer[writeIndex] = newChar;
+                \State writeIndex = (writeIndex + 1) % bufferSize
+            \EndFunction
+            \Function{releaseProcessor}{}
+                \State \ldots
+                \State processUartInput();
+                \State \ldots
+            \EndFunction
+            \Function{processUartInput}{}
+                \State \ldots
+                \While{buffer has more}
+                    \State char newChar = buffer[readIndex];
+                    \State readIndex = (readIndex + 1) % bufferSize;
+                    \If {newChar is a newline}
+                        \State send a message to keyboard that a newline has occurred
+                        \State continue;
+                    \ElsIf{newChar is SHOW\_DEBUG\_PROCESSES}
+                        \State print debug information, send it to the CRT proc
+                        \State continue;
+                    \EndIf
+                \EndWhile
+                \State \ldots
+            \EndFunction
+        \end{algorithmic}
+    \end{algorithm}
 \section{Output}
 \subsection{Basic Output}
     At a basic level, user processes send messages to the CRT process, which
