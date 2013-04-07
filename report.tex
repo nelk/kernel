@@ -380,7 +380,7 @@
 \subsection{Basic Output}
     At a basic level, user processes send messages to the CRT process, which
     buffers it into a stream. The method uart\_send\_char\_isr consumes the
-    buffer and sends it through UART to the putty on the PC. Additionally, the
+    buffer and sends it through UART to the PuTTY on the PC. Additionally, the
     same UART0\_IRQHandler used in Section~\ref{sec:Input} triggers uart\_send\_char\_isr
     when the uart has notified us it is able to send more bytes. Diagram \ref{diagram:output} is a pictorial representation of a
     procedure that agrees with this description. In the next subsection
@@ -415,7 +415,7 @@
 \subsection{Output Enhancements}
 \label{sec:outputEnhancements}
     We decided to implement a larger feature set than required in the
-    application specification in order to make our putty interface feel and act
+    application specification in order to make our PuTTY interface feel and act
     more like a command line found in a traditional computer. Our features
     include a text input bar that stays at the bottom while users type, coloured
     text, backspace support, and a few other enhancements.
