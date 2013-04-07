@@ -277,7 +277,10 @@
     priorities through terminal commands.  It is registered to the \%C command,
     and will attempt to set a new priority level to the given process ID.
     Validation is done on the input parameters to ensure that they are actually
-    valid inputs before calling set\_process\_priority(pid, priority).  The
+    valid inputs before calling set\_process\_priority(pid, priority).  We check
+    to ensure that we have a space between \%C, the pid, and the priority.  We
+    also ensure that the pid is valid (within our allowed range of integers) and
+    that the priority is valid (between 0 and 255 inclusive).  The
     set\_process\_priority process itself satisfies the requirements that the
     change be immediate and that the target process could be located in the
     ready or blocked resource queue.
@@ -286,7 +289,7 @@
     of this user process.  Note that this process, among others, makes use of
     a custom implementation of a read\_uint32 helper function that we created.
     The pseudocode for that function is included in Algorithm
-    \ref{code:read_uint_32}.
+    \ref{code:read_uint32}.
 
     As a user process, we require memory in order to send a message to it (as
     the user), so we will be unable to send commands to it (as well as other
@@ -298,53 +301,7 @@
         \caption{Set priority command process pseudocode}
         \label{code:user_set_priority}
         \begin{algorithmic}[1]
-
-            \State $envelope \gets NULL$
-            \Comment{Envelope for message passing}\\
-
-            \Function{processSetMessage}{$message$}
-                \State $index \gets 2$
-                \Comment {Index of current position}
-                \State $numLength \gets 0$
-                \Comment {Length of parameters}
-                \State $pid \gets 0$
-                \State $priority \gets 0$\\
-
-                \If {$message \lbrack index \rbrack \ne space$}
-                    \State \Return $EINVAL$
-                \EndIf\\
-
-                \State $numLength, pid \gets \Call {read\_uint32}{message +
-                    index}$\\
-
-                \If {$numLength = 0$}
-                    \State \Return $EINVAL$
-                \EndIf\\
-
-                \State $index \gets index + numLength$\\
-
-                \If {$message \lbrack index \rbrack \ne space$}
-                    \State \Return $EINVAL$
-                \EndIf\\
-
-                \State $numLength, priority \gets \Call{read\_uint32}{message +
-                    index}$\\
-
-                \If {$numLength = 0 \mid\mid priority > 255$}
-                    \State \Return $EINVAL$
-                \EndIf\\
-
-                \State \Return \Call {set\_process\_priority}{$pid, priority$}
-            \EndFunction\\
-
-            \algstore{userSetPrioritySplit}
-        \end{algorithmic}
-    \end{algorithm}
-
-    \begin{algorithm}
-        \begin{algorithmic}[1]
-            \algrestore{userSetPrioritySplit}
-            \Function{setPriorityProcess}{}
+            \Function {setPriorityProcess}{}
                 \State $envelope \gets \Call {request\_memory\_block}{}$
                 \State \Call {init\_registration\_envelope}{$envelope, c$}
                 \State \Call {send\_message}{$KEYBOARD\_PID, envelope$}\\
@@ -363,7 +320,9 @@
                     \EndIf\\
 
                     \State $status \gets \Call {processSetMessage}{envelope
-                        \rightarrow message}$\\
+                        \rightarrow message}$
+                    \Comment {This will also call set\_process\_priority if the
+                        contents pass validation}
 
                     \If {$status = EINVAL$}
                         \Comment {Print error message upon failure to validate}
@@ -378,10 +337,9 @@
 
     \begin{algorithm}
         \caption{Read uint32 from char array pseudocode}
-        \label{code:read_uint_32}
+        \label{code:read_uint32}
         \begin{algorithmic}[1]
-
-            \Function{read\_uint32}{$buf, out$}
+            \Function {read\_uint32}{$buf, out$}
                 \Comment {buf is a char pointer}
                 \State $number \gets 0$
                 \Comment {The integer result}
@@ -414,6 +372,202 @@
     \end{algorithm}
 
 \chapter{24-Hour Wall Clock Display Process}
+
+\section{Description}
+    This process is responsible for acting as a digital clock, printing the time
+    at one second intervals.  The user can start the clock at 00:00:00 with the
+    command \%WR, can stop output with \%WT, and can set an arbitrary time using
+    \%WS HH:MM:SS.  The process will reject any messages passed to it that
+    either don't begin with the registered \%W command, or are malformed.
+
+    For the \%WS HH:MM:SS command, we check that there is a space in between
+    \%WS and HH:MM:SS.  As well, we make sure that there are colons in between
+    HH, MM, and SS.  We also ensure that HH is between 00 and 23 inclusive, and
+    MM and SS are both between 00 and 59 inclusive.
+
+    See Algorithm \ref{code:user_clock} for a pseudocode implementation
+    of this user process.  Note that this process, among others, makes use of
+    a few helper functions.  It uses read\_uint32, write\_uint32, as well as
+    write\_string.  See Algorithm \ref{code:write_uint32} for the pseudocode of
+    write\_uint32, and Algorithm \ref{code:write_string} for the pseudocode of
+    write\_string.  In addition, a user API call get\_time is also used.  This
+    simply obtains the current system counter, which is incremented every
+    millisecond by the timer ISR.
+
+    \begin{algorithm}
+        \caption{Wall clock process pseudocode}
+        \label{code:user_clock}
+        \begin{algorithmic}[1]
+            \State $receivedEnvelope \gets NULL$
+            \Comment {Envelope for message passing}
+            \State $selfEnvelope \gets \Call {request\_memory\_block}{}$
+            \Comment {Cached envelope for self delayed messages}
+            \State $cmdType \gets TERMINATE$
+            \Comment {Action to take}
+            \State $currentTime \gets 0$
+            \Comment {Cached current time}
+            \State $offset \gets 0$
+            \Comment {Offset for calculating time}
+            \State $isRunning \gets 0$
+            \Comment {Boolean value for running state}\\
+
+            \Function {parseClockMessage}{}
+                \State $status \gets 0$
+                \State $envelope \gets receivedEnvelope$\\
+
+                \If {$envelope \rightarrow srcPid = CLOCK\_PID$}
+                    \Comment {Received wake up, don't release memory}
+                    \If {$isRunning$}
+                        \Comment {If not terminated, print time}
+                        \State $cmdType \gets PRINT\_TIME$
+                    \EndIf
+                    \State \Return
+                \ElsIf {$envelope \rightarrow srcPid \ne KEYBOARD\_PID}$
+                    \Comment {Ignore unwanted message}
+                    \State \Call {release\_memory\_block}{$envelope$}
+                    \State \Return
+                \EndIf\\
+
+                \If {$envelope \rightarrow message \lbrack 2 \rbrack = $'R'}
+                    \State $cmdType \gets RESET\_TIME$
+                \ElsIf {$envelope \rightarrow message \lbrack 2 \rbrack = $'T'}
+                    \State $cmdType \gets TERMINATE$
+                \ElsIf {$envelope \rightarrow message \lbrack 2 \rbrack = $'S'}
+                    \State $cmdType \gets SET\_TIME$
+                \Else
+                    \State \Return
+                \EndIf\\
+
+                \If {$cmdType = RESET\_TIME$}
+                    \State $offset \gets -1 \times currentTime$
+        \algstore{wallClockProcess}
+        \end{algorithmic}
+    \end{algorithm}
+
+    \begin{algorithm}
+        \begin{algorithmic}[1]
+        \algrestore{wallClockProcess}
+                    \If {$isRunning = 0$}
+                        \Comment {Start clock if necessary}
+                        \State $cmdType \gets PRINT\_TIME$
+                    \EndIf
+                \ElsIf {$cmdType = SET\_TIME$}
+                    \State $status, offset \gets \Call {parseTime}{envelope}$
+                        \Comment {Sets offset if validation is passed}
+                    \If {$status = SUCCESS \&\& isRunning = 0$}
+                        \Comment {Start clock if necessary}
+                        \State $cmdType \gets PRINT\_TIME$
+                    \EndIf
+                \ElsIf {$cmdType = TERMINATE$}
+                    \State $isRunning \gets 0$
+                \EndIf\\
+
+                \State \Call {release\_memory\_block}{$envelope$}
+            \EndFunction\\
+
+            \Function {clockProcess}{}
+                \State $envelope \gets \Call {request\_memory\_block}{}$
+                \State \Call {init\_registration\_envelope}{$envelope, w$}
+                \State \Call {send\_message}{$KEYBOARD\_PID, envelope$}\\
+
+                \Loop
+                    \State $receivedEnvelope \gets \Call {receive\_message}{}$
+                    \State $currentTime \gets \Call {get\_time}{}$\\
+
+                    \State \Call {parseClockMessage}{}\\
+
+                    \If {$cmdType = PRINT\_TIME$}
+                        \Comment {Print the time in HH:MM:SS using the
+                            calculated offset, and wake self in 1 second}
+                        \State \Call {printTime}{$currentTime, offset$}
+                        \State $isRunning \gets 1$
+                        \State \Call {delayed\_send}{$CLOCK\_PID, selfEnvelope,
+                            1000$}
+                    \EndIf
+                \EndLoop
+            \EndFunction
+        \end{algorithmic}
+    \end{algorithm}
+
+    \begin{algorithm}
+        \caption{Write uint32 to char array pseudocode}
+        \label{code:write_uint32}
+        \begin{algorithmic}[1]
+
+            \Function{write\_uint32}{$buf, number, minDigits$}
+                \Comment {buf is a char pointer}
+                \State $tempNumber \gets number$
+                \State $numDigits \gets 0$
+                \Comment {Number of digits available}\\
+
+                \While {$tempNumber > 0$}
+                    \State $numDigits \gets numDigits + 1$
+                    \State $tempNumber \gets tempNumber / 10$
+                \EndWhile\\
+
+                \If {$minDigits < 1$}
+                    \State $minDigits \gets 1$
+                \EndIf\\
+
+                \If {$numDigits < minDigits$}
+                    \State $numDigits \gets minDigits$
+                \EndIf\\
+
+                \If {$numDigits > \Call {len}{buf}$}
+                    \State $numDigits \gets \Call {len}{buf}$
+                \EndIf\\
+
+                \State $tempNumber \gets numDigits$\\
+
+                \While {$numDigits > 0$}
+                    \If {$buf \ne NULL$}
+                        \State $buf \lbrack numDigits - 1 \rbrack \gets \Call
+                            {to\_char}{number \% 10}$
+                    \EndIf\\
+
+                    \State $number \gets number / 10$
+                    \State $numDigits \gets numDigits - 1$
+                \EndWhile\\
+
+                \State \Return $tempNumber$
+                \Comment {Returns number of digits read}
+            \EndFunction
+        \end{algorithmic}
+    \end{algorithm}
+
+    \begin{algorithm}
+        \caption{Write string to char array pseudocode}
+        \label{code:write_string}
+        \begin{algorithmic}[1]
+
+            \Function{write\_string}{$buf, message$}
+                \Comment {buf is a char pointer}
+                \State $written \gets 0$
+                \Comment {Number of characters written}
+                \State $bufLen \gets \Call {len}{buf}$\\
+
+                \If {$msg = NULL$}
+                    \State \Return $0$
+                    \Comment {Return if there's nothing to write}
+                \EndIf\\
+
+                \While {$msg \lbrack 0 \rbrack \ne NULL\_CHAR \&\&
+                    bufLen > 0$}
+                    \If {$buf \ne NULL$}
+                        \State $buf \lbrack 0 \rbrack \gets msg \lbrack 0
+                            \rbrack$
+                        \State $buf \gets buf + 1$
+                    \EndIf\\
+
+                    \State $msg \gets msg + 1$
+                    \State $bufLen \gets bufLen - 1$
+                    \State $written \gets written + 1$
+                \EndWhile\\
+
+                \State \Return $written$
+            \EndFunction
+        \end{algorithmic}
+    \end{algorithm}
 
 \chapter{Stress Processes A, B, and C}
 
