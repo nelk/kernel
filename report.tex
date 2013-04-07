@@ -503,115 +503,15 @@ while (1) {
 // CRT_advance:
 //----------------------------------------------------------------------//
 void crt_advance_(CRTData *crt) {
-    // If the screen is showing more than our internal model, then we
-    // need to clear the latter part of the screen.
-    if (crt->screenBufLen > crt->lineBufLen) {
-        // Clear from the cursor to the end of line using a special putty character:
-        crt->outqBuf += "\x1b[0K";
-        crt->screenBufLen = crt->lineBufLen;
-        return;
-    }
+    Print the text bar. Remove characters that are not matching.
 
-    // Otherwise, we know that the screen is showing less than or equal to
-    // our internal model. We try to find the first mismatch.
-    mismatchPos = crt->lastMismatchPos;
-    while (mismatchPos < crt->screenBufLen && mismatchPos < crt->lineBufLen) {
-        if (crt->screenBuf[mismatchPos] != crt->lineBuf[mismatchPos]) {
-            break;
-        }
-        ++mismatchPos;
-    }
-
-    crt->lastMismatchPos = mismatchPos;
-
-    // If the mismatch is before what our screen is showing, then we go to
-    // that position, and output some characters
-    if (mismatchPos < crt->screenBufLen) {
-        // ...
-        // Move cursor to the mismatch
-        // ...
-        crt->outqBuf[outqWriter++] = crt->lineBuf[mismatchPos];
-        crt->screenBuf[mismatchPos] = crt->lineBuf[mismatchPos];
-        crt_setCursor_(crt, 0, mismatchPos+1);
-        return;
-    }
-
-    // If there is no mismatch, but we are showing less than our internal
-    // model, then show the next character in our internal model.
-    if (
-        mismatchPos == crt->screenBufLen &&
-        crt->screenBufLen < crt->lineBufLen
-    ) {
-        // ...
-        // Move cursor to the end, set background to black, foreground to white.
-        // ...
-
-        crt->outqBuf[outqWriter++] = crt->lineBuf[mismatchPos];
-        ++(crt->screenBufLen);
-        crt->screenBuf[mismatchPos] = crt->lineBuf[mismatchPos];
-        crt_setCursor_(crt, 0, mismatchPos+1);
-        return;
-    }
-
-    // We now know that screenBufLen == lineBufLen == mismatchPos
-    // so screen data on the user line exactly matches our internal model.
-    // We now move on to process output.
-
+    Process output
     while (crt->envqHead != NULL) {
-        Envelope *nextEnv = crt->envqHead;
-        uint8_t nextByte = 0;
-
-        // If we see a null byte in our current envelope, or we've fallen
-        // off the end of this envelope, give up on this envelope.
-        if (
-            readIndex >= MESSAGEDATA_SIZE_BYTES ||
-            nextEnv->messageData[readIndex] == '\0'
-        ) {
-            Dequeue from envQ
-            free the memory
-            continue;
-        }
-
-        nextByte = nextEnv->messageData[readIndex];
-        ++(readIndex);
-
-        if (isColor(nextByte)) {
-            setColor(nextByte);
-            continue;
-        }
-
-        if (nextEnv->srcPid != currentPid) {
-            currentPid = nextEnv->srcPid;
-            if (there was other content on this line) {
-                crt_scrollCursorArea_(crt);
-            }
-        }
-
-        // If we are printing a newline, then just scroll this process area.
-        if (nextByte == '\n' && crt->procCursorPos > 0) {
-            crt_scrollCursorArea_(crt);
-            return;
-        }
-
-        // If the process has output more than 80 characters, truncate.
-        if (crt->procCursorPos >= CRT_LINE_LIMIT) {
-            continue;
-        }
-
-        // Otherwise, merely move to the correct location, and output the
-        // next byte.
-        crt_moveTo_(crt, 1, crt->procCursorPos);
-        crt_setCursor_(crt, 1, (crt->procCursorPos)+1);
-        ++(crt->procCursorPos);
-        crt_setBC_(crt, crt->procBC);
-        crt_setFC_(crt, crt->procFC);
-
-        // Enqueue this character
-        crt->outqBuf[outqWriter++] = nextByte;
-        return;
+        Print next queued envelope until a null byte occurrs.
     }
 
-    crt_moveTo_(crt, 0, crt->userCursorPos);
+    move the cursor to the user position
+}
 
 \end{lstlisting}
 
