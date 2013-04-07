@@ -435,12 +435,12 @@
     \ref{code:process_delayed_messages}) is called in release\_processor, and it
     delivers any delayed messages that have waited for their specified delay.
     The  message queue for each process is where messages are stored when
-    they're delivered  to a process that is not blocked on message.
+    they're delivered to a process that is not blocked on message.
 
     Sending a message may cause the sending process to be preempted. This will
     occur if the receiving process is blocked on receiving a message and it has
     a higher priority. Calling receive\_message will cause the process to block
-    on message, unless  it has messages in its message queue. Sending a delayed
+    on message, unless it has messages in its message queue. Sending a delayed
     message, however, will never cause  the sender to block. See Algorithm
     \ref{code:send_message} for a pseudocode implementation  of send\_message,
     Algorithm \ref{code:receive_message} for receive\_message, and
@@ -569,9 +569,9 @@
     The runtime of k\_sendDelayedMessage is bounded by the time it takes to add
     a  message to the kernel delayed message queue. This is a priority queue
     implemented  as a heap, so it takes $O(\log n)$ time for insertion. This is
-    a good runtime  for sending a delayed message, considering that delayed
+    a good runtime for sending a delayed message, considering that delayed
     messages are not necessarily delivered in the order they are sent. A heap
-    efficiently allows retrieval of the earliest message without having to sort
+    allows efficient retrieval of the earliest message without having to sort
     all of the messages.
 
     The runtime of k\_processDelayedMessages depends upon how many delayed
