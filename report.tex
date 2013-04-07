@@ -443,7 +443,7 @@
         \label{code:uart_output}
         \begin{algorithmic}[1]
             \Function{CRT\_proc}{}
-                \While($true$)
+                \Loop
                     \State nextMessage = receive\_message(NULL)
                     \State pushEnvelope(nextMessage)
                     \While(crt\_hasData \&\& ((writeIndex + 1) % OUTPUT\_BUFSIZE != readIndex))
@@ -451,7 +451,7 @@
                         \State writeIndex = (writeIndex + 1) % OUTPUT\_BUFSIZE;
                     \EndWhile
                     \State uart\_send\_char\_isr(outputBuffer)
-                \EndWhile
+                \EndLoop
             \EndFunction
             \Function{CRT\_advance}{}
                 \State Print the text bar. Remove characters that are not matching.
