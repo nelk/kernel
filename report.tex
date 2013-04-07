@@ -5,7 +5,22 @@
     algorithm,      % For algorithm environment
     algpseudocode,  % For pseudocode
     hyperref,       % For PDF bookmarks
+    tikz,           % For state diagrams
 }
+
+% State diagrams (i.e. I/O)
+\usetikzlibrary{
+    shadows,
+    positioning,
+}
+% TODO: move these to another file.
+\tikzstyle{decision} = [rectangle, draw,
+    text width=4.5em, text badly centered, node distance=3cm, inner sep=0pt]
+\tikzstyle{block} = [rectangle, draw,
+    text width=5em, text centered, rounded corners, minimum height=4em]
+\tikzstyle{line} = [draw]
+\tikzstyle{cloud} = [draw, rectangle, node distance=3cm,
+    minimum height=2em]
 
 % PDF bookmarks setup (keep sorted)
 \hypersetup{
@@ -259,9 +274,48 @@
 \chapter{I/O}
 % Make sure to include pseudocode and testing, if appropriate.
 
-\section{UART output}
+    I/O interactions were designed to provide a simple user-facing interface
+    while guaranteeing a high level of functionality and speed in low-memory
+    situations. Functionality was split between separate input and output
+    processes, each of which were responsible for providing functionality
+    evident in their names. By separating functionality, we took advantage of
+    the benefits of micorkenel architecture instead of monolithic architecture.
+    In the context of our OS, both input and output tasks consisted of % TODO: should I put our OS name here?
+    interacting solely with UART (Universal asynchronous receiver / transmitter)
+    connections to the boards used in this lab. % TODO: Should I put the name here?
+    We will describe both input and output independently in their respective
+    sections.
 
-\section{UART input}
+\section{Input}
+    Input in this assignment is focused on sending keyboard input to
+    Keyboard input triggers the ``UART0\_IRQHandler'' assembly call. This
+    passes input to the ``c\_UART0\_IRQHandler'' method that buffers keyboard
+    input. Whenever ``release\_processor'' is called, the main method processes
+    the input buffer. Processes that have registered for specific messages will
+    receive notifications that the message has occurred.
+
+    Diagram \ref{diagram:input} illustrates this process in a visually
+    apparent manner, and Algorithm \ref{code:uart_input} expresses this flow
+    algorithmically.
+
+    \begin{tikzpicture}[node distance = 3cm, auto]
+        \label{diagram:input}
+        % Place nodes
+        \node [block] (kbd) {keyboard};
+        \node [cloud, above of=kbd] (user) {user};
+        \node [block, right of=kbd] (uart) {uart on PC};
+        \node [block, right of=uart] (uart_h) {IRQHandler};
+        \node [block, right of=uart_h] (buffer) {buffer};
+        \node [cloud, above of=buffer] (release) {release processor};
+        \node [block, right of=buffer] (user_proc) {user processes};
+        % Draw edges
+        \path [line,dashed] (user) -- (kbd);
+        \path [line] (kbd) -- (uart);
+        \path [line] (uart) -- (uart_h);
+        \path [line] (uart_h) -- (buffer);
+        \path [line,dashed] (buffer) -- (release);
+        \path [line] (buffer) -- (user_proc);
+    \end{tikzpicture}\section{Output}
 
 \chapter{Misc}
 % Make sure to include pseudocode and testing, if appropriate.
