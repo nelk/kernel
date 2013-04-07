@@ -329,14 +329,15 @@
     receive a message containing the command. If no processes have been
     registered, the message is freed.
 
-    Diagram \ref{diagram:input} illustrates this process in a visually
+    Figure \ref{figure:inputDiagram} illustrates this process in a visually
     apparent manner, and Algorithm \ref{code:uart_input} expresses this flow
     algorithmically.
+
     \begin{figure}
         \centering
+
         \begin{tikzpicture}[node distance = 3cm,
-                            auto,
-                            label={diagram:input}]
+                            auto,label={figure:inputDiagram}]
             % Place nodes
             \node [block] (kbd) {keyboard};
             \node [cloud, above of=kbd] (user) {user};
@@ -418,31 +419,35 @@
     buffer and sends it through UART to the putty on the PC. Additionally, the
     same ``UART0\_IRQHandler'' used in Section~\ref{sec:Input} triggers ``uart\_send\_char\_isr''
     when the uart has notified us it is able to send more bytes. Diagram \ref{diagram:output} is a pictorial representation of a
-    procedure that agrees with this description. In the next
-    subsection\ref{sec:outputEnhancements}, we will explain how we exceeded the
+    procedure that agrees with this description. In the next subsection
+    \ref{sec:outputEnhancements}, we will explain how we exceeded the
     specifications which caused our implementation to be more complicated than
     this.
 
-    \begin{tikzpicture}[node distance = 3cm, auto]
-        \label{diagram:output}
-        % Place nodes
-        \node [block] (user_proc) {User Processes};
-        \node [cloud, right of=user_proc] (message) {Message};
-        \node [block, right of=message] (crtProc) {CRT process};
-        \node [cloud, right of=crtProc] (buffer) {Buffer};
-        \node [block, below of=crtProc] (handler) {UART Handler};
-        \node [block, right of=handler] (sendChar) {sendCharIsr};
-        \node [block, right of=sendChar] (uart) {UART};
-        % Draw edges
-        \path [very thick,line] (user_proc) -- (message);
-        \path [very thick,line] (user_proc) -- (message);
-        \path [->,very thick,line] (message) -- (crtProc);
-        \path [->,very thick,line] (crtProc) -- (sendChar);
-        \path [->,very thick,line,dashed] (crtProc) -- (buffer);
-        \path [->,very thick,line,dashed] (buffer) -- (sendChar);
-        \path [->,very thick,line] (handler) -- (sendChar);
-        \path [->,very thick,line] (sendChar) -- (uart);
-    \end{tikzpicture}
+    \begin{figure}
+        \centering
+        \begin{tikzpicture}[node distance = 3cm, auto]
+            \label{diagram:output}
+            % Place nodes
+            \node [block] (user_proc) {User Processes};
+            \node [cloud, right of=user_proc] (message) {Message};
+            \node [block, right of=message] (crtProc) {CRT process};
+            \node [cloud, right of=crtProc] (buffer) {Buffer};
+            \node [block, below of=crtProc] (handler) {UART Handler};
+            \node [block, right of=handler] (sendChar) {sendCharIsr};
+            \node [block, right of=sendChar] (uart) {UART};
+            % Draw edges
+            \path [very thick,line] (user_proc) -- (message);
+            \path [very thick,line] (user_proc) -- (message);
+            \path [->,very thick,line] (message) -- (crtProc);
+            \path [->,very thick,line] (crtProc) -- (sendChar);
+            \path [->,very thick,line,dashed] (crtProc) -- (buffer);
+            \path [->,very thick,line,dashed] (buffer) -- (sendChar);
+            \path [->,very thick,line] (handler) -- (sendChar);
+            \path [->,very thick,line] (sendChar) -- (uart);
+        \end{tikzpicture}
+        \caption{Flow of Output Data to Uart}
+    \end{figure}
 
 \subsection{Output Enhancements}
 \label{sec:outputEnhancements}
