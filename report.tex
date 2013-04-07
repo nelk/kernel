@@ -26,8 +26,8 @@
     \texttt{sakcraig@uwaterloo.ca}
     \and
     Klen, Alex\\
-    XXXXXXXX\\
-    \texttt{XXXX@uwaterloo.ca}
+    20372654\\
+    \texttt{ayklen@uwaterloo.ca}
     \and
     Menakuru, Sanjay\\
     20374915\\
@@ -61,8 +61,159 @@
 % Make sure to include pseudocode and testing, if appropriate.
 
 \section{Description}
+    The scheduler is responsible for dividing processor time amongst all of the
+    system's processes. It handles context switching between processes, deciding
+    which process to schedule next, and preempting or blocking processes when
+    appropriate. Processes can be in one of the following states: new, ready,
+    running, blocked on memory, blocked on message, or unused. `New' is a state
+    that processes are given after being initialized so that the scheduler can
+    properly context switch to them for the first time. The running state
+    signifies that the process is the only currently running process in the
+    system. Processes which are ready are placed in a priority queue, and the
+    scheduler will select the ready process with the highest priority to run
+    next. Processes which are blocked on memory are put into another priority
+    queue called the blocked-on-memory queue, and when memory is freed, the
+    blocked process with the highest priority is unblocked. Processes that are
+    blocked on a message remain blocked until they are sent a message.
+
+    A process can be preempted when it frees memory or sends a message. If the
+    process that it unblocks has a higher priority, then the currently running
+    process is preempted.
+
+    The ready queues are priority queues implemented using heaps. The decision
+    was made to use a priority queue for all ready/blocked processes instead of
+    a queue for each priority level because it allowed the system to support an
+    arbitrary number of priorities without having the release\_processor runtime
+    depend on the number of priorities.
+
+    Pseudocode for process initialization is listed in Algorithm
+    \ref{code:proc_init}.
+
+    \begin{algorithm}
+        \caption{Process Initialization Pseudocode}
+        \label{code:proc_init}
+        \begin{algorithmic}[1]
+        \Function{k\_initProcesses}{}
+            \State Initialize process-ready queue
+            \State Initialize blocked-on-memory queue
+
+            \For{each process p, index i}
+                \State p.pid $\gets$ i
+                \State p.stack $\gets$ \Call{acquireMemoryBlock}{} three times + memory block size \Comment{Use three memory blocks for each process stack and place stack pointer at end of third one}
+                \State push initial required values onto stack
+                \State set p.startLocation to appropriate process function location
+                \Comment{Reserve a debug envelope for each process to be able to display a debug message even if there is no free memory in the system}
+                \State p.debugEnvelope $\gets$ acquireMemoryBlock()
+                \State p.state $\gets$ new
+                \State add p to the process-ready queue
+            \EndFor \\
+            \State Initialize CRT proc
+        \EndFunction
+        \end{algorithmic}
+    \end{algorithm}
+
+    See Algorithm \ref{code:release_processor} for a pseudocode implementation
+    for the kernel-level function k\_releaseProcessor. This function is called
+    any time the current process should be preempted and a new process should be
+    scheduled. The function takes a parameter that specifies what the reason is
+    for the context switch. The release reason can be one of the following: a
+    voluntary yield, a process priority change, memory was freed, the system is
+    out of memory, a message was sent, or a message was received. The scheduling
+    behavior can be different for some of these reasons.
+
+\begin{algorithm}
+    \caption{Release Processor Pseudocode}
+    \label{code:release_processor}
+    \begin{algorithmic}[1]
+    \Function{k\_releaseProcessor}{releaseReason}
+        \Comment{First we process the changed states of a few interrupt-driven systems here to avoid ISRs modifying kernel state while they are interrupting kernel methods}
+        \State \Call{k\_processUartOutput}{}
+        \State \Call{k\_processUartInput}{}
+        \State \Call{k\_processDelayedMessages}{}
+
+        \Comment{These variables are set depending on the release reason}
+        \State define targetState, \Comment{The state to give the currently running process}
+            \State \indent srcQueue, \Comment{The queue to schedule the next process 
+            from}
+            \State \indent dstQueue \Comment{The queue to insert the current process into}
+
+        \If{releaseReason = out of memory}
+            \State srcQueue $\gets$ process-ready queue
+            \State dstQueue $\gets$ blocked-on-memory queue
+            \State targetState $\gets$ blocked on memory
+        \ElsIf{releaseReason = message was received}
+            \If{the current process's mail queue is empty}
+                \State srcQueue $\gets$ process-ready queue
+                \State dstQueue $\gets$ NULL \Comment{Don't place in any queue}
+                \State targetState $\gets$ blocked on message
+            \Else
+                \State srcQueue $\gets$ process-ready queue
+                \State dstQueue $\gets$ process-ready queue
+                \State targetState $\gets$ ready
+            \EndIf
+        \Else
+            \State srcQueue $\gets$ process-ready queue
+            \State dstQueue $\gets$ process-ready queue
+            \State targetState $\gets$ ready
+
+            \If{currentProcess is the null process}
+                \Comment{Keep the null process out of the ready queue - handle it separately}
+                \State dstQueue $\gets$ NULL
+            \EndIf
+        \EndIf
+
+        \If{srcQueue $\ne$ NULL and srcQueue.size $>$ 0}
+            \State nextProc $\gets$ \Call{srcQueue.pop}{}
+        \Else
+            \State nextProc $\gets$ the null process
+        \EndIf
+
+    \algstore{releaseProcessor}
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \begin{algorithmic}[1]
+    \algrestore{releaseProcessor}
+
+        \If{currentProcess $\ne$ NULL}
+            \Comment{Save old process info}
+            \State currentProcess.stack $\gets$ \Call{getStackPointer}{}
+            \State currentProcess.state $\gets$ targetState
+            \If{dstQueue $\ne$ NULL}
+                \State \Call{dstQueue.add}{currentProcess}
+            \EndIf
+        \EndIf
+
+        \State oldState $\gets$ nextProc.state
+        \State nextProc.state $\gets$ running
+        \State currentProcess $\gets$ nextProc
+        \State \Call{setStackPointer}{nextProc.stack}
+        \If{oldState = new}
+            \Call{\_\_rte}{} \Comment{If first time, pop the exception stack frame}
+        \EndIf
+    \EndFunction
+    \end{algorithmic}
+\end{algorithm}
 
 \section{Running Time Analysis}
+
+    The runtime for k\_initProcesses is $O(n\log n)$, where n is the number of
+    processes in the system. This is because each processes is inserted into the
+    process-ready queue, which is implemented as a heap and therefore taking
+    $O(\log n)$ to insert an element. This function could be trivially modified
+    to achieve a runtime of $O(n)$ time by putting all of the heap elements in
+    an array first, and then heapifying it afterwards. Since there is a
+    small, fixed number of processes in the system, this small optimization
+    wasn't completed since this function only runs once at system startup.
+
+    The runtime for k\_releaseProcessor, with the assumption that the UART and
+    delayed message processing at the beginning will typically take $O(1)$ time,
+    takes $O(\log n)$ time, where n is the number of processes in the system. It
+    is bounded by removing and inserting from the source and destination
+    priority queues (heaps). This provides good performance, and we can have an
+    arbitrary number of priorities in the system because a priority queue was
+    used instead of a queue per priority level.
 
 \chapter{Memory Allocator}
 % Make sure to include pseudocode and testing, if appropriate.
