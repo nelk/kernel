@@ -298,14 +298,14 @@
     receive a message containing the command. If no processes have been
     registered, the message is freed.
 
-    Figure \ref{figure:inputDiagram} illustrates this process in a visually
+    Figure \ref{fig:inputFigure} illustrates this process in a visually
     apparent manner, and Algorithm \ref{code:uart_input} expresses this flow
     algorithmically.
 
     \begin{figure}
         \centering
-        \label{figure:inputDiagram}
         \caption{Flow of Input Data to User Processes}
+        \label{fig:inputFigure}
         \begin{tikzpicture}[node distance = 3cm,
                             auto]
             % Place nodes
@@ -381,17 +381,18 @@
     At a basic level, user processes send messages to the CRT process, which
     buffers it into a stream. The method uart\_send\_char\_isr consumes the
     buffer and sends it through UART to the PuTTY on the PC. Additionally, the
-    same UART0\_IRQHandler used in Section~\ref{sec:Input} triggers uart\_send\_char\_isr
-    when the uart has notified us it is able to send more bytes. Diagram \ref{diagram:output} is a pictorial representation of a
-    procedure that agrees with this description. In the next subsection
+    same UART0\_IRQHandler used in Section~\ref{sec:Input} triggers
+    uart\_send\_char\_isr when the uart has notified us it is able to send more
+    bytes. Figure \ref{fig:outputFigure} is a pictorial representation of this
+    procedure. In the next subsection
     \ref{sec:outputEnhancements}, we will explain how we exceeded the
     specifications which caused our implementation to be more complicated than
     this.
 
     \begin{figure}
         \centering
+        \label{fig:outputFigure}
         \begin{tikzpicture}[node distance = 3cm, auto]
-            \label{diagram:output}
             % Place nodes
             \node [block] (user_proc) {User Processes};
             \node [cloud, right of=user_proc] (message) {Message};
