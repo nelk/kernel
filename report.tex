@@ -418,7 +418,8 @@ void k_processUartInput() {
     buffers the stream. The method ``uart\_send\_char\_isr'' consumes the buffer
     and sends it through UART to the putty on the PC. Additionally, the same
     ``UART0\_IRQHandler'' used in Input triggers ``uart\_send\_char\_isr'' when
-    appropriate.
+    appropriate. Diagram \ref{diagram:output} is an over-simplification of the
+    process that agrees with this description.
 
     \begin{tikzpicture}[node distance = 3cm, auto]
         \label{diagram:output}
@@ -431,8 +432,9 @@ void k_processUartInput() {
         \node [block, right of=handler] (sendChar) {sendCharIsr};
         \node [block, right of=sendChar] (uart) {UART};
         % Draw edges
-        \path [->,very thick,line] (user_proc) -- (message);
-        \path [->,very thick,line,dashed] (message) -- (crtProc);
+        \path [very thick,line] (user_proc) -- (message);
+        \path [very thick,line] (user_proc) -- (message);
+        \path [->,very thick,line] (message) -- (crtProc);
         \path [->,very thick,line] (crtProc) -- (sendChar);
         \path [->,very thick,line,dashed] (crtProc) -- (buffer);
         \path [->,very thick,line,dashed] (buffer) -- (sendChar);
@@ -440,6 +442,7 @@ void k_processUartInput() {
         \path [->,very thick,line] (sendChar) -- (uart);
     \end{tikzpicture}
 
+    In order to
 
 \chapter{Misc}
 % Make sure to include pseudocode and testing, if appropriate.
