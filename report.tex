@@ -6,6 +6,7 @@
     algpseudocode,  % For pseudocode
     hyperref,       % For PDF bookmarks
     tikz,           % For state diagrams
+    listings,
 }
 
 % State diagrams (i.e. I/O)
@@ -21,6 +22,10 @@
 \tikzstyle{line} = [draw]
 \tikzstyle{cloud} = [draw, rectangle, node distance=3cm,
     minimum height=2em]
+
+% Listings for pseudocode (TODO: remove before merge)
+\lstset{mathescape,showstringspaces=false,breaklines=true,numbers=left,numbersep=5pt,numberstyle=\small,language=c}
+
 
 % PDF bookmarks setup (keep sorted)
 \hypersetup{
@@ -290,9 +295,12 @@
     Input in this assignment is focused on sending keyboard input to
     Keyboard input triggers the ``UART0\_IRQHandler'' assembly call. This
     passes input to the ``c\_UART0\_IRQHandler'' method that buffers keyboard
-    input. Whenever ``release\_processor'' is called, the main method processes
-    the input buffer. Processes that have registered for specific messages will
-    receive notifications that the message has occurred.
+    input. Whenever ``release\_processor'' is called, the keyboard decoder
+    process receives a message telling it a message has occurred. It processes
+    the input buffer. In the case that input is a hot-key, it immediately
+    executes the relevant execution path. In the case that input is a message, a
+    relevant process that has registered will receive a message containing the
+    message.
 
     Diagram \ref{diagram:input} illustrates this process in a visually
     apparent manner, and Algorithm \ref{code:uart_input} expresses this flow
@@ -306,16 +314,102 @@
         \node [block, right of=kbd] (uart) {uart on PC};
         \node [block, right of=uart] (uart_h) {IRQHandler};
         \node [block, right of=uart_h] (buffer) {buffer};
-        \node [cloud, above of=buffer] (release) {release processor};
-        \node [block, right of=buffer] (user_proc) {user processes};
+        \node [cloud, below left of=buffer] (release) {release processor};
+        \node [block, below right of=release] (kcd) {keyboard decoder};
+        \node [block, left of=kcd] (user_proc) {user processes};
         % Draw edges
         \path [line,dashed] (user) -- (kbd);
         \path [line] (kbd) -- (uart);
         \path [line] (uart) -- (uart_h);
         \path [line] (uart_h) -- (buffer);
         \path [line,dashed] (buffer) -- (release);
-        \path [line] (buffer) -- (user_proc);
+        \path [line,dashed] (kcd) -- (release);
+        \path [line] (buffer) -- (kcd);
+        \path [line] (kcd) -- (user_proc);
     \end{tikzpicture}\section{Output}
+
+{
+% TODO: Format this. It's ugly.
+\label{code:uart_input}
+\begin{lstlisting}
+------------------------------------------------------
+crt.c:
+------------------------------------------------------
+__asm void UART0_IRQHandler() {
+    ...
+    BL c_UART0_IRQHandler
+    ...
+}
+void c_UART0_IRQHandler {
+    ...
+    mark message as seen
+    uart_receive_char_isr(newChar);
+    ...
+}
+void uart_receive_char_isr(newChar) {
+    if ((writeIndex + 1) % bufferSize == readIndex) {
+        bufferOverflow = true
+        return;
+    }
+    buffer[writeIndex] = newChar;
+    writeIndex = (writeIndex + 1) % bufferSize
+}
+------------------------------------------------------
+proc.c:
+------------------------------------------------------
+uint32_t releaseProcessor() {
+    ...
+    processUartInput();
+    ...
+}
+void k_processUartInput() {
+    ...
+    lineBuffer = []
+    while (buffer != null && readIndex != writeIndex) {
+        char new_char = buffer[readIndex];
+
+        readIndex = (readIndex + 1) % bufferSize;
+
+        if (new_char == '\r') {
+            kcdEnvelope = acquireMemoryBlock();
+
+            kcdEnvelope = MT_KEYBOARD;
+
+            kcdEnvelope->messageData = clone(buffer);
+
+            k_sendMessage(kcdEnvelope, KEYBOARD_PID, KEYBOARD_PID);
+
+            kcdEnvelope = NULL;
+            continue;
+        } else if (new_char == SHOW_DEBUG_PROCESSES) {
+            Envelope *currentEnv = currentProcess->envelope;
+            char *buf = NULL;
+
+            buf = currentEnv->messageData;
+
+            write(buf, "Allocated " + numSuccessfulAllocs + "b");
+
+            currentEnv->messageType = MT_KEYBOARD;
+            send currentEnv to CRT_PID
+
+            for (procId : procIds) {
+                Envelope *tempEnvelope = NULL;
+                PCB *process = &(processes[i]);
+
+                tempEnvelope = process->debugEnv;
+                buf = tempEnvelope->messageData;
+
+                writeProcessInfo(buf, process);
+
+                sendMessage(tempEnvelope, CRT_PID, CRT_PID);
+            }
+            continue;
+        }
+    }
+    ...
+}
+\end{lstlisting}
+}
 
 \chapter{Misc}
 % Make sure to include pseudocode and testing, if appropriate.
