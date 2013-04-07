@@ -47,8 +47,8 @@
     \texttt{smenakur@uwaterloo.ca}
     \and
     Wei, Jonathan\\
-    XXXXXXXX\\
-    \texttt{XXXX@uwaterloo.ca}
+    20376489\\
+    \texttt{j25wei@uwaterloo.ca}
 }
 
 \maketitle
@@ -713,9 +713,459 @@
 
 \part{User-level Processes}
 
-\chapter{Proc 1}
+\chapter{Set Priority Command Process}
 
-\chapter{Proc 2}
+\section{Description}
+    This process is responsible for allowing the user to change process
+    priorities through terminal commands.  It is registered to the \%C command,
+    and will attempt to set a new priority level to the given process ID.
+    Validation is done on the input parameters to ensure that they are actually
+    valid inputs before calling set\_process\_priority(pid, priority).  We check
+    to ensure that we have a space between \%C, the pid, and the priority.  We
+    also ensure that the pid is valid (within our allowed range of integers) and
+    that the priority is valid (between 0 and 255 inclusive).  The
+    set\_process\_priority process itself satisfies the requirements that the
+    change be immediate and that the target process could be located in the
+    ready or blocked resource queue.
+
+    See Algorithm \ref{code:user_set_priority} for a pseudocode implementation
+    of this user process.  Note that this process, among others, makes use of
+    a custom implementation of a read\_uint32 helper function that we created.
+    The pseudocode for that function is included in Algorithm
+    \ref{code:read_uint32}.
+
+    As a user process, we require memory in order to send a message to it (as
+    the user), so we will be unable to send commands to it (as well as other
+    user processes) in a situation where we are out of memory.  Therefore, we
+    are unable to use this process to stop a misbehaving process that is holding
+    and not releasing memory if we are already out of memory.
+
+    \begin{algorithm}
+        \caption{Set priority command process pseudocode}
+        \label{code:user_set_priority}
+        \begin{algorithmic}[1]
+            \Function {setPriorityProcess}{}
+                \State $envelope \gets \Call {request\_memory\_block}{}$
+                \State \Call {init\_registration\_envelope}{$envelope, c$}
+                \State \Call {send\_message}{$KEYBOARD\_PID, envelope$}\\
+
+                \Loop
+                    \State $envelope \gets \Call {receive\_message}{NULL}$\\
+
+                    \If {$envelope \rightarrow srcPid \ne KEYBOARD\_PID$}
+                        \State \Call {release\_memory\_block}{$envelope$}
+                        \State $continue$
+                    \EndIf\\
+
+                    \If {$envelope\ message\ isn't\ prefixed\ with\ \%C$}
+                        \State \Call {release\_memory\_block}{$envelope$}
+                        \State $continue$
+                    \EndIf\\
+
+                    \State $status \gets \Call {processSetMessage}{envelope
+                        \rightarrow message}$
+                    \Comment {This will also call set\_process\_priority if the
+                        contents pass validation}
+
+                    \If {$status = EINVAL$}
+                        \Comment {Print error message upon failure to validate}
+                        \State \Call {printSetErrorMessage}{$envelope$}
+                    \Else
+                        \State \Call {release\_memory\_block}{$envelope$}
+                    \EndIf
+                \EndLoop
+            \EndFunction
+        \end{algorithmic}
+    \end{algorithm}
+
+    \begin{algorithm}
+        \caption{Read uint32 from char array pseudocode}
+        \label{code:read_uint32}
+        \begin{algorithmic}[1]
+            \Function {read\_uint32}{$buf, out$}
+                \Comment {buf is a char pointer}
+                \State $number \gets 0$
+                \Comment {The integer result}
+                \State $read \gets 0$
+                \Comment {Number of characters read}\\
+
+                \If {$buf = NULL$}
+                    \State \Return $0$
+                    \Comment {Return if there's nothing to read}
+                \EndIf\\
+
+                \While {$read < \Call{len}{buf}$}
+                    \If {\Call {$\neg$is\_numeric}{$buf \lbrack 0 \rbrack$}}
+                        \State \textbf{break}
+                    \EndIf\\
+
+                    \State $number \gets number \times 10$
+                    \State $number \gets number + \Call {to\_int}{buf \lbrack 0 \rbrack}$
+                    \State $read \gets read + 1$
+                    \State $buf \gets buf + 1$
+                \EndWhile\\
+
+                \If {$out \ne NULL$}
+                    \State $out \lbrack 0 \rbrack \gets number$
+                \EndIf\\
+
+                \State \Return $read$
+            \EndFunction
+        \end{algorithmic}
+    \end{algorithm}
+
+\chapter{24-Hour Wall Clock Display Process}
+
+\section{Description}
+    This process is responsible for acting as a digital clock, printing the time
+    at one second intervals.  The user can start the clock at 00:00:00 with the
+    command \%WR, can stop output with \%WT, and can set an arbitrary time using
+    \%WS HH:MM:SS.  The process will reject any messages passed to it that
+    either don't begin with the registered \%W command, or are malformed.
+
+    For the \%WS HH:MM:SS command, we check that there is a space in between
+    \%WS and HH:MM:SS.  As well, we make sure that there are colons in between
+    HH, MM, and SS.  We also ensure that HH is between 00 and 23 inclusive, and
+    MM and SS are both between 00 and 59 inclusive.
+
+    See Algorithm \ref{code:user_clock} for a pseudocode implementation
+    of this user process.  Note that this process, among others, makes use of
+    a few helper functions.  It uses read\_uint32, write\_uint32, as well as
+    write\_string.  See Algorithm \ref{code:write_uint32} for the pseudocode of
+    write\_uint32, and Algorithm \ref{code:write_string} for the pseudocode of
+    write\_string.  In addition, a user API call get\_time is also used.  This
+    simply obtains the current system counter, which is incremented every
+    millisecond by the timer ISR.
+
+    \begin{algorithm}
+        \caption{Wall clock process pseudocode}
+        \label{code:user_clock}
+        \begin{algorithmic}[1]
+            \State $receivedEnvelope \gets NULL$
+            \Comment {Envelope for message passing}
+            \State $selfEnvelope \gets \Call {request\_memory\_block}{}$
+            \Comment {Cached envelope for self delayed messages}
+            \State $cmdType \gets TERMINATE$
+            \Comment {Action to take}
+            \State $currentTime \gets 0$
+            \Comment {Cached current time}
+            \State $offset \gets 0$
+            \Comment {Offset for calculating time}
+            \State $isRunning \gets 0$
+            \Comment {Boolean value for running state}\\
+
+            \Function {parseClockMessage}{}
+                \State $status \gets 0$
+                \State $envelope \gets receivedEnvelope$\\
+
+                \If {$envelope \rightarrow srcPid = CLOCK\_PID$}
+                    \Comment {Received wake up, don't release memory}
+                    \If {$isRunning$}
+                        \Comment {If not terminated, print time}
+                        \State $cmdType \gets PRINT\_TIME$
+                    \EndIf
+                    \State \Return
+                \ElsIf {$envelope \rightarrow srcPid \ne KEYBOARD\_PID}$
+                    \Comment {Ignore unwanted message}
+                    \State \Call {release\_memory\_block}{$envelope$}
+                    \State \Return
+                \EndIf\\
+
+                \If {$envelope \rightarrow message \lbrack 2 \rbrack = $`R'}
+                    \State $cmdType \gets RESET\_TIME$
+                \ElsIf {$envelope \rightarrow message \lbrack 2 \rbrack = $`T'}
+                    \State $cmdType \gets TERMINATE$
+                \ElsIf {$envelope \rightarrow message \lbrack 2 \rbrack = $`S'}
+                    \State $cmdType \gets SET\_TIME$
+                \Else
+                    \State \Return
+                \EndIf\\
+
+                \If {$cmdType = RESET\_TIME$}
+                    \State $offset \gets -1 \times currentTime$
+        \algstore{wallClockProcess}
+        \end{algorithmic}
+    \end{algorithm}
+
+    \begin{algorithm}
+        \begin{algorithmic}[1]
+        \algrestore{wallClockProcess}
+                    \If {$isRunning = 0$}
+                        \Comment {Start clock if necessary}
+                        \State $cmdType \gets PRINT\_TIME$
+                    \EndIf
+                \ElsIf {$cmdType = SET\_TIME$}
+                    \State $status, offset \gets \Call {parseTime}{envelope}$
+                        \Comment {Sets offset if validation is passed}
+                    \If {$status = SUCCESS \&\& isRunning = 0$}
+                        \Comment {Start clock if necessary}
+                        \State $cmdType \gets PRINT\_TIME$
+                    \EndIf
+                \ElsIf {$cmdType = TERMINATE$}
+                    \State $isRunning \gets 0$
+                \EndIf\\
+
+                \State \Call {release\_memory\_block}{$envelope$}
+            \EndFunction\\
+
+            \Function {clockProcess}{}
+                \State $envelope \gets \Call {request\_memory\_block}{}$
+                \State \Call {init\_registration\_envelope}{$envelope, w$}
+                \State \Call {send\_message}{$KEYBOARD\_PID, envelope$}\\
+
+                \Loop
+                    \State $receivedEnvelope \gets \Call {receive\_message}{}$
+                    \State $currentTime \gets \Call {get\_time}{}$\\
+
+                    \State \Call {parseClockMessage}{}\\
+
+                    \If {$cmdType = PRINT\_TIME$}
+                        \Comment {Print the time in HH:MM:SS using the
+                            calculated offset, and wake self in 1 second}
+                        \State \Call {printTime}{$currentTime, offset$}
+                        \State $isRunning \gets 1$
+                        \State \Call {delayed\_send}{$CLOCK\_PID, selfEnvelope,
+                            1000$}
+                    \EndIf
+                \EndLoop
+            \EndFunction
+        \end{algorithmic}
+    \end{algorithm}
+
+    \begin{algorithm}
+        \caption{Write uint32 to char array pseudocode}
+        \label{code:write_uint32}
+        \begin{algorithmic}[1]
+
+            \Function{write\_uint32}{$buf, number, minDigits$}
+                \Comment {buf is a char pointer}
+                \State $tempNumber \gets number$
+                \State $numDigits \gets 0$
+                \Comment {Number of digits available}\\
+
+                \While {$tempNumber > 0$}
+                    \State $numDigits \gets numDigits + 1$
+                    \State $tempNumber \gets tempNumber / 10$
+                \EndWhile\\
+
+                \If {$minDigits < 1$}
+                    \State $minDigits \gets 1$
+                \EndIf\\
+
+                \If {$numDigits < minDigits$}
+                    \State $numDigits \gets minDigits$
+                \EndIf\\
+
+                \If {$numDigits > \Call {len}{buf}$}
+                    \State $numDigits \gets \Call {len}{buf}$
+                \EndIf\\
+
+                \State $tempNumber \gets numDigits$\\
+
+                \While {$numDigits > 0$}
+                    \If {$buf \ne NULL$}
+                        \State $buf \lbrack numDigits - 1 \rbrack \gets \Call
+                            {to\_char}{number \% 10}$
+                    \EndIf\\
+
+                    \State $number \gets number / 10$
+                    \State $numDigits \gets numDigits - 1$
+                \EndWhile\\
+
+                \State \Return $tempNumber$
+                \Comment {Returns number of digits read}
+            \EndFunction
+        \end{algorithmic}
+    \end{algorithm}
+
+    \begin{algorithm}
+        \caption{Write string to char array pseudocode}
+        \label{code:write_string}
+        \begin{algorithmic}[1]
+
+            \Function{write\_string}{$buf, message$}
+                \Comment {buf is a char pointer}
+                \State $written \gets 0$
+                \Comment {Number of characters written}
+                \State $bufLen \gets \Call {len}{buf}$\\
+
+                \If {$msg = NULL$}
+                    \State \Return $0$
+                    \Comment {Return if there's nothing to write}
+                \EndIf\\
+
+                \While {$msg \lbrack 0 \rbrack \ne NULL\_CHAR \&\&
+                    bufLen > 0$}
+                    \If {$buf \ne NULL$}
+                        \State $buf \lbrack 0 \rbrack \gets msg \lbrack 0
+                            \rbrack$
+                        \State $buf \gets buf + 1$
+                    \EndIf\\
+
+                    \State $msg \gets msg + 1$
+                    \State $bufLen \gets bufLen - 1$
+                    \State $written \gets written + 1$
+                \EndWhile\\
+
+                \State \Return $written$
+            \EndFunction
+        \end{algorithmic}
+    \end{algorithm}
+
+\chapter{Stress Processes A, B, and C}
+
+\section{Description}
+    These processes were used to stress test the system.  Process A was
+    registered under command \%Z.  Upon starting, it would continuously obtain
+    a memory block when possible and send it off as a message to process B,
+    containing the value of a counter that it incremented every time it went
+    around the loop.  Process B would redirect any messages to process C.
+    Process C had its own extra message queue (on top of the one that we already
+    had for each process).  If there was something in its extra queue, we would
+    dequeue from that first, before processing any new messages from its regular
+    queue.  Then, if we received a message from process A, we would check if the
+    counter that was included is divisible by 20.  If so, we send a message to
+    the CRT process to print a message to the screen, then sleep for 10 seconds.
+    During this time, messages from process A (through process B) would continue
+    to accumulate, eventually running out of memory when there is none left to
+    use to send messages.  After waking up, C would process all the messages in
+    the queue, releasing their memory, and the cycle would begin again.
+
+    This set of operations would quickly deprive our system of memory.  It was
+    designed to see how the system would respond in a no-memory situation.  When
+    we ran this during testing, we would run into deadlocks in the situation
+    when the priority of process C was less than or equal to process A, as
+    process A only requested memory blocks, while process C was the one that
+    released memory.  The scenario would be when all the memory is locked up
+    inside process C's local message queue, and it blocks during the call to
+    sleep (which requires an envelope in order to send itself a message).  To
+    this end, we modified the sleep function such that this scenario wouldn't
+    occur.  We would still be out of memory, but we wouldn't deadlock - we
+    would simply undergo the 10 second cycle of flushing all memory, then being
+    out of memory again until the next time process C wakes up.
+
+    To do this, we preallocated envelopes for processes that needed to use the
+    sleep function (process C as well as some of our own user-level test
+    processes).  That way, sleep doesn't require a call to
+    request\_memory\_block, so it's a non-blocking call (apart from the sleep
+    itself).
+
+    The pseudocode for processes A, B, and C are not included as they were
+    implemented off of the given pseudocode in the project description.
+    However, an additional envelope was preallocated for process C so that its
+    sleep call wouldn't block.  See Algorithm \ref{code:sleep} for a pseudocode
+    implementation of the sleep function, which was modified from the given
+    pseudocode in order to include our additional functionality.  We also make a
+    user call to pid(), which is a function returning the process ID of the
+    currently running process.
+
+    \begin{algorithm}
+        \caption{Sleep function pseudocode}
+        \label{code:sleep}
+        \begin{algorithmic}[1]
+            \Function {sleep}{$ms, listEnv, sleepEnv$}
+                \Comment {listEnv is a double pointer to Envelope to be used as
+                    an additional message queue, while sleepEnv is a pointer to
+                    a preallocated Envelope to be used for sending the delayed
+                    message}
+                \State $currentTime \gets \Call {get\_time}{}$
+                \State $targetTime \gets currentTime + ms$
+                \State $sleepEnv \rightarrow messageType \gets MT\_SLEEP$
+                \State \textproc {delayed\_send}(\Call {pid}{}$, sleepEnv,
+                    targetTime - currentTime$)\\
+
+                \If {$listEnv \ne NULL$}
+                    \Comment {Advance to back of passed queue if available}
+                    \While {$listEnv \lbrack 0 \rbrack \ne NULL$}
+                        \State $listEnv \gets \Call {addrOf}{listEnv \lbrack 0
+                            \rbrack \rightarrow next}$
+                    \EndWhile
+                \EndIf\\
+
+                \Loop
+                    \State $env \gets \Call {receive\_message}{}$\\
+
+                    \If {$env \rightarrow messageType = MT\_SLEEP$}
+                        \Comment {If it's the sleep message, then we can wake
+                            up}
+                        \State \Return
+                    \ElsIf {$listEnv \ne NULL$}
+                        \Comment {Push onto queue if available}
+                        \State $env \rightarrow next \gets NULL$
+                        \State $listEnv \lbrack 0 \rbrack \gets env$
+                        \State $listEnv \gets \Call {addrOf}{env \rightarrow
+                            next}$
+                    \Else
+                        \Comment {Send it to ourselves on a delay to process
+                            later otherwise}
+                        \State \textproc {delayed\_send}(\Call {pid}{}$, env,
+                            ms$)
+                    \EndIf
+                \EndLoop
+            \EndFunction
+        \end{algorithmic}
+    \end{algorithm}
+
+\chapter{User-Level Test Processes}
+
+\section{Description}
+
+    We had various user-level processes that we created for the first
+    deliverable, and continued to use throughout creating our OS.  As we
+    continued adding more features, the user processes were modified as well.
+    Most notably, they were modified in order to incorporate a sleep function,
+    which we had already implemented for the second deliverable after adding
+    message passing.  As we set the processes to sleep for different delays, it
+    is possible to see the interleaving of message printing by the CRT process
+    when their delays synchronise.  The processes are listed below.
+
+\subsection{`funProcess'}
+
+    This process would send 5 messages to the CRT process to print the numbers
+    1, 2, 3, 4, and 5.  It would then sleep for 3000 milliseconds.  This would
+    be repeated indefinitely.  This process, along with the other processes, had
+    to be modified for the second deliverable when we switched from straight
+    UART polling to passing messages to the CRT process for printing.
+
+\subsection{`schizophrenicProcess'}
+
+    This process is similar to `funProcess', printing the numbers 9, 8, 7, 6,
+    and 5.  It would then sleep for 4000 milliseconds.  This would be repeated
+    indefinitely.
+
+\subsection{`fibProcess'}
+
+    This process would print the first 40 or so Fibonacci numbers.  It would
+    print these 5 at a time, then sleep for 1000 milliseconds.  After reaching
+    the Fibonacci number just under 1000000000, it would restart at 1.  This
+    would be repeated indefinitely.
+
+\subsection{`memoryMuncherProcess'}
+
+    This process would request all available memory blocks, printing the
+    addresses of the obtained memory blocks.  When it has obtained all available
+    blocks, it would try to acquire another block, which would cause the process
+    to block, waiting for an additional memory block to become available.  Prior
+    to this, it would set the priority of `releaseProcess' to the highest
+    possible, which would free a preallocated block of memory, allowing this
+    process to continue.  After becoming unblocked, it would free all held
+    memory blocks and then block on receiving a message indefinitely.
+
+\subsection{`releaseProcess'}
+
+    This process was used in conjunction to the above `memoryMuncherProcess'.
+    At startup, this process had the highest priority.  It would preallocate a
+    memory block (used to unblock `memoryMuncherProcess'), then set its own
+    priority to the lowest possible.  It would then call release\_processor.
+    Our other user processes were running at higher priority than this one was
+    set to, so it would require a set\_process\_priority in order to get it to
+    run again, provided by `memoryMuncherProcess'.  It would continue executing
+    after having its priority set to the highest possible again by
+    `memoryMuncherProcess', and free its single block.  After doing so, it would
+    block on receiving a message indefinitely.  The combination of these two
+    processes allowed us to test low to no memory situations to ensure our
+    memory allocator was working as expected, as well as to ensure that our
+    APIs for setting and getting priorities were working correctly.
 
 \part{Lessons Learned}
 % They call this the lessons learned summary.
