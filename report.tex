@@ -396,11 +396,9 @@
         }
         void processUartInput() {
             ...
-            while (readIndex != writeIndex) {
+            while (buffer has more) {
                 char new_char = buffer[readIndex];
-
                 readIndex = (readIndex + 1) % bufferSize;
-
                 if (new_char is a newline) {
                     send a message to keyboard that a newline has occurred
                     continue;
