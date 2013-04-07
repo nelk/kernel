@@ -472,48 +472,36 @@
     % ^Please verify this. I'm not entirely sure about how the two interact,
     % they're pretty coupled.
 
-\label{code:uart_output}
-\begin{lstlisting}
-//----------------------------------------------------------------------//
-// CRT_proc:
-//----------------------------------------------------------------------//
-while (1) {
-    nextMsg = (Envelope *)receive_message(NULL);
-    if (nextMsg == NULL) {
-        continue;
-    }
 
-    if (nextMsg->srcPid == CRT_PID && nextMsg->messageType == MT_CRT_WAKEUP) {
-        uartOutputEnv = nextMsg;
-    } else {
-        crt_pushProcEnv(crtData, nextMsg);
-    }
+    \begin{algorithm}
+        \caption{Uart Output Pseudocode}
+        \label{code:uart_output}
+        \begin{algorithmic}[1]
+            \Function{CRT\_proc}{}
+                \While($true$)
+                    \State nextMessage = receive\_message(NULL)
+                    \State pushEnvelope(nextMessage)
+                    \While(crt\_hasData \&\& ((writeIndex + 1) % OUTPUT\_BUFSIZE != readIndex))
+                        \State outputBuffer[writeIndex] = crt\_getData()
+                        \State writeIndex = (writeIndex + 1) % OUTPUT\_BUFSIZE;
+                    \EndWhile
+                    \State uart\_send\_char\_isr(outputBuffer)
+                \EndWhile
+            \EndFunction
+            \Function{CRT\_advance}{}
+                \State Print the text bar. Remove characters that are not matching.
 
-    while (
-        ((writeIndex + 1) % OUTPUT_BUFSIZE != readIndex) &&
-        (crt_hasData(crtData))
-    ) {
-        outputBuf[writeIndex] = crt_getData(crtData);
-        writeIndex = (writeIndex + 1) % OUTPUT_BUFSIZE;
-    }
+                \State Process output
+                \While{hasQueuedEnvelopes}
+                    \State Print next queued envelope until a null byte occurrs.
+                \EndWhile
 
-    uart_send_char_isr(outputBuf);
-}
-//----------------------------------------------------------------------//
-// CRT_advance:
-//----------------------------------------------------------------------//
-void crt_advance_(CRTData *crt) {
-    Print the text bar. Remove characters that are not matching.
+                \State move the cursor to the user position
+            \EndFunction
+        \end{algorithmic}
+    \end{algorithm}
 
-    Process output
-    while (crt->envqHead != NULL) {
-        Print next queued envelope until a null byte occurrs.
-    }
 
-    move the cursor to the user position
-}
-
-\end{lstlisting}
 
 \chapter{Misc}
 % Make sure to include pseudocode and testing, if appropriate.
