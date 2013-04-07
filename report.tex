@@ -481,8 +481,13 @@ void k_processUartInput() {
     position, we are able to maintain the currently buffered user text at the
     bottom of the screen, allowing the user to see their text as they enter it.
     Implementing deletion only required parsing a special character in a similar
-    way to a hot-key. Inside the pseudocode algorithm for the
+    way to a hot-key. Inside the pseudocode algorithm (\ref{code:uart_output})
+    for this section, the CRT process loads messages from the buffer that
+    CRT_advance is loading.
+    % ^Please verify this. I'm not entirely sure about how the two interact,
+    % they're pretty coupled.
 
+\label{code:uart_output}
 \begin{lstlisting}
 //----------------------------------------------------------------------//
 // CRT_proc:
@@ -507,7 +512,7 @@ while (1) {
         writeIndex = (writeIndex + 1) % OUTPUT_BUFSIZE;
     }
 
-    uart_send_char_isr();
+    uart_send_char_isr(outputBuf);
 }
 //----------------------------------------------------------------------//
 // CRT_advance:
@@ -516,17 +521,8 @@ void crt_advance_(CRTData *crt) {
     // If the screen is showing more than our internal model, then we
     // need to clear the latter part of the screen.
     if (crt->screenBufLen > crt->lineBufLen) {
-        // ...
-        // Move cursor to bottom, set background to black, foreground to white.
-        // ...
-
         // Clear from the cursor to the end of line using a ``magical'' putty character:
-        crt->outqWriter += write_string(
-            crt->outqBuf + crt->outqWriter,
-            CRT_OUTQ_LEN - crt->outqWriter,
-            "\x1b[0K"
-        );
-
+        crt->outqBuf += "\x1b[0K";
         crt->screenBufLen = crt->lineBufLen;
         return;
     }
@@ -547,10 +543,9 @@ void crt_advance_(CRTData *crt) {
     // that position, and output some characters
     if (mismatchPos < crt->screenBufLen) {
         // ...
-        // Move cursor to the mismatch, set background to black, foreground to white.
+        // Move cursor to the mismatch
         // ...
-
-        crt->outqBuf[(crt->outqWriter)++] = crt->lineBuf[mismatchPos];
+        crt->outqBuf[outqWriter++] = crt->lineBuf[mismatchPos];
         crt->screenBuf[mismatchPos] = crt->lineBuf[mismatchPos];
         crt_setCursor_(crt, 0, mismatchPos+1);
         return;
@@ -566,7 +561,7 @@ void crt_advance_(CRTData *crt) {
         // Move cursor to the end, set background to black, foreground to white.
         // ...
 
-        crt->outqBuf[(crt->outqWriter)++] = crt->lineBuf[mismatchPos];
+        crt->outqBuf[outqWriter++] = crt->lineBuf[mismatchPos];
         ++(crt->screenBufLen);
         crt->screenBuf[mismatchPos] = crt->lineBuf[mismatchPos];
         crt_setCursor_(crt, 0, mismatchPos+1);
@@ -584,22 +579,19 @@ void crt_advance_(CRTData *crt) {
         // If we see a null byte in our current envelope, or we've fallen
         // off the end of this envelope, give up on this envelope.
         if (
-            crt->readIndex >= MESSAGEDATA_SIZE_BYTES ||
-            nextEnv->messageData[crt->readIndex] == '\0'
+            readIndex >= MESSAGEDATA_SIZE_BYTES ||
+            nextEnv->messageData[readIndex] == '\0'
         ) {
             Dequeue from envQ
             free the memory
             continue;
         }
 
-        nextByte = nextEnv->messageData[crt->readIndex];
-        ++(crt->readIndex);
+        nextByte = nextEnv->messageData[readIndex];
+        ++(readIndex);
 
         if (isColor(nextByte)) {
             setColor(nextByte);
-            continue;
-        }
-        if (!is_printable(nextByte) && nextByte != '\n') {
             continue;
         }
 
@@ -630,7 +622,7 @@ void crt_advance_(CRTData *crt) {
         crt_setFC_(crt, crt->procFC);
 
         // Enqueue this character
-        crt->outqBuf[(crt->outqWriter)++] = nextByte;
+        crt->outqBuf[outqWriter++] = nextByte;
         return;
     }
 
