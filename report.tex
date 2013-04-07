@@ -5,7 +5,20 @@
     algorithm,      % For algorithm environment
     algpseudocode,  % For pseudocode
     hyperref,       % For PDF bookmarks
+    tikz,           % For state diagrams
 }
+
+% State diagrams (i.e. I/O)
+\usetikzlibrary{
+    shadows,
+    positioning,
+}
+% TODO: move these to another file.
+\tikzstyle{block} = [rectangle, draw,
+    text width=5em, text centered, rounded corners, minimum height=4em]
+\tikzstyle{line} = [draw]
+\tikzstyle{cloud} = [draw, rectangle, node distance=3cm,
+    minimum height=2em]
 
 % PDF bookmarks setup (keep sorted)
 \hypersetup{
@@ -26,8 +39,8 @@
     \texttt{sakcraig@uwaterloo.ca}
     \and
     Klen, Alex\\
-    XXXXXXXX\\
-    \texttt{XXXX@uwaterloo.ca}
+    20372654\\
+    \texttt{ayklen@uwaterloo.ca}
     \and
     Menakuru, Sanjay\\
     20374915\\
@@ -46,9 +59,9 @@
 
 \tableofcontents
 \listofalgorithms
+\listoffigures
 
 % NOTE(sanjay): uncomment these if we add any figures or tables
-% \listoffigures
 % \listoftables
 
 
@@ -61,8 +74,159 @@
 % Make sure to include pseudocode and testing, if appropriate.
 
 \section{Description}
+    The scheduler is responsible for dividing processor time amongst all of the
+    system's processes. It handles context switching between processes, deciding
+    which process to schedule next, and preempting or blocking processes when
+    appropriate. Processes can be in one of the following states: new, ready,
+    running, blocked on memory, blocked on message, or unused. `New' is a state
+    that processes are given after being initialized so that the scheduler can
+    properly context switch to them for the first time. The running state
+    signifies that the process is the only currently running process in the
+    system. Processes which are ready are placed in a priority queue, and the
+    scheduler will select the ready process with the highest priority to run
+    next. Processes which are blocked on memory are put into another priority
+    queue called the blocked-on-memory queue, and when memory is freed, the
+    blocked process with the highest priority is unblocked. Processes that are
+    blocked on a message remain blocked until they are sent a message.
+
+    A process can be preempted when it frees memory or sends a message. If the
+    process that it unblocks has a higher priority, then the currently running
+    process is preempted.
+
+    The ready queues are priority queues implemented using heaps. The decision
+    was made to use a priority queue for all ready/blocked processes instead of
+    a queue for each priority level because it allowed the system to support an
+    arbitrary number of priorities without having the release\_processor runtime
+    depend on the number of priorities.
+
+    Pseudocode for process initialization is listed in Algorithm
+    \ref{code:proc_init}.
+
+    \begin{algorithm}
+        \caption{Process Initialization Pseudocode}
+        \label{code:proc_init}
+        \begin{algorithmic}[1]
+        \Function{k\_initProcesses}{}
+            \State Initialize process-ready queue
+            \State Initialize blocked-on-memory queue
+
+            \For{each process p, index i}
+                \State p.pid $\gets$ i
+                \State p.stack $\gets$ \Call{acquireMemoryBlock}{} three times + memory block size \Comment{Use three memory blocks for each process stack and place stack pointer at end of third one}
+                \State push initial required values onto stack
+                \State set p.startLocation to appropriate process function location
+                \Comment{Reserve a debug envelope for each process to be able to display a debug message even if there is no free memory in the system}
+                \State p.debugEnvelope $\gets$ acquireMemoryBlock()
+                \State p.state $\gets$ new
+                \State add p to the process-ready queue
+            \EndFor \\
+            \State Initialize CRT proc
+        \EndFunction
+        \end{algorithmic}
+    \end{algorithm}
+
+    See Algorithm \ref{code:release_processor} for a pseudocode implementation
+    for the kernel-level function k\_releaseProcessor. This function is called
+    any time the current process should be preempted and a new process should be
+    scheduled. The function takes a parameter that specifies what the reason is
+    for the context switch. The release reason can be one of the following: a
+    voluntary yield, a process priority change, memory was freed, the system is
+    out of memory, a message was sent, or a message was received. The scheduling
+    behavior can be different for some of these reasons.
+
+\begin{algorithm}
+    \caption{Release Processor Pseudocode}
+    \label{code:release_processor}
+    \begin{algorithmic}[1]
+    \Function{k\_releaseProcessor}{releaseReason}
+        \Comment{First we process the changed states of a few interrupt-driven systems here to avoid ISRs modifying kernel state while they are interrupting kernel methods}
+        \State \Call{k\_processUartOutput}{}
+        \State \Call{k\_processUartInput}{}
+        \State \Call{k\_processDelayedMessages}{}
+
+        \Comment{These variables are set depending on the release reason}
+        \State define targetState, \Comment{The state to give the currently running process}
+            \State \indent srcQueue, \Comment{The queue to schedule the next process 
+            from}
+            \State \indent dstQueue \Comment{The queue to insert the current process into}
+
+        \If{releaseReason = out of memory}
+            \State srcQueue $\gets$ process-ready queue
+            \State dstQueue $\gets$ blocked-on-memory queue
+            \State targetState $\gets$ blocked on memory
+        \ElsIf{releaseReason = message was received}
+            \If{the current process's mail queue is empty}
+                \State srcQueue $\gets$ process-ready queue
+                \State dstQueue $\gets$ NULL \Comment{Don't place in any queue}
+                \State targetState $\gets$ blocked on message
+            \Else
+                \State srcQueue $\gets$ process-ready queue
+                \State dstQueue $\gets$ process-ready queue
+                \State targetState $\gets$ ready
+            \EndIf
+        \Else
+            \State srcQueue $\gets$ process-ready queue
+            \State dstQueue $\gets$ process-ready queue
+            \State targetState $\gets$ ready
+
+            \If{currentProcess is the null process}
+                \Comment{Keep the null process out of the ready queue - handle it separately}
+                \State dstQueue $\gets$ NULL
+            \EndIf
+        \EndIf
+
+        \If{srcQueue $\ne$ NULL and srcQueue.size $>$ 0}
+            \State nextProc $\gets$ \Call{srcQueue.pop}{}
+        \Else
+            \State nextProc $\gets$ the null process
+        \EndIf
+
+    \algstore{releaseProcessor}
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \begin{algorithmic}[1]
+    \algrestore{releaseProcessor}
+
+        \If{currentProcess $\ne$ NULL}
+            \Comment{Save old process info}
+            \State currentProcess.stack $\gets$ \Call{getStackPointer}{}
+            \State currentProcess.state $\gets$ targetState
+            \If{dstQueue $\ne$ NULL}
+                \State \Call{dstQueue.add}{currentProcess}
+            \EndIf
+        \EndIf
+
+        \State oldState $\gets$ nextProc.state
+        \State nextProc.state $\gets$ running
+        \State currentProcess $\gets$ nextProc
+        \State \Call{setStackPointer}{nextProc.stack}
+        \If{oldState = new}
+            \Call{\_\_rte}{} \Comment{If first time, pop the exception stack frame}
+        \EndIf
+    \EndFunction
+    \end{algorithmic}
+\end{algorithm}
 
 \section{Running Time Analysis}
+
+    The runtime for k\_initProcesses is $O(n\log n)$, where n is the number of
+    processes in the system. This is because each processes is inserted into the
+    process-ready queue, which is implemented as a heap and therefore taking
+    $O(\log n)$ to insert an element. This function could be trivially modified
+    to achieve a runtime of $O(n)$ time by putting all of the heap elements in
+    an array first, and then heapifying it afterwards. Since there is a
+    small, fixed number of processes in the system, this small optimization
+    wasn't completed since this function only runs once at system startup.
+
+    The runtime for k\_releaseProcessor, with the assumption that the UART and
+    delayed message processing at the beginning will typically take $O(1)$ time,
+    takes $O(\log n)$ time, where n is the number of processes in the system. It
+    is bounded by removing and inserting from the source and destination
+    priority queues (heaps). This provides good performance, and we can have an
+    arbitrary number of priorities in the system because a priority queue was
+    used instead of a queue per priority level.
 
 \chapter{Memory Allocator}
 % Make sure to include pseudocode and testing, if appropriate.
@@ -259,9 +423,202 @@
 \chapter{I/O}
 % Make sure to include pseudocode and testing, if appropriate.
 
-\section{UART output}
+    I/O interactions were designed to provide a simple user-facing interface
+    while guaranteeing a high level of functionality and speed in low-memory
+    situations. Functionality was split between separate input and output
+    processes, each of which were responsible for providing their respective
+    functionality. By separating functionality, we were able to take advantage
+    of the benefits of microkernel architecture instead of monolithic
+    architecture.
+    In the context of our OS, both input and output tasks consisted of % TODO: should I put our OS name here?
+    interacting solely with UART (Universal Asynchronous Receiver / Transmitter)
+    connections to the boards used in this lab.
+    We will describe both input and output independently in their respective
+    sections.
 
-\section{UART input}
+\section{Input}
+\label{sec:Input}
+    In this assignment, the primary input device is keyboard input.
+    Keyboard input triggers the UART0\_IRQHandler assembly interrupt. This
+    passes the input to the c\_UART0\_IRQHandler method that puts the events
+    in a buffer. Whenever release\_processor is called, messages in the
+    buffer are sent to the keyboard decoder method to decode the new
+    events in the buffer. In the case that input is a hot-key,
+    it immediately executes the relevant execution path. In the case that input
+    is a complete command, a process that has registered for that command will
+    receive a message containing the command. If no processes have been
+    registered, the message is freed.
+
+    Figure \ref{fig:inputFigure} illustrates this process in a visually
+    apparent manner, and Algorithm \ref{code:uart_input} expresses this flow
+    algorithmically.
+
+    \begin{figure}
+        \centering
+        \caption{Flow of Input Data to User Processes}
+        \label{fig:inputFigure}
+        \begin{tikzpicture}[node distance = 3cm,
+                            auto]
+            % Place nodes
+            \node [block] (kbd) {keyboard};
+            \node [cloud, above of=kbd] (user) {user};
+            \node [block, right of=kbd] (uart_h) {IRQHandler};
+            \node [cloud, above right of=uart_h] (buffer) {buffer};
+            \node [block, right of=uart_h] (kcd) {keyboard decoder};
+            \node [block, below of=kcd] (release) {release processor};
+            \node [cloud, right of=kcd] (message) {message};
+            \node [block, right of=message] (keyboard_proc) {keyboard process};
+            \node [block, below of=keyboard_proc] (user_proc) {user processes};
+            % Draw edges
+            \path [->,very thick,line,dashed] (user) -- (kbd);
+            \path [->,very thick,line] (kbd) -- (uart_h);
+            \path [->,very thick,line,dashed] (uart_h) -- (buffer);
+            \path [->,very thick,line] (release) -- (kcd);
+            \path [very thick,line] (kcd) -- (message);
+            \path [->,very thick,line] (message) -- (keyboard_proc);
+            \path [->,very thick,line,dashed] (buffer) -- (kcd);
+            \path [->,very thick,line] (release) -- (kcd);
+            \path [->,very thick,line] (keyboard_proc) -- (user_proc);
+        \end{tikzpicture}
+    \end{figure}
+
+    \begin{algorithm}
+        \caption{Uart Input Pseudocode}
+        \label{code:uart_input}
+        \begin{algorithmic}[1]
+            \Function{\_\_asm UART0\_IRQHandler}{}
+                \State \ldots
+                \State BL c\_UART0\_IRQHandler
+                \State \ldots
+            \EndFunction
+            \Function{c\_UART0\_IRQHandler}{}
+                \State \ldots
+                \State mark message as seen
+                \State uart\_receive\_char\_isr(newChar);
+                \State \ldots
+            \EndFunction
+            \Function{uart\_receive\_char\_isr}{newChar}
+                \If{(writeIndex + 1) \% bufferSize == readIndex}
+                    \State bufferOverflow = true
+                    \State \Return
+                \EndIf
+                \State buffer[writeIndex] = newChar;
+                \State writeIndex = (writeIndex + 1) % bufferSize
+            \EndFunction
+            \Function{releaseProcessor}{}
+                \State \ldots
+                \State processUartInput();
+                \State \ldots
+            \EndFunction
+            \Function{processUartInput}{}
+                \State \ldots
+                \While{buffer has more}
+                    \State char newChar = buffer[readIndex];
+                    \State readIndex = (readIndex + 1) % bufferSize;
+                    \If {newChar is a newline}
+                        \State send a message to keyboard that a newline has occurred
+                        \State continue;
+                    \ElsIf{newChar is SHOW\_DEBUG\_PROCESSES}
+                        \State print debug information, send it to the CRT proc
+                        \State continue;
+                    \EndIf
+                \EndWhile
+                \State \ldots
+            \EndFunction
+        \end{algorithmic}
+    \end{algorithm}
+\section{Output}
+\subsection{Basic Output}
+    At a basic level, user processes send messages to the CRT process, which
+    buffers it into a stream. The method uart\_send\_char\_isr consumes the
+    buffer and sends it through UART to the PuTTY on the PC. Additionally, the
+    same UART0\_IRQHandler used in Section~\ref{sec:Input} triggers
+    uart\_send\_char\_isr when the uart has notified us it is able to send more
+    bytes. Figure \ref{fig:outputFigure} is a pictorial representation of this
+    procedure. In the next subsection
+    \ref{sec:outputEnhancements}, we will explain how we exceeded the
+    specifications which caused our implementation to be more complicated than
+    this.
+
+    \begin{figure}
+        \centering
+        \label{fig:outputFigure}
+        \begin{tikzpicture}[node distance = 3cm, auto]
+            % Place nodes
+            \node [block] (user_proc) {User Processes};
+            \node [cloud, right of=user_proc] (message) {Message};
+            \node [block, right of=message] (crtProc) {CRT process};
+            \node [cloud, right of=crtProc] (buffer) {Buffer};
+            \node [block, below of=crtProc] (handler) {UART Handler};
+            \node [block, right of=handler] (sendChar) {sendCharIsr};
+            \node [block, right of=sendChar] (uart) {UART};
+            % Draw edges
+            \path [very thick,line] (user_proc) -- (message);
+            \path [->,very thick,line] (message) -- (crtProc);
+            \path [->,very thick,line] (crtProc) -- (sendChar);
+            \path [->,very thick,line,dashed] (crtProc) -- (buffer);
+            \path [->,very thick,line,dashed] (buffer) -- (sendChar);
+            \path [->,very thick,line] (handler) -- (sendChar);
+            \path [->,very thick,line] (sendChar) -- (uart);
+        \end{tikzpicture}
+        \caption{Flow of Output Data to Uart}
+    \end{figure}
+
+\subsection{Output Enhancements}
+\label{sec:outputEnhancements}
+    We decided to implement a larger feature set than required in the
+    application specification in order to make our PuTTY interface feel and act
+    more like a command line found in a traditional computer. Our features
+    include a text input bar that stays at the bottom while users type, coloured
+    text, backspace support, and a few other enhancements.
+
+    To achieve this, we've moved the buffered keyboard input into an envelope
+    belonging to a CRTData object. Whenever the buffer is cleared by a
+    user pressing the enter key, we move the cursor upwards, and write
+    the content of the buffer in the cleared space. Similarly, if a process
+    requests to print, we move the cursor upwards, and write the content of the
+    message into the cleared space. By shifting the cursor's position, we are
+    able to maintain the currently buffered user text at the bottom of the
+    screen, allowing the user to see their text as they enter it. Implementing
+    deletion only required parsing a special character in a similar way to a
+    hot-key. Inside the pseudocode algorithm (\ref{code:uart_output}) listed for
+    this subsection, the CRT process loads messages from the buffer that
+    CRT\_advance loads with instructions to move characters, print content from
+    processes, and show current input buffer status (i.e. what the user has
+    typed).
+    % ^Please verify this. I'm not entirely sure about how the two interact,
+    % they're pretty coupled.
+
+
+    \begin{algorithm}
+        \caption{Uart Output Pseudocode}
+        \label{code:uart_output}
+        \begin{algorithmic}[1]
+            \Function{CRT\_proc}{}
+                \Loop
+                    \State nextMessage = receive\_message(NULL)
+                    \State pushEnvelope(nextMessage)
+                    \While(crt\_hasData \&\& ((writeIndex + 1) % OUTPUT\_BUFSIZE != readIndex))
+                        \State outputBuffer[writeIndex] = crt\_getData()
+                        \State writeIndex = (writeIndex + 1) % OUTPUT\_BUFSIZE;
+                    \EndWhile
+                    \State uart\_send\_char\_isr(outputBuffer)
+                \EndLoop
+            \EndFunction
+            \Function{CRT\_advance}{}
+                \State Print the text bar. Remove characters that are not matching.
+
+                \State Process output
+                \While{hasQueuedEnvelopes}
+                    \State Print next queued envelope until a null byte occurrs.
+                \EndWhile
+
+                \State move the cursor to the user position
+            \EndFunction
+        \end{algorithmic}
+    \end{algorithm}
+
+
 
 \chapter{Misc}
 % Make sure to include pseudocode and testing, if appropriate.
