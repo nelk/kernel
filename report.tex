@@ -591,7 +591,7 @@
 
 \section{Measurements}
     
-
+    G
 
 \chapter{I/O}
 % Make sure to include pseudocode and testing, if appropriate.
@@ -619,8 +619,19 @@
 
 \chapter{Appendix A - Measurements}
 
-% \begin{table}{h}
-% \centering
+
+\section{Trial Information}
+\begin{tabular}{l | l | l}
+    Trial&Total Runtime&Notes \\
+    \hline
+    1&4.219&Normal (no stress processes) \\
+    2&7.754&Wall clock \\
+    3&8.487&Normal (no stress processes)\\
+    4&6.5&No Memory Muncher or Release Process \\
+    5&30.988&Stress processes \\
+\end{tabular}
+
+\section{Function Runtime Profiling}
 \begin{tabular}{l | l | l | l | l}
     Function & Trial & Time ($\mu s$) & \# of Calls & Average time / call ($\mu s$) \\
     \hline
@@ -639,9 +650,7 @@
     k\_sendMessage&5&750.63&687&1.093 \\
     k\_receiveMessage&5&497.09&693&0.717 \\
     k\_aquireMemoryBlock&5&329.90&447&0.738 \\
-
-
 \end{tabular}
-% \end{table}
+
 
 \end{document}
