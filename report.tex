@@ -61,9 +61,29 @@
 % Make sure to include pseudocode and testing, if appropriate.
 
 \section{Description}
-The scheduler is responsible for dividing processor time amongst all of the system's processes. It handles context switching between processes, deciding which process to schedule next, and preempting or blocking processes when appropriate. Processes can be in one of the following states: new, ready, running, blocked on memory, blocked on message, unused. New is a state that processes are given after being initialized so that the scheduler can properly context switch to them for the first time. The running state signifies that the process is the only currently running process in the system. Processes which are ready are placed in a priority queue, and the scheduler will select the ready process with the highest priority to run next. Processes which are blocked on memory are put into another priority queue, and when memory is freed, the blocked process with the highest priority is unblocked. If the unblocked process has a higher priority than the currently running process, then the currently running process is preempted. Processes that are blocked on a message remain blocked until they are sent a message. Upon receiving a message, the process is unblocked, and if it has a higher priority than the sending process, the sending process is preempted.
+The scheduler is responsible for dividing processor time amongst all of the
+system's processes. It handles context switching between processes, deciding
+which process to schedule next, and preempting or blocking processes when
+appropriate. Processes can be in one of the following states: new, ready,
+running, blocked on memory, blocked on message, unused. New is a state that
+processes are given after being initialized so that the scheduler can properly
+context switch to them for the first time. The running state signifies that the
+process is the only currently running process in the system. Processes which
+are ready are placed in a priority queue, and the scheduler will select the
+ready process with the highest priority to run next. Processes which are
+blocked on memory are put into another priority queue, and when memory is
+freed, the blocked process with the highest priority is unblocked. If the
+unblocked process has a higher priority than the currently running process, then
+the currently running process is preempted. Processes that are blocked on a
+message remain blocked until they are sent a message. Upon receiving a message,
+the process is unblocked, and if it has a higher priority than the sending
+process, the sending process is preempted.
 
-The ready queue is a priority queue implemented with a heap. We decided to use a priority queue for all ready/blocked processes instead of a queue for each priority level because that way we could support an arbitrary number of priorities in the system without having our runtime depend on the number of priorities.
+The ready queue is a priority queue implemented with a heap. We decided to use a
+priority queue for all ready/blocked processes instead of a queue for each
+priority level because that way we could support an arbitrary number of
+priorities in the system without having our runtime depend on the number of
+priorities.
 
 Following is pseudo-code for process initialization:
 \begin{lstlisting}
@@ -73,7 +93,8 @@ function k_initProcesses()
 
     for each process p, index i:
         p.pid = i
-        p.stack = acquireMemoryBlock() three times + memory block size // Use three memory blocks for each process stack and place stack pointer at end of third one
+        // Use three memory blocks for each process stack and place stack pointer at end of third one
+        p.stack = acquireMemoryBlock() three times + memory block size 
         push initial required values onto stack
         set p.startLocation to appropriate process function location
         p.debugEnvelope = acquireMemoryBlock() // Reserve a debug envelope for each process to be able to display a debug message even if there is no free memory in the system
@@ -83,19 +104,27 @@ function k_initProcesses()
     Initialize CRT proc
 \end{lstlisting}
 
-Following is pseudo\-code for the kernel\-level function for release\_processor. This is called any time the current process should be preempted and a new process should be scheduled. The function takes a parameter that specifies what the reason is for the context\-switch. The release reason can be one of the following: a voluntary yield, a process priority change, memory was freed, the system is out of memory, a message was sent, or a message was received. The scheduling behavior can be different for some of these reasons.
+Following is pseudo\-code for the kernel\-level function for release\_processor.
+This is called any time the current process should be preempted and a new
+process should be scheduled. The function takes a parameter that specifies what
+the reason is for the context\-switch. The release reason can be one of the
+following: a voluntary yield, a process priority change, memory was freed, the
+system is out of memory, a message was sent, or a message was received. The
+scheduling behavior can be different for some of these reasons.
 
 \begin{lstlisting}
 function k_releaseProcessor(releaseReason)
-    // First we process the changed states of a few interrupt-driven systems here to avoid ISRs modifying kernel state while they are interrupting kernel methods.
+    // First we process the changed states of a few interrupt-driven systems
+    here to avoid ISRs modifying kernel state while they are interrupting
+    kernel methods.
     k_processUartOutput()
     k_processUartInput()
     k_processDelayedMessages()
 
     // We need to set these three variables depending on the release reason
-    define targetState, // The state the currently running process should get.
+    define targetState, // The state the currently running process should get
         srcQueue, // The queue we should use to schedule the next process
-        dstQueue // The queue we should add the currently running process to
+        dstQueue // The queue we should add the currently running process to.
 
     if releaseReason == out of memory:
         srcQueue = process-ready queue
@@ -140,9 +169,22 @@ function k_releaseProcessor(releaseReason)
 \end{lstlisting}
 
 \section{Running Time Analysis}
-The runtime for k\_initProcesses is $O(nlogn)$, where n is the number of processes in the system. This is because for each of n processes we insert them into the process\-ready queue, which is implemented as a heap and therefore taking $O(logn)$ to insert an element. This function could be trivially modified to achieve a runtime of $O(n)$ time, by putting all of the heap elements in an array first, and then heapifying it afterwards, but since there is a small, fixed number of processes in the system we didn't bother completing this optimization since this function only runs once at system startup.
+The runtime for k\_initProcesses is $O(nlogn)$, where n is the number of
+processes in the system. This is because for each of n processes we insert them
+into the process\-ready queue, which is implemented as a heap and therefore
+taking $O(logn)$ to insert an element. This function could be trivially
+modified to achieve a runtime of $O(n)$ time, by putting all of the heap
+elements in an array first, and then heapifying it afterwards, but since there
+is a small, fixed number of processes in the system we didn't bother completing
+this optimization since this function only runs once at system startup.
 
-The runtime for k\_releaseProcessor, with the assumption that the UART and delayed message processing at the beginning will typically take $O(1)$ time, takes $O(log n)$ time, where n is the number of processes in the system. It is bounded by removing and inserting from the source and destination priority queues (heaps). This provides good performance, and we can have an arbitrary number of priorities in the system because a priority queue was used instead of a queue per priority level.
+The runtime for k\_releaseProcessor, with the assumption that the UART and
+delayed message processing at the beginning will typically take $O(1)$ time,
+takes $O(log n)$ time, where n is the number of processes in the system. It is
+bounded by removing and inserting from the source and destination priority
+queues (heaps). This provides good performance, and we can have an arbitrary
+number of priorities in the system because a priority queue was used instead of
+a queue per priority level.
 
 \chapter{Memory Allocator}
 % Make sure to include pseudocode and testing, if appropriate.
