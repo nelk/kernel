@@ -314,18 +314,19 @@
         \node [block, right of=kbd] (uart) {uart on PC};
         \node [block, right of=uart] (uart_h) {IRQHandler};
         \node [block, right of=uart_h] (buffer) {buffer};
+        % TODO: fix this graph. It's broken.
         \node [cloud, below left of=buffer] (release) {release processor};
         \node [block, below right of=release] (kcd) {keyboard decoder};
         \node [block, left of=kcd] (user_proc) {user processes};
         % Draw edges
-        \path [line,dashed] (user) -- (kbd);
-        \path [line] (kbd) -- (uart);
-        \path [line] (uart) -- (uart_h);
-        \path [line] (uart_h) -- (buffer);
-        \path [line,dashed] (buffer) -- (release);
-        \path [line,dashed] (kcd) -- (release);
-        \path [line] (buffer) -- (kcd);
-        \path [line] (kcd) -- (user_proc);
+        \path [->,very thick,line,dashed] (user) -- (kbd);
+        \path [->,very thick,line] (kbd) -- (uart);
+        \path [->,very thick,line] (uart) -- (uart_h);
+        \path [->,very thick,line] (uart_h) -- (buffer);
+        \path [->,very thick,line,dashed] (buffer) -- (release);
+        \path [->,very thick,line,dashed] (release) -- (kcd);
+        \path [->,very thick,line] (buffer) -- (kcd);
+        \path [->,very thick,line] (kcd) -- (user_proc);
     \end{tikzpicture}
 
 {
@@ -411,6 +412,34 @@ void k_processUartInput() {
 \end{lstlisting}
 }
 \section{Output}
+    Output in our OS operates much more simply than output in a production-grade
+    operating system.
+    At a basic level, user processes send messages to the CRT process, which
+    buffers the stream. The method ``uart\_send\_char\_isr'' consumes the buffer
+    and sends it through UART to the putty on the PC. Additionally, the same
+    ``UART0\_IRQHandler'' used in Input triggers ``uart\_send\_char\_isr'' when
+    appropriate.
+
+    \begin{tikzpicture}[node distance = 3cm, auto]
+        \label{diagram:output}
+        % Place nodes
+        \node [block] (user_proc) {User Processes};
+        \node [cloud, right of=user_proc] (message) {Message};
+        \node [block, right of=message] (crtProc) {CRT process};
+        \node [cloud, right of=crtProc] (buffer) {Buffer};
+        \node [block, below of=crtProc] (handler) {UART Handler};
+        \node [block, right of=handler] (sendChar) {sendCharIsr};
+        \node [block, right of=sendChar] (uart) {UART};
+        % Draw edges
+        \path [->,very thick,line] (user_proc) -- (message);
+        \path [->,very thick,line,dashed] (message) -- (crtProc);
+        \path [->,very thick,line] (crtProc) -- (sendChar);
+        \path [->,very thick,line,dashed] (crtProc) -- (buffer);
+        \path [->,very thick,line,dashed] (buffer) -- (sendChar);
+        \path [->,very thick,line] (handler) -- (sendChar);
+        \path [->,very thick,line] (sendChar) -- (uart);
+    \end{tikzpicture}
+
 
 \chapter{Misc}
 % Make sure to include pseudocode and testing, if appropriate.
