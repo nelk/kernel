@@ -317,136 +317,113 @@
     sections.
 
 \section{Input}
-    In this assignment, the primary input device is a keyboard input.
+\label{sec:Input}
+    In this assignment, the primary input device is keyboard input.
     Keyboard input triggers the ``UART0\_IRQHandler'' assembly interrupt. This
-    passes the input to the ``c\_UART0\_IRQHandler'' method that buffers
-    keyboard input. Whenever ``release\_processor'' is called, the keyboard
-    decoder process receives a message telling it a message has occurred. It
-    processes the input buffer. In the case that input is a hot-key, it
-    immediately executes the relevant execution path. In the case that input is
-    a message, a relevant process that has registered will receive a message
-    containing the message. If no processes have been registered, the message
-    is freed.
+    passes the input to the ``c\_UART0\_IRQHandler'' method that puts the events
+    in a buffer. Whenever ``release\_processor'' is called, messages in the
+    buffer are sent to the keyboard decoder process so it can decode the new
+    events. It processes the input buffer. In the case that input is a hot-key,
+    it immediately executes the relevant execution path. In the case that input
+    is a complete command, a process that has registered for that command will
+    receive a message containing the command. If no processes have been
+    registered, the message is freed.
 
     Diagram \ref{diagram:input} illustrates this process in a visually
     apparent manner, and Algorithm \ref{code:uart_input} expresses this flow
     algorithmically.
+    \begin{figure}
+        \centering
+        \begin{tikzpicture}[node distance = 3cm,
+                            auto,
+                            label={diagram:input}]
+            % Place nodes
+            \node [block] (kbd) {keyboard};
+            \node [cloud, above of=kbd] (user) {user};
+            \node [block, right of=kbd] (uart) {uart on PC};
+            \node [block, right of=uart] (uart_h) {IRQHandler};
+            \node [block, right of=uart_h] (buffer) {buffer};
+            % TODO: fix this graph. It's broken.
+            \node [cloud, below left of=buffer] (release) {release processor};
+            \node [block, below right of=release] (kcd) {keyboard decoder};
+            \node [block, left of=kcd] (user_proc) {user processes};
+            % Draw edges
+            \path [->,very thick,line,dashed] (user) -- (kbd);
+            \path [->,very thick,line] (kbd) -- (uart);
+            \path [->,very thick,line] (uart) -- (uart_h);
+            \path [->,very thick,line] (uart_h) -- (buffer);
+            \path [->,very thick,line,dashed] (buffer) -- (release);
+            \path [->,very thick,line,dashed] (release) -- (kcd);
+            \path [->,very thick,line] (buffer) -- (kcd);
+            \path [->,very thick,line] (kcd) -- (user_proc);
+        \end{tikzpicture}
+        \caption{Flow of Input Data to User Processes}
+    \end{figure}
 
-    \begin{tikzpicture}[node distance = 3cm, auto]
-        \label{diagram:input}
-        % Place nodes
-        \node [block] (kbd) {keyboard};
-        \node [cloud, above of=kbd] (user) {user};
-        \node [block, right of=kbd] (uart) {uart on PC};
-        \node [block, right of=uart] (uart_h) {IRQHandler};
-        \node [block, right of=uart_h] (buffer) {buffer};
-        % TODO: fix this graph. It's broken.
-        \node [cloud, below left of=buffer] (release) {release processor};
-        \node [block, below right of=release] (kcd) {keyboard decoder};
-        \node [block, left of=kcd] (user_proc) {user processes};
-        % Draw edges
-        \path [->,very thick,line,dashed] (user) -- (kbd);
-        \path [->,very thick,line] (kbd) -- (uart);
-        \path [->,very thick,line] (uart) -- (uart_h);
-        \path [->,very thick,line] (uart_h) -- (buffer);
-        \path [->,very thick,line,dashed] (buffer) -- (release);
-        \path [->,very thick,line,dashed] (release) -- (kcd);
-        \path [->,very thick,line] (buffer) -- (kcd);
-        \path [->,very thick,line] (kcd) -- (user_proc);
-    \end{tikzpicture}
-
-{
 % TODO: Format this. It's ugly.
-\label{code:uart_input}
-\begin{lstlisting}
-------------------------------------------------------
-crt.c:
-------------------------------------------------------
-__asm void UART0_IRQHandler() {
-    ...
-    BL c_UART0_IRQHandler
-    ...
-}
-void c_UART0_IRQHandler {
-    ...
-    mark message as seen
-    uart_receive_char_isr(newChar);
-    ...
-}
-void uart_receive_char_isr(newChar) {
-    if ((writeIndex + 1) % bufferSize == readIndex) {
-        bufferOverflow = true
-        return;
-    }
-    buffer[writeIndex] = newChar;
-    writeIndex = (writeIndex + 1) % bufferSize
-}
-------------------------------------------------------
-proc.c:
-------------------------------------------------------
-uint32_t releaseProcessor() {
-    ...
-    processUartInput();
-    ...
-}
-void k_processUartInput() {
-    ...
-    lineBuffer = []
-    while (buffer != null && readIndex != writeIndex) {
-        char new_char = buffer[readIndex];
-
-        readIndex = (readIndex + 1) % bufferSize;
-
-        if (new_char == '\r') {
-            kcdEnvelope = acquireMemoryBlock();
-
-            kcdEnvelope = MT_KEYBOARD;
-
-            kcdEnvelope->messageData = clone(buffer);
-
-            k_sendMessage(kcdEnvelope, KEYBOARD_PID, KEYBOARD_PID);
-
-            kcdEnvelope = NULL;
-            continue;
-        } else if (new_char == SHOW_DEBUG_PROCESSES) {
-            Envelope *currentEnv = currentProcess->envelope;
-            char *buf = NULL;
-
-            buf = currentEnv->messageData;
-
-            write(buf, "Allocated " + numSuccessfulAllocs + "b");
-
-            currentEnv->messageType = MT_KEYBOARD;
-            send currentEnv to CRT_PID
-
-            for (procId : procIds) {
-                Envelope *tempEnvelope = NULL;
-                PCB *process = &(processes[i]);
-
-                tempEnvelope = process->debugEnv;
-                buf = tempEnvelope->messageData;
-
-                writeProcessInfo(buf, process);
-
-                sendMessage(tempEnvelope, CRT_PID, CRT_PID);
-            }
-            continue;
+    \begin{figure}
+        \centering
+        \begin{lstlisting}[label=code:uart_input,caption={Input Pseudocode}]
+        ------------------------------------------------------
+        crt.c:
+        ------------------------------------------------------
+        __asm void UART0_IRQHandler() {
+            ...
+            BL c_UART0_IRQHandler
+            ...
         }
-    }
-    ...
-}
-\end{lstlisting}
-}
+        void c_UART0_IRQHandler {
+            ...
+            mark message as seen
+            uart_receive_char_isr(newChar);
+            ...
+        }
+        void uart_receive_char_isr(newChar) {
+            if ((writeIndex + 1) % bufferSize == readIndex) {
+                bufferOverflow = true
+                return;
+            }
+            buffer[writeIndex] = newChar;
+            writeIndex = (writeIndex + 1) % bufferSize
+        }
+        ------------------------------------------------------
+        proc.c:
+        ------------------------------------------------------
+        uint32_t releaseProcessor() {
+            ...
+            processUartInput();
+            ...
+        }
+        void processUartInput() {
+            ...
+            while (readIndex != writeIndex) {
+                char new_char = buffer[readIndex];
+
+                readIndex = (readIndex + 1) % bufferSize;
+
+                if (new_char is a newline) {
+                    send a message to keyboard that a newline has occurred
+                    continue;
+                } else if (new_char == SHOW_DEBUG_PROCESSES) {
+                    print debug information, send it to the CRT proc
+                    continue;
+                }
+            }
+            ...
+        }
+        \end{lstlisting}
+    \end{figure}
 \section{Output}
-    Output in our OS operates much more simply than output in a production-grade
-    operating system.
 \subsection{Basic Output}
     At a basic level, user processes send messages to the CRT process, which
-    buffers the stream. The method ``uart\_send\_char\_isr'' consumes the buffer
-    and sends it through UART to the putty on the PC. Additionally, the same
-    ``UART0\_IRQHandler'' used in Input triggers ``uart\_send\_char\_isr'' when
-    appropriate. Diagram \ref{diagram:output} is an over-simplification of the
-    process that agrees with this description.
+    buffers it into a stream. The method ``uart\_send\_char\_isr'' consumes the
+    buffer and sends it through UART to the putty on the PC. Additionally, the
+    same ``UART0\_IRQHandler'' used in Section~\ref{sec:Input} triggers ``uart\_send\_char\_isr''
+    when the uart has notified us it is able to send more bytes. Diagram \ref{diagram:output} is a pictorial representation of a
+    procedure that agrees with this description. In the next
+    subsection\ref{sec:outputEnhancements}, we will explain how we exceeded the
+    specifications which caused our implementation to be more complicated than
+    this.
 
     \begin{tikzpicture}[node distance = 3cm, auto]
         \label{diagram:output}
@@ -470,22 +447,27 @@ void k_processUartInput() {
     \end{tikzpicture}
 
 \subsection{Output Enhancements}
-    We decided to implement a larger feature set than required from the
-    application specification in order to make our interface feel like a real
-    command line. Our features include a text input bar that stays at the bottom
-    while users type, coloured text, backspace support, and a few other
-    enhancements.
+\label{sec:outputEnhancements}
+    We decided to implement a larger feature set than required in the
+    application specification in order to make our putty interface feel and act
+    more like a command line found in a traditional computer. Our features
+    include a text input bar that stays at the bottom while users type, coloured
+    text, backspace support, and a few other enhancements.
 
-    To achieve this, we save the buffered keyboard input into an envelope
-    that belongs to a ``CRTData'' object. Whenever the buffer is cleared by a
+    To achieve this, we've moved the buffered keyboard input into an envelope
+    belonging to a ``CRTData'' object. Whenever the buffer is cleared by a
     user pressing the ``enter button'', we move the cursor upwards, and write
-    the content of the buffer in the cleared space. By shifting the cursor's %'
-    position, we are able to maintain the currently buffered user text at the
-    bottom of the screen, allowing the user to see their text as they enter it.
-    Implementing deletion only required parsing a special character in a similar
-    way to a hot-key. Inside the pseudocode algorithm (\ref{code:uart_output})
-    for this section, the CRT process loads messages from the buffer that
-    CRT\_advance is loading.
+    the content of the buffer in the cleared space. Similarly, if a process
+    requests to print, we move the cursor upwards, and write the content of the
+    message into the cleared space. By shifting the cursor's position, we are
+    able to maintain the currently buffered user text at the bottom of the
+    screen, allowing the user to see their text as they enter it. Implementing
+    deletion only required parsing a special character in a similar way to a
+    hot-key. Inside the pseudocode algorithm (\ref{code:uart_output}) listed for
+    this subsection, the CRT process loads messages from the buffer that
+    CRT\_advance loads with instructions to move characters, print content from
+    processes, and show current input buffer status (i.e. what the user has
+    typed).
     % ^Please verify this. I'm not entirely sure about how the two interact,
     % they're pretty coupled.
 
