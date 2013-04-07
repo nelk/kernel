@@ -34,8 +34,8 @@
     \texttt{smenakur@uwaterloo.ca}
     \and
     Wei, Jonathan\\
-    XXXXXXXX\\
-    \texttt{XXXX@uwaterloo.ca}
+    20376489\\
+    \texttt{j25wei@uwaterloo.ca}
 }
 
 \maketitle
@@ -343,7 +343,7 @@
                 \State \Call {init\_registration\_envelope}{$envelope, c$}
                 \State \Call {send\_message}{$KEYBOARD\_PID, envelope$}\\
 
-                \While{1}
+                \Loop
                     \State $envelope \gets \Call {receive\_message}{NULL}$\\
 
                     \If {$envelope \rightarrow srcPid \ne KEYBOARD\_PID$}
@@ -365,7 +365,7 @@
                     \Else
                         \State \Call {release\_memory\_block}{$envelope$}
                     \EndIf
-                \EndWhile
+                \EndLoop
             \EndFunction
         \end{algorithmic}
     \end{algorithm}
@@ -375,7 +375,7 @@
         \label{code:read_uint_32}
         \begin{algorithmic}[1]
 
-            \Function{read\_uint32}{$buf, bufLen, out$}
+            \Function{read\_uint32}{$buf, out$}
                 \Comment {buf is a char pointer}
                 \State $number \gets 0$
                 \Comment {The integer result}
@@ -387,19 +387,19 @@
                     \Comment {Return if there's nothing to read}
                 \EndIf\\
 
-                \While {$read < bufLen$}
-                    \If {\Call {$\neg is\_numeric$}{$buf$}}
+                \While {$read < \Call{len}{buf}$}
+                    \If {\Call {$\neg$is\_numeric}{$buf \lbrack 0 \rbrack$}}
                         \State \textbf{break}
                     \EndIf\\
 
                     \State $number \gets number \times 10$
-                    \State $number \gets number + \Call {to\_int}{buf}$
+                    \State $number \gets number + \Call {to\_int}{buf \lbrack 0 \rbrack}$
                     \State $read \gets read + 1$
                     \State $buf \gets buf + 1$
                 \EndWhile\\
 
                 \If {$out \ne NULL$}
-                    \State $out \gets number$
+                    \State $out \lbrack 0 \rbrack \gets number$
                 \EndIf\\
 
                 \State \Return $read$
