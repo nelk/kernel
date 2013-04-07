@@ -99,7 +99,7 @@
 
             \For{each process p, index i}
                 \State p.pid $\gets$ i
-                \State p.stack $\gets$ \Call{acquireMemoryBlock}{} three times + memory block size \Comment{Use three memory blocks for each process stack and place stack pointer at end of third one}
+                \State p.stack $\gets$ \Call{acquireMemoryBlock}{$ $} three times + memory block size \Comment{Use three memory blocks for each process stack and place stack pointer at end of third one}
                 \State push initial required values onto stack
                 \State set p.startLocation to appropriate process function location
                 \Comment{Reserve a debug envelope for each process to be able to display a debug message even if there is no free memory in the system}
@@ -118,7 +118,7 @@
     scheduled. The function takes a parameter that specifies what the reason is
     for the context\-switch. The release reason can be one of the following: a
     voluntary yield, a process priority change, memory was freed, the system is
-    out of memory, a message was sent, or a message was received. The scheduling
+    out of memory, a message was sent, or a message is being received. The scheduling
     behavior can be different for some of these reasons.
 
 \begin{algorithm}
@@ -127,9 +127,9 @@
     \begin{algorithmic}[1]
     \Function{k\_releaseProcessor}{releaseReason}
         \Comment{First we process the changed states of a few interrupt-driven systems here to avoid ISRs modifying kernel state while they are interrupting kernel methods}
-        \State \Call{k\_processUartOutput}{}
-        \State \Call{k\_processUartInput}{}
-        \State \Call{k\_processDelayedMessages}{}
+        \State \Call{k\_processUartOutput}{$ $}
+        \State \Call{k\_processUartInput}{$ $}
+        \State \Call{k\_processDelayedMessages}{$ $}
 
         \Comment{These variables are set depending on the release reason}
         \State define targetState, \Comment{The state to give the currently running process}
@@ -163,14 +163,14 @@
         \EndIf
 
         \If{srcQueue $\ne$ NULL \and srcQueue.size > 0}
-            \State nextProc $\gets$ \Call{srcQueue.pop}{}
+            \State nextProc $\gets$ \Call{srcQueue.pop}{$ $}
         \Else
             \State nextProc $\gets$ the null process
         \EndIf
 
         \If{currentProcess $\ne$ NULL}
             \Comment{Save old process info}
-            \State currentProcess.stack $\gets$ \Call{getStackPointer}{}
+            \State currentProcess.stack $\gets$ \Call{getStackPointer}{$ $}
             \State currentProcess.state $\gets$ targetState
             \If{dstQueue $\ne$ NULL}
                 \State \Call{dstQueue.add}{currentProcess}
@@ -182,7 +182,7 @@
         \State currentProcess $\gets$ nextProc
         \State \Call{setStackPointer}{nextProc.stack}
         \If{oldState = new}
-            \Call{\_\_rte}{} \Comment{If first time, pop the exception stack frame}
+            \State \Call{\_\_rte}{$ $} \Comment{If first time, pop the exception stack frame}
         \EndIf
     \EndFunction
     \end{algorithmic}
@@ -394,6 +394,152 @@
 % Make sure to include pseudocode and testing, if appropriate.
 
 \section{Description}
+    This micro-kernel supports three user API functions for message passing: send\_message, 
+    receive\_message, and send\_delayed\_message. Each function requires the user process to use a special data structure called Envelope, which is available in a provided header file. Following is a table of the fields available on the Envelope data structure.
+
+    \begin{tabular}{l | l}
+        Type & Name \\
+        \hline
+        uint32\_t & messageType \\
+        char[MESSAGEDATA\_SIZE\_BYTES] & messageData \\
+        ProcId & srcPid \\
+        ProcId & dstPid \\
+        uint32\_t & sendTime \\
+        Envelope* & next \\
+    \end{tabular}
+
+    To obtain an envelope, a user process must acquire a memory block and then
+    cast  it to the Envelope type. When sending a message, the user should set
+    the messageType and messageData fields to values they wish to send. The
+    srcPid and dstPid fields may be filled out, but the kernel will overwrite
+    them to their correct values. The rest of the fields are reserved for kernel
+    use and they will be overwritten after the user sends the message.  After
+    sending an envelope, the user process no longer owns that block of memory
+    and they should clear all references to it.
+
+    The kernel maintains a priority queue of delayed messages (where priority is
+    the time it should be delivered) for the system and a message queue for each
+    process. A function called k\_processDelayedMessages (see Algorithm
+    \ref{code:process_delayed_messages}) is called in release\_processor, and it
+    delivers any delayed messages that have waited for their specified delay.
+    The  message queue for each process is where messages are stored when their
+    delivered  to a process that is not blocked on message.
+
+    Sending a message may cause the sending process to be preempted. This will
+    occur if the receiving process is blocked on receiving a message and it has
+    a higher priority. Calling receive\_message will cause the process to block
+    on message, unless  it has messages in its message queue. Sending a delayed
+    message, however, will never cause  the sender to block. See Algorithm
+    \ref{code:send_message} for a pseudocode implementation  of send\_message,
+    Algorithm \ref{code:receive_message} for receive\_message, and
+    \ref{code:send_delayed_message} for send\_delayed\_message.
+
+    \begin{algorithm}
+    \caption{Send Message}
+    \label{code:send_message}
+    \begin{algorithmic}[1]
+        \Function{k\_sendMessage}{envelope, srcPid, dstPid}
+            \State Initialize reserved kernel fields of envelope to a zeroed state
+            \State envelope.srcPid = srcPid
+            \State envelope.dstPid = dstPid
+
+            \State \Return error code if srcPid or dstPid is invalid
+            \State dstPCB $\gets$ PCB of process with pid dstPid
+            \State srcPCB $\gets$ PCB of process with pid srcPid
+
+            \If{srcPid owns memory block envelope}
+                \State Set owner of envelope to dstPid
+            \Else
+                \State \Return error code
+            \EndIf
+
+            \State Add envelope to dstPCB's message queue
+
+            \If{dstPCB.state = blocked on message} \Comment{Unblock receiver}
+                \State dstPCB.state $\gets$ ready
+                \State Add dstPCB to process-ready queue
+                \If{dstPCB.priority $<$ currentProcess.priority}
+                    \State \Call{k\_releaseProcessor}{$ $} \Comment{Preempt if unblocked process has higher priority}
+                \EndIf
+            \EndIf
+        \EndFunction
+    \end{algorithmic}
+    \end{algorithm}
+
+    \begin{algorithm}
+    \caption{Receive Message}
+    \label{code:receive_message}
+    \begin{algorithmic}[1]
+        \Function{k\_receiveMessage}{}
+            \State message $\gets$ \Call{currentProc.messageQueue.top}{$ $}
+            \While{message = NULL} \Comment{Loop until message exists}
+                \State \Call{k\_releaseProcessor}{message being received} \Comment{Blocks 
+                this process}
+                \State message $\gets$ \Call{currentProc.messageQueue.top}{$ $}
+            \EndWhile
+
+            \State \Call{currentProc.messageQueue.pop}{$ $}
+
+            \State message.next $\gets$ NULL
+            \Comment{Clear next pointer so user doesn't have next message}
+
+            \State Set owner of message to dstPid
+            \State \Return message
+        \EndFunction
+    \end{algorithmic}
+    \end{algorithm}
+
+    \begin{algorithm}
+    \caption{Send Delayed Message}
+    \label{code:send_delayed_message}
+    \begin{algorithmic}[1]
+        \Function{k\_sendDelayedMessage}{envelope, srcPid, dstPid, delay}
+            \State Initialize reserved kernel fields of envelope to a zeroed state
+            \State \Return error code if srcPid or dstPid is invalid
+            \If{srcPid owns memory block envelope}
+                \State Set owner of envelope to kernel
+            \Else
+                \State \Return error code
+            \EndIf
+
+            \State envelope.sendTime $\gets$ \Call{k\_getTime}{$ $} + delay
+            \Comment{Set the time the envelope will be delivered}
+            \State envelope.srcPid $\gets$ srcPid
+            \State envelope.dstPid $\gets$ dstPid
+
+            \State Add envelope to kernel delayed message queue
+        \EndFunction
+    \end{algorithmic}
+    \end{algorithm}
+
+    \begin{algorithm}
+    \caption{Process Delayed Messages}
+    \label{code:process_delayed_messages}
+    \begin{algorithmic}[1]
+        \Function{k\_processDelayedMessages}{}
+            \State messageQueue $\gets$ kernel delayed message queue
+            \State currentTime $\gets$ \Call{k\_getTime}{$ $}
+
+            \If{messageQueue is empty}
+                \State \Return
+            \EndIf
+
+            \Loop
+                \State message $\gets$ \Call{messageQueue.top}{$ $}
+
+                \If{message = NULL or message.sendTime $>$ currentTime}
+                    \State \Return
+                    \Comment{Loop until there are no more messages to deliver}
+                \EndIf
+
+                \State \Call{messageQueue.pop}{$ $}
+                \State Set owner of message to message.srcPid
+                \Comment{Set to srcPid so that we can use k\_sendMessage}
+                \State \Call{k\_sendMessage}{message, message.srcPid, message.dstPid}
+            \EndLoop
+        \EndFunction
+    \end{algorithmic}
+    \end{algorithm}
 
 \section{Running Time Analysis}
 
