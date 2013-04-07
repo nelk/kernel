@@ -146,7 +146,7 @@
 
         \Comment{These variables are set depending on the release reason}
         \State define targetState, \Comment{The state to give the currently running process}
-            \State \indent srcQueue, \Comment{The queue to schedule the next process 
+            \State \indent srcQueue, \Comment{The queue to schedule the next process
             from}
             \State \indent dstQueue \Comment{The queue to insert the current process into}
 
@@ -632,9 +632,52 @@
 \chapter{Proc 2}
 
 \part{Lessons Learned}
-% They call this the lessons learned summary.
-% 1-2 pages
-% what you did do well, both technically and organizationally, and what you
-% would do differently if you were to do it again
 
+    During the implementation phases of our OS project we went through several
+    deliverables, which allowed us to learn various lessons. At times, we
+    decided to learn from our mistakes and not to make the same mistakes
+    repetitively. In other cases, we did not learn mistakes, and lost a lot of
+    time in the process.
+
+    Our development process consisted in writing code on our laptops, and
+    committing it to centralized version control system. In our case, we used
+    Git, an open-source distributed version control system. When group members
+    decided code they had written was of adequate quality, they pushed to a Git
+    server their changes on a branch, and team members read through it to verify
+    it being correct. This process saved us a lot of time, as many bugs were
+    caught as they were being introduced, instead of in production. If we had
+    not used version control, and not used the peer code-review system, it is
+    entirely possible we wouldn't have been able to complete the lab
+    successfully. This was a very good organizational decision that we started
+    early on, and kept with for the duration of the project.
+
+    Initially, we only tested code on our local machines, and did not use Keil
+    to verify our code compiles under the limitations imposed by the editor.
+    This caused us much undue stress, as we raced towards the first deliverable
+    making sure our code compiled correctly inside Keil. Luckily, our peer
+    review system ensured our first deliverable was mainly bug-free, which saved
+    us time actually testing on the board.
+
+    One of the issues that seemed to continually plague us (until we made it
+    easier to detect), was incorrectly accessing memory that had not been
+    initialized. This caused many unusual bugs that would only occur in some
+    circumstances where memory we accessed would contain unusual data. By
+    changing our memory allocator to always zero-initialize memory returned, we
+    were able to quickly identify invalid memory accesses. This in turn helped
+    us fix these kinds of bugs very quickly.
+
+    In some initial assignments, we ran into problems with looming deadlines. As
+    we learned from these experiences, we started working on assignments earlier
+    and earlier, in order to reduce our stress at submission time. One of the
+    side effects was allowing us to write our enhanced crt output display.
+
+    One of the overall goals for our operating system was to provide efficient
+    implementations to all user-side operating system calls. By maintaining the
+    intention to reduce the runtime of operations (i.e. $O(n) \to O(\log(n))$,
+    etc.), we feel we are not just able to say our implementations are faster
+    than naive implementations but guarantee performance to be better.
+
+    Overall, we are very happy with our implementation. It succinctly implements
+    the required portions of the project (memory, messages, I/O, etc.) while
+    ensuring high performance on a stable API.
 \end{document}
