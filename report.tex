@@ -146,7 +146,7 @@
 
         \Comment{These variables are set depending on the release reason}
         \State define targetState, \Comment{The state to give the currently running process}
-            \State \indent srcQueue, \Comment{The queue to schedule the next process 
+            \State \indent srcQueue, \Comment{The queue to schedule the next process
             from}
             \State \indent dstQueue \Comment{The queue to insert the current process into}
 
@@ -1079,7 +1079,7 @@
     block on receiving a message indefinitely.  The combination of these two
     processes allowed us to test low to no memory situations to ensure our
     memory allocator was working as expected, as well as to ensure that our
-    set/get\_process\_priority functions were working properly.
+    APIs for setting and getting priorities were working correctly.
 
 \part{Lessons Learned}
 % They call this the lessons learned summary.
