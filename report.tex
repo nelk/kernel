@@ -6,7 +6,7 @@
     algpseudocode,  % For pseudocode
     hyperref,       % For PDF bookmarks
     tikz,           % For state diagrams
-    listings,
+    listings,       % For code/etc.
 }
 
 % State diagrams (i.e. I/O)
@@ -24,7 +24,31 @@
     minimum height=2em]
 
 % Listings for pseudocode (TODO: remove before merge)
-\lstset{mathescape,showstringspaces=false,breaklines=true,numbers=left,numbersep=5pt,numberstyle=\small,language=c}
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+% http://stackoverflow.com/questions/3175105/how-to-insert-code-into-a-latex-doc
+\lstset{
+    aboveskip=3mm,
+    basicstyle={\small\ttfamily},
+    belowskip=3mm,
+    breakatwhitespace=true
+    breaklines=true,
+    breaklines=true,
+    columns=flexible,
+    commentstyle=\color{dkgreen},
+    frame=tb,
+    keywordstyle=\color{blue},
+    language=c,
+    mathescape,
+    numbers=left,
+    numbersep=5pt,
+    numberstyle=\small,
+    numberstyle=\tiny\color{gray},
+    showstringspaces=false,
+    stringstyle=\color{mauve},
+    tabsize=3,
+}
 
 
 % PDF bookmarks setup (keep sorted)
@@ -414,6 +438,7 @@ void k_processUartInput() {
 \section{Output}
     Output in our OS operates much more simply than output in a production-grade
     operating system.
+\subsection{Basic Output}
     At a basic level, user processes send messages to the CRT process, which
     buffers the stream. The method ``uart\_send\_char\_isr'' consumes the buffer
     and sends it through UART to the putty on the PC. Additionally, the same
@@ -442,6 +467,7 @@ void k_processUartInput() {
         \path [->,very thick,line] (sendChar) -- (uart);
     \end{tikzpicture}
 
+\subsection{Output Enhancements}
     We decided to implement a larger feature set than required from the
     application specification in order to make our interface feel like a real
     command line. Our features include a text input bar that stays at the bottom
@@ -451,11 +477,166 @@ void k_processUartInput() {
     To achieve this, we save the buffered keyboard input into an envelope
     that belongs to a ``CRTData'' object. Whenever the buffer is cleared by a
     user pressing the ``enter button'', we move the cursor upwards, and write
-    the content of the buffer in the cleared space. By shifting the cursor's
+    the content of the buffer in the cleared space. By shifting the cursor's %'
     position, we are able to maintain the currently buffered user text at the
     bottom of the screen, allowing the user to see their text as they enter it.
     Implementing deletion only required parsing a special character in a similar
-    way to a hotkey.
+    way to a hot-key. Inside the pseudocode algorithm for the
+
+\begin{lstlisting}
+//----------------------------------------------------------------------//
+// CRT_proc:
+//----------------------------------------------------------------------//
+while (1) {
+    nextMsg = (Envelope *)receive_message(NULL);
+    if (nextMsg == NULL) {
+        continue;
+    }
+
+    if (nextMsg->srcPid == CRT_PID && nextMsg->messageType == MT_CRT_WAKEUP) {
+        uartOutputEnv = nextMsg;
+    } else {
+        crt_pushProcEnv(crtData, nextMsg);
+    }
+
+    while (
+        ((writeIndex + 1) % OUTPUT_BUFSIZE != readIndex) &&
+        (crt_hasData(crtData))
+    ) {
+        outputBuf[writeIndex] = crt_getData(crtData);
+        writeIndex = (writeIndex + 1) % OUTPUT_BUFSIZE;
+    }
+
+    uart_send_char_isr();
+}
+//----------------------------------------------------------------------//
+// CRT_advance:
+//----------------------------------------------------------------------//
+void crt_advance_(CRTData *crt) {
+    // If the screen is showing more than our internal model, then we
+    // need to clear the latter part of the screen.
+    if (crt->screenBufLen > crt->lineBufLen) {
+        // ...
+        // Move cursor to bottom, set background to black, foreground to white.
+        // ...
+
+        // Clear from the cursor to the end of line using a ``magical'' putty character:
+        crt->outqWriter += write_string(
+            crt->outqBuf + crt->outqWriter,
+            CRT_OUTQ_LEN - crt->outqWriter,
+            "\x1b[0K"
+        );
+
+        crt->screenBufLen = crt->lineBufLen;
+        return;
+    }
+
+    // Otherwise, we know that the screen is showing less than or equal to
+    // our internal model. We try to find the first mismatch.
+    mismatchPos = crt->lastMismatchPos;
+    while (mismatchPos < crt->screenBufLen && mismatchPos < crt->lineBufLen) {
+        if (crt->screenBuf[mismatchPos] != crt->lineBuf[mismatchPos]) {
+            break;
+        }
+        ++mismatchPos;
+    }
+
+    crt->lastMismatchPos = mismatchPos;
+
+    // If the mismatch is before what our screen is showing, then we go to
+    // that position, and output some characters
+    if (mismatchPos < crt->screenBufLen) {
+        // ...
+        // Move cursor to the mismatch, set background to black, foreground to white.
+        // ...
+
+        crt->outqBuf[(crt->outqWriter)++] = crt->lineBuf[mismatchPos];
+        crt->screenBuf[mismatchPos] = crt->lineBuf[mismatchPos];
+        crt_setCursor_(crt, 0, mismatchPos+1);
+        return;
+    }
+
+    // If there is no mismatch, but we are showing less than our internal
+    // model, then show the next character in our internal model.
+    if (
+        mismatchPos == crt->screenBufLen &&
+        crt->screenBufLen < crt->lineBufLen
+    ) {
+        // ...
+        // Move cursor to the end, set background to black, foreground to white.
+        // ...
+
+        crt->outqBuf[(crt->outqWriter)++] = crt->lineBuf[mismatchPos];
+        ++(crt->screenBufLen);
+        crt->screenBuf[mismatchPos] = crt->lineBuf[mismatchPos];
+        crt_setCursor_(crt, 0, mismatchPos+1);
+        return;
+    }
+
+    // We now know that screenBufLen == lineBufLen == mismatchPos
+    // so screen data on the user line exactly matches our internal model.
+    // We now move on to process output.
+
+    while (crt->envqHead != NULL) {
+        Envelope *nextEnv = crt->envqHead;
+        uint8_t nextByte = 0;
+
+        // If we see a null byte in our current envelope, or we've fallen
+        // off the end of this envelope, give up on this envelope.
+        if (
+            crt->readIndex >= MESSAGEDATA_SIZE_BYTES ||
+            nextEnv->messageData[crt->readIndex] == '\0'
+        ) {
+            Dequeue from envQ
+            free the memory
+            continue;
+        }
+
+        nextByte = nextEnv->messageData[crt->readIndex];
+        ++(crt->readIndex);
+
+        if (isColor(nextByte)) {
+            setColor(nextByte);
+            continue;
+        }
+        if (!is_printable(nextByte) && nextByte != '\n') {
+            continue;
+        }
+
+        if (nextEnv->srcPid != currentPid) {
+            currentPid = nextEnv->srcPid;
+            if (there was other content on this line) {
+                crt_scrollCursorArea_(crt);
+            }
+        }
+
+        // If we are printing a newline, then just scroll this process area.
+        if (nextByte == '\n' && crt->procCursorPos > 0) {
+            crt_scrollCursorArea_(crt);
+            return;
+        }
+
+        // If the process has output more than 80 characters, truncate.
+        if (crt->procCursorPos >= CRT_LINE_LIMIT) {
+            continue;
+        }
+
+        // Otherwise, merely move to the correct location, and output the
+        // next byte.
+        crt_moveTo_(crt, 1, crt->procCursorPos);
+        crt_setCursor_(crt, 1, (crt->procCursorPos)+1);
+        ++(crt->procCursorPos);
+        crt_setBC_(crt, crt->procBC);
+        crt_setFC_(crt, crt->procFC);
+
+        // Enqueue this character
+        crt->outqBuf[(crt->outqWriter)++] = nextByte;
+        return;
+    }
+
+    crt_moveTo_(crt, 0, crt->userCursorPos);
+
+\end{lstlisting}
 
 \chapter{Misc}
 % Make sure to include pseudocode and testing, if appropriate.
