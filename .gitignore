@@ -42,3 +42,9 @@
 kernel.htm
 kernel.map
 *.lnp
+
+# latex:
+*.aux
+*.loa
+*.log
+*.toc
