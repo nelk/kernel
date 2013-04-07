@@ -306,9 +306,10 @@
     I/O interactions were designed to provide a simple user-facing interface
     while guaranteeing a high level of functionality and speed in low-memory
     situations. Functionality was split between separate input and output
-    processes, each of which were responsible for providing functionality
-    evident in their names. By separating functionality, we took advantage of
-    the benefits of micorkenel architecture instead of monolithic architecture.
+    processes, each of which were responsible for providing their respective
+    functionality. By separating functionality, we were able to take advantage
+    of the benefits of micorkenel architecture instead of monolithic
+    architecture.
     In the context of our OS, both input and output tasks consisted of % TODO: should I put our OS name here?
     interacting solely with UART (Universal asynchronous receiver / transmitter)
     connections to the boards used in this lab. % TODO: Should I put the name here?
@@ -316,15 +317,16 @@
     sections.
 
 \section{Input}
-    Input in this assignment is focused on sending keyboard input to
-    Keyboard input triggers the ``UART0\_IRQHandler'' assembly call. This
-    passes input to the ``c\_UART0\_IRQHandler'' method that buffers keyboard
-    input. Whenever ``release\_processor'' is called, the keyboard decoder
-    process receives a message telling it a message has occurred. It processes
-    the input buffer. In the case that input is a hot-key, it immediately
-    executes the relevant execution path. In the case that input is a message, a
-    relevant process that has registered will receive a message containing the
-    message.
+    In this assignment, the primary input device is a keyboard input.
+    Keyboard input triggers the ``UART0\_IRQHandler'' assembly interrupt. This
+    passes the input to the ``c\_UART0\_IRQHandler'' method that buffers
+    keyboard input. Whenever ``release\_processor'' is called, the keyboard
+    decoder process receives a message telling it a message has occurred. It
+    processes the input buffer. In the case that input is a hot-key, it
+    immediately executes the relevant execution path. In the case that input is
+    a message, a relevant process that has registered will receive a message
+    containing the message. If no processes have been registered, the message
+    is freed.
 
     Diagram \ref{diagram:input} illustrates this process in a visually
     apparent manner, and Algorithm \ref{code:uart_input} expresses this flow
@@ -483,7 +485,7 @@ void k_processUartInput() {
     Implementing deletion only required parsing a special character in a similar
     way to a hot-key. Inside the pseudocode algorithm (\ref{code:uart_output})
     for this section, the CRT process loads messages from the buffer that
-    CRT_advance is loading.
+    CRT\_advance is loading.
     % ^Please verify this. I'm not entirely sure about how the two interact,
     % they're pretty coupled.
 
