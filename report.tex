@@ -428,11 +428,11 @@
                     \State \Return
                 \EndIf\\
 
-                \If {$envelope \rightarrow message \lbrack 2 \rbrack = $'R'}
+                \If {$envelope \rightarrow message \lbrack 2 \rbrack = $`R'}
                     \State $cmdType \gets RESET\_TIME$
-                \ElsIf {$envelope \rightarrow message \lbrack 2 \rbrack = $'T'}
+                \ElsIf {$envelope \rightarrow message \lbrack 2 \rbrack = $`T'}
                     \State $cmdType \gets TERMINATE$
-                \ElsIf {$envelope \rightarrow message \lbrack 2 \rbrack = $'S'}
+                \ElsIf {$envelope \rightarrow message \lbrack 2 \rbrack = $`S'}
                     \State $cmdType \gets SET\_TIME$
                 \Else
                     \State \Return
@@ -664,6 +664,65 @@
     \end{algorithm}
 
 \chapter{User-Level Test Processes}
+
+\section{Description}
+
+    We had various user-level processes that we created for the first
+    deliverable, and continued to use throughout creating our OS.  As we
+    continued adding more features, the user processes were modified as well.
+    Most notably, they were modified in order to incorporate a sleep function,
+    which we had already implemented for the second deliverable after adding
+    message passing.  As we set the processes to sleep for different delays, it
+    is possible to see the interleaving of message printing by the CRT process
+    when their delays synchronise.  The processes are listed below.
+
+\subsection{`funProcess'}
+
+    This process would send 5 messages to the CRT process to print the numbers
+    1, 2, 3, 4, and 5.  It would then sleep for 3000 milliseconds.  This would
+    be repeated indefinitely.  This process, along with the other processes, had
+    to be modified for the second deliverable when we switched from straight
+    UART polling to passing messages to the CRT process for printing.
+
+\subsection{`schizophrenicProcess'}
+
+    This process is similar to `funProcess', printing the numbers 9, 8, 7, 6,
+    and 5.  It would then sleep for 4000 milliseconds.  This would be repeated
+    indefinitely.
+
+\subsection{`fibProcess'}
+
+    This process would print the first 40 or so Fibonacci numbers.  It would
+    print these 5 at a time, then sleep for 1000 milliseconds.  After reaching
+    the Fibonacci number just under 1000000000, it would restart at 1.  This
+    would be repeated indefinitely.
+
+\subsection{`memoryMuncherProcess'}
+
+    This process would request all available memory blocks, printing the
+    addresses of the obtained memory blocks.  When it has obtained all available
+    blocks, it would try to acquire another block, which would cause the process
+    to block, waiting for an additional memory block to become available.  Prior
+    to this, it would set the priority of `releaseProcess' to the highest
+    possible, which would free a preallocated block of memory, allowing this
+    process to continue.  After becoming unblocked, it would free all held
+    memory blocks and then block on receiving a message indefinitely.
+
+\subsection{`releaseProcess'}
+
+    This process was used in conjunction to the above `memoryMuncherProcess'.
+    At startup, this process had the highest priority.  It would preallocate a
+    memory block (used to unblock `memoryMuncherProcess'), then set its own
+    priority to the lowest possible.  It would then call release\_processor.
+    Our other user processes were running at higher priority than this one was
+    set to, so it would require a set\_process\_priority in order to get it to
+    run again, provided by `memoryMuncherProcess'.  It would continue executing
+    after having its priority set to the highest possible again by
+    `memoryMuncherProcess', and free its single block.  After doing so, it would
+    block on receiving a message indefinitely.  The combination of these two
+    processes allowed us to test low to no memory situations to ensure our
+    memory allocator was working as expected, as well as to ensure that our
+    set/get\_process\_priority functions were working properly.
 
 \part{Lessons Learned}
 % They call this the lessons learned summary.
